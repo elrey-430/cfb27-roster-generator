@@ -1,0 +1,97 @@
+namespace RosterGenerator.Core.Schema;
+
+/// <summary>
+/// Canonical CFB27 <c>Player</c> table column names used by the typed layer.
+/// Only columns with empirically confirmed meaning get a constant here; the
+/// remaining ~250 columns are carried through untouched as raw strings.
+/// See <c>docs/Schema.md</c> for the evidence behind each field group.
+/// </summary>
+public static class PlayerColumns
+{
+    // -- Export bookkeeping columns added by the save-export tool ------------
+
+    /// <summary>Table index of the source table in the save (always 152).</summary>
+    public const string TableIndex = "_tableIndex";
+
+    /// <summary>Table name of the source table (always "Player").</summary>
+    public const string TableName = "_tableName";
+
+    /// <summary>Row key. Unique, stable within one export; the primary key.</summary>
+    public const string Row = "_row";
+
+    /// <summary>"true" for unused pool slots, "false" for real records.</summary>
+    public const string IsEmpty = "_isEmpty";
+
+    // -- Group 1: core identity (safe to edit directly) ----------------------
+
+    /// <summary>Player first name (plain text).</summary>
+    public const string FirstName = "FirstName";
+
+    /// <summary>Player last name (plain text).</summary>
+    public const string LastName = "LastName";
+
+    /// <summary>Jersey number, integer 0–99.</summary>
+    public const string JerseyNum = "JerseyNum";
+
+    /// <summary>Height in raw inches (no encoding).</summary>
+    public const string Height = "Height";
+
+    /// <summary>Class standing enum: Freshman/Sophomore/Junior/Senior.</summary>
+    public const string SchoolYear = "SchoolYear";
+
+    /// <summary>Redshirt enum: Eligible/Previous/Ineligible.</summary>
+    public const string RedshirtStatus = "RedshirtStatus";
+
+    /// <summary>Position enum (QB, HB, WR, ...).</summary>
+    public const string Position = "Position";
+
+    /// <summary>Overall rating, integer 0–99.</summary>
+    public const string OverallRating = "OverallRating";
+
+    // -- Group 2: known encoding quirk (do NOT write real-world values) ------
+
+    /// <summary>
+    /// NOT raw pounds — observed values (20, 35, 55, 100, 166...) are far off
+    /// realistic weights and are believed to index a weight curve/spline.
+    /// Unresolved research item; treated as opaque by this library.
+    /// </summary>
+    public const string Weight = "Weight";
+
+    // -- Group 3: identity-derived assets (depends on rename-vs-replace) -----
+
+    /// <summary>Asset name derived from identity at generation time.</summary>
+    public const string AssetName = "PLYR_ASSETNAME";
+
+    /// <summary>Generic head model asset derived from identity.</summary>
+    public const string GenericHeadAssetName = "GenericHeadAssetName";
+
+    /// <summary>Portrait id tied to identity, not name text.</summary>
+    public const string Portrait = "PLYR_PORTRAIT";
+
+    /// <summary>
+    /// Internal flavor-text/comment-pool index. Changed spontaneously on one
+    /// observed rename with no clear trigger — leave alone, never set.
+    /// </summary>
+    public const string Comment = "PLYR_COMMENT";
+
+    // -- Group 4: team assignment and its companion fields -------------------
+
+    /// <summary>Current team index (0–137 FBS in observed saves; 255 = none/FCS).</summary>
+    public const string TeamIndex = "TeamIndex";
+
+    /// <summary>Previous team index; 255 is the "no previous team" sentinel.</summary>
+    public const string PrevTeamIndex = "PrevTeamIndex";
+
+    /// <summary>
+    /// Secondary/legacy previous-team field kept in sync with
+    /// <see cref="PrevTeamIndex"/> on transfers. Uses 0 (not 255) when the
+    /// player has no previous team.
+    /// </summary>
+    public const string PrevTeamId = "PLYR_PREVTEAMID";
+
+    /// <summary>Base NIL value; observed reset to 0 on every team change.</summary>
+    public const string BaseNilValue = "BaseNILValue";
+
+    /// <summary>Current NIL compensation; observed reset to 0 on every team change.</summary>
+    public const string CurrentNilCompensation = "CurrentNILCompensation";
+}
