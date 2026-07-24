@@ -1,8 +1,35 @@
 # Project Status
 
-_Last updated: 2026-07-24 — end of Milestone 2._
+_Last updated: 2026-07-24 — end of Milestone 3._
 
 ## Current status
+
+**Milestone 3 (Generalized historical roster pipeline) is complete.** The
+generator is now a general-purpose end-user tool: it works with any
+compatible dynasty export, takes a simple spreadsheet-style roster CSV, and
+needs no programming, schema, or database-id knowledge from the user.
+
+- **No dynasty-specific dependency.** `DynastyExport.Open` discovers the
+  Player table and the main Team table by content (`_tableName`) in the
+  user's own export, and derives the available teams and their ids from
+  that save. `data/TeamMappings.json` is now only an optional alias
+  overlay, filtered to teams that actually exist in the loaded dynasty.
+- **Simple user-facing input.** `FirstName,LastName,Position,Number,
+  Height,Weight,Class,Team,Season` (+ optional `Hometown`,
+  `PreviousSchool`, `Notes`); case-insensitive headers, any column order,
+  heights as `6-2` or `74`, classes as `RS Junior`; only the first three
+  fields are required. Template: `templates/HistoricalRosterTemplate.csv`.
+- **Team/season selection.** `list-teams` enumerates the dynasty's teams;
+  `generate` takes `--team`/`--season`, reads them from the CSV, or prompts
+  interactively with a numbered list.
+- **Standard output.** `Output/Generated_Roster.csv` +
+  `Output/Generation_Report.txt` (plain text: processed/mapped counts,
+  missing fields, defaults used, warnings).
+- **Regression-protected.** The 2023 FSU recreation is now an automated
+  byte-stability test over committed fixtures (`Tests/2023_FSU_Input.csv`,
+  `Tests/DonorDynasty/`, `Tests/2023_FSU_Expected_Output.csv`).
+- Tests: 65/65 passing. Standalone `win-x64` single-file publish verified,
+  shipping `data/` and `templates/` alongside the executable.
 
 **Milestone 2 (Historical Roster Pipeline & 2023 Florida State recreation)
 is complete.** The pipeline independently generated a complete 2023 FSU
@@ -47,6 +74,28 @@ brief).
   clean Windows 10/11 machine with no runtime installed
 
 ## Completed features
+
+### Milestone 3 — generalized end-user pipeline
+
+- **Dynasty import** (`Dynasty/DynastyExport.cs`) — opens an export folder
+  (searched recursively) or a lone Player CSV; identifies the Player table
+  by its required columns and the main Team table by row count (the export
+  contains several decoy single-row Team tables); exposes the discovered
+  teams and builds the school-name lookup from them.
+- **Simple historical CSV reader** (`Historical/HistoricalCsv.cs`) —
+  tolerant header matching, feet-inches or plain-inch heights, per-row
+  user-facing warnings instead of hard failures, caller-supplied
+  team/season overriding file columns.
+- **Roster template** (`templates/HistoricalRosterTemplate.csv`).
+- **Plain-text generation report** (`ConversionReport.ToText`) alongside
+  the existing Markdown renderer.
+- **CLI workflow** (`RosterGenerator.Cli`) — `generate` (with interactive
+  team/season selection when not supplied), `list-teams`, `compare`;
+  defaults to `Output/Generated_Roster.csv` +
+  `Output/Generation_Report.txt`; friendly single-line error messages.
+- **2023 FSU regression test** (`FsuRegressionTests`) — regenerates from
+  the committed simple-CSV input and donor dynasty and asserts the output
+  is byte-identical to the committed expected file.
 
 ### Milestone 2 — historical pipeline
 
@@ -148,25 +197,32 @@ guessed at (details in `docs/Schema.md`):
 
 ## Next recommended milestone
 
-**Milestone 3 — Benchmark validation & the accuracy gaps.**
+**Milestone 4 — Realism: ratings generation and identity assets.**
 
-1. **Import + benchmark comparison**: import
-   `Output/2023_Florida_State_CFB27.csv` into the roster editor/game and
-   verify it loads; then run the `compare` command against the manually
-   created 2023 FSU dynasty export (held back as a benchmark) to score the
-   generated roster field by field. Every difference becomes a data fix, a
-   new schema fact, or a documented gap.
-2. **Dataset accuracy pass**: resolve the jersey numbers and roster
-   statuses marked "verify"/unconfirmed in `FloridaState.json` (~25
-   entries), and fill missing walk-on depth.
-3. ~~**Weight decoding research**~~ — done: encoding confirmed
-   (pounds − 160) and the field unlocked; generated output now carries
-   real weights.
-4. **Ratings generation**: replace inherited donor ratings with generated
-   ones (from historical stats/usage tiers) — the biggest realism gap.
-5. **Asset-field study**: learn how `PLYR_ASSETNAME` /
-   `GenericHeadAssetName` / `PLYR_PORTRAIT` are regenerated so replaced
+The pipeline is now general and reliable; the remaining gaps are about how
+*convincing* a generated roster is once it is in the game.
+
+1. **Ratings generation** — the biggest realism gap. Generated players
+   currently inherit the ratings of whoever they replaced, so a walk-on
+   can carry a star's ratings and vice versa. Drive ratings from the
+   historical data the user already supplies (position, class, and
+   optional star rating / usage tier / stats), with a documented,
+   tunable model rather than a black box.
+2. **Roster-size handling** — when the historical roster has fewer players
+   than the team's slots, leftover fictional players remain (10 in the FSU
+   run). Decide and implement a policy (leave, deactivate, or fill from
+   the historical dataset's walk-ons) rather than only reporting it.
+3. **Asset-field study** — learn how `PLYR_ASSETNAME` /
+   `GenericHeadAssetName` / `PLYR_PORTRAIT` are generated so replaced
    players stop wearing the donor players' faces.
+4. **Benchmark scoring** — run `compare` against the manually created 2023
+   FSU dynasty export and turn each difference into a data fix, a new
+   schema fact, or a documented gap. (Also resolve the ~25 "verify"
+   jersey/status flags in `FloridaState.json`.)
+5. **Hometown/previous-school export** — confirm whether
+   `PLYR_HOME_TOWN` / `PLYR_HOME_STATE` are safe to write, so the optional
+   CSV columns stop being decorative.
 
-Explicitly still deferred: equipment/face mapping, GUI, scraping, dynasty
-editing, multiple seasons, and the derived-array recompute.
+Explicitly still deferred: GUI polish, automatic historical data
+gathering, equipment/face generation, multi-season bulk generation,
+dynasty editing, and the derived-array recompute.

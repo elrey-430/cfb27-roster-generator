@@ -1,75 +1,85 @@
 # Historical CFB27 Roster Generator
 
-A .NET 8 class library and CLI that reliably loads a CFB27 dynasty save
-`Player.csv` export, edits players in a controlled way, validates the
-result — including the confirmed multi-field dependencies — and exports a
-CSV compatible with the existing roster import tool. As of Milestone 2 it
-can independently recreate a historical team roster (the 2023 Florida
-State Seminoles) from a public-information dataset.
+Recreate real historical college football rosters inside a CFB27 dynasty
+save. You provide your own dynasty export and a simple spreadsheet-style
+roster CSV; the generator replaces the chosen team's players and produces
+an import-ready `Player.csv` plus a plain-English report of everything it
+did — no programming knowledge, CFB27 schema knowledge, or database ids
+required.
 
-- **`docs/Architecture.md`** — project structure, data flow, and why each
-  design decision was made.
-- **`docs/Schema.md`** — column-level ground truth for the 286-column
-  player table: what is confirmed safe to write, what has an unresolved
-  encoding, and what must never be hand-edited.
-- **`docs/Status.md`** — current status, completed features, known
-  unknowns, next milestone.
+- **`docs/Historical_CSV_Format.md`** — the simple roster CSV you fill in
+  (template: `templates/HistoricalRosterTemplate.csv`).
+- **`docs/Architecture.md`** — project structure, pipelines, and design
+  rationale.
+- **`docs/Schema.md`** — column-level ground truth for the CFB27 player
+  table (what is confirmed safe to write and why).
+- **`docs/Status.md`** — current status, known unknowns, next milestone.
 
-## Build & test (developers)
+## End-user workflow
 
-Requires the .NET 8 SDK (developers only — end users need nothing):
+1. **Export your dynasty** with the community save-export tool (it writes a
+   folder of CSVs, one per table).
+2. **Fill in a roster CSV** — copy
+   `templates/HistoricalRosterTemplate.csv`, one row per player:
+   `FirstName,LastName,Position,Number,Height,Weight,Class,Team,Season`
+   (only the first three are required; real-world values like `Tailback`,
+   `6-2`, `RS Junior` are expected).
+3. **Run the generator:**
+
+   ```
+   RosterGenerator.Cli generate --dynasty <your export folder> --roster MyRoster.csv
+   ```
+
+   If your CSV has no `Team` column, the generator lists your dynasty's
+   teams and asks you to pick one (`list-teams` shows them any time).
+4. **Collect the output** from `Output/`:
+   - `Generated_Roster.csv` — the full player table with your team
+     replaced; import it with the existing roster editing tool.
+   - `Generation_Report.txt` — players processed/mapped, missing fields,
+     defaults used, and warnings.
+
+The generator works with **any compatible dynasty export** — teams, ids
+and roster structure are discovered from your own file, never hard-coded.
+Position names are normalized via the editable
+`data/PositionMappings.json`; extra school aliases (e.g. "FSU") can be
+added to `data/TeamMappings.json`.
+
+## Example
 
 ```
-dotnet test          # round-trip fidelity, validation rules, historical pipeline
-dotnet run --project src/RosterGenerator.Poc -- <input Player.csv> <output.csv> [_row]
+RosterGenerator.Cli list-teams --dynasty MyDynastyExport/
+RosterGenerator.Cli generate --dynasty MyDynastyExport/ --roster 2013_FSU.csv --team "Florida State" --season 2013
+RosterGenerator.Cli compare --left Output/Generated_Roster.csv --right OtherExport/Player.csv --team "Florida State" --dynasty MyDynastyExport/
 ```
 
-The PoC loads a roster, renames one player and changes their jersey number,
-validates, exports, and prints an independent cell-by-cell diff proving
-only `FirstName`, `LastName` and `JerseyNum` changed.
+## Distribution (Windows 10/11)
 
-## Historical roster pipeline (Milestone 2)
-
-Generate a CFB27-importable `Player.csv` with one team's roster replaced by
-a historical dataset, plus a validation report:
-
-```
-dotnet run --project src/RosterGenerator.Cli -- generate \
-  --base <base save Player.csv> \
-  --historical HistoricalData/2023/FloridaState.json \
-  --output Output/2023_Florida_State_CFB27.csv \
-  --report Output/2023_Florida_State_Report.md
-```
-
-Compare one team's roster between two Player CSVs (e.g. generated vs a
-manual benchmark export):
-
-```
-dotnet run --project src/RosterGenerator.Cli -- compare \
-  --left Output/2023_Florida_State_CFB27.csv --right <benchmark Player.csv> \
-  --team "Florida State"
-```
-
-Team ids and position names are never hard-coded — they come from the
-editable `data/TeamMappings.json` (generated from the save's own Team
-table) and `data/PositionMappings.json` (Tailback→HB, Cornerback→CB, ...).
-Datasets live under `HistoricalData/<season>/<School>.json`; the model
-tolerates missing values, and every substituted default is listed in the
-generated report.
-
-## Distribution (end users, Windows 10/11)
-
-Publish a single self-contained executable — no Python, Node, WSL or .NET
-runtime required on the target machine:
+One self-contained executable — no Python, Node, WSL or .NET runtime
+needed on the target machine:
 
 ```
 dotnet publish src/RosterGenerator.Cli -c Release -r win-x64 \
   --self-contained true -p:PublishSingleFile=true
 ```
 
+The publish folder contains `RosterGenerator.Cli.exe` plus the editable
+`data/` mapping files and the roster template.
+
+## Build & test (developers)
+
+Requires the .NET 8 SDK (developers only — end users need nothing):
+
+```
+dotnet test    # 65 tests: round-trip fidelity, validation, pipeline, 2023 FSU regression
+```
+
+The 2023 Florida State recreation (Milestone 2) is preserved as a
+byte-stable regression test — `Tests/2023_FSU_Input.csv` +
+`Tests/DonorDynasty/` must keep producing `Tests/2023_FSU_Expected_Output.csv`
+exactly.
+
 ## What is deliberately not implemented yet
 
-Ratings generation, equipment/face recreation, GUI, web scraping, multiple
-seasons, dynasty editing, and the two open reverse-engineering items
-(`Weight` encoding, derived `Player[]` array tables) — see `docs/Status.md`
-for the recommended next milestone.
+Automatic ratings generation, equipment/face recreation, GUI polish,
+automatic historical data gathering, multi-season bulk generation, dynasty
+editing, and the derived `Player[]` array recompute — see `docs/Status.md`.

@@ -4,6 +4,13 @@
     <ProjectReference Include="..\RosterGenerator.Core\RosterGenerator.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Ship the editable mapping files and the roster template next to the
+         executable so a standalone publish works with no repo checkout. -->
+    <None Include="..\..\data\*.json" Link="data\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\templates\*.csv" Link="templates\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>

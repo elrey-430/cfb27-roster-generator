@@ -54,7 +54,14 @@ public sealed class TeamMappingSet
         _byNormalizedName.TryGetValue(Normalize(schoolName), out teamId);
 
     /// <summary>Loads the mapping file.</summary>
-    public static TeamMappingSet Load(string path)
+    public static TeamMappingSet Load(string path) => Build(LoadEntries(path));
+
+    /// <summary>Builds a mapping set from raw (teamId, names) entries.</summary>
+    public static TeamMappingSet Build(IEnumerable<(int TeamId, IReadOnlyList<string> Names)> entries) =>
+        new(entries.Select(e => (e.TeamId, e.Names)));
+
+    /// <summary>Reads a mapping file's raw (teamId, names) entries.</summary>
+    public static IReadOnlyList<(int TeamId, IReadOnlyList<string> Names)> LoadEntries(string path)
     {
         using var document = JsonDocument.Parse(File.ReadAllText(path));
         if (!document.RootElement.TryGetProperty("teams", out var teams))
@@ -73,7 +80,7 @@ public sealed class TeamMappingSet
             entries.Add((teamId, names));
         }
 
-        return new TeamMappingSet(entries);
+        return entries;
     }
 
     /// <summary>Lowercases and strips everything but letters and digits.</summary>

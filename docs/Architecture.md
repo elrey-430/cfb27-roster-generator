@@ -1,4 +1,65 @@
-# Historical CFB27 Roster Generator — Architecture (Milestone 1)
+# Historical CFB27 Roster Generator — Architecture
+
+The system is built in three layers, delivered across three milestones:
+
+1. **Foundation (Milestone 1)** — byte-faithful CFB27 `Player.csv` I/O,
+   a typed player model, intent-recording edits, named validation rules,
+   and a validating exporter.
+2. **Historical pipeline (Milestone 2)** — a platform-independent
+   historical roster model, external team/position mapping systems, and a
+   converter that replaces one team's players inside a donor save.
+3. **Generalized end-user workflow (Milestone 3)** — dynasty-export
+   discovery (any user's save), a simple spreadsheet-style input CSV,
+   team/season selection, and standard `Output/` generation, with the 2023
+   FSU recreation preserved as a byte-stable regression test.
+
+## The three pipelines (Milestone 3 view)
+
+### Input pipeline
+
+```
+user dynasty export folder            simple historical CSV
+      │ DynastyExport.Open                  │ HistoricalCsv.Read
+      │  – finds the Player table           │  – case-insensitive headers
+      │    by content (_tableName)          │  – heights "6-2" or inches
+      │  – finds the main Team table        │  – per-row user-facing warnings
+      │  – lists available teams            │  – Team/Season from file or
+      ▼                                     ▼    caller (interactive prompt)
+PlayerRoster (donor)                  HistoricalRoster
+```
+
+Teams and ids always come from the **user's own dynasty**; `data/TeamMappings.json`
+is only an optional alias overlay (e.g. "FSU"), filtered to teams that
+actually exist in the loaded save. Nothing is keyed to any particular
+dynasty file.
+
+### Conversion pipeline
+
+```
+HistoricalRoster + PlayerRoster
+      │ HistoricalTeamConverter.Convert (via RosterEditSession)
+      │  – school → TeamIndex through the dynasty-derived mappings
+      │  – position normalized through data/PositionMappings.json
+      │  – slot assignment: same position → interchangeable group → any
+      │  – class → SchoolYear + RedshirtStatus; weight → pounds − 160
+      │  – missing values inherit the replaced player's values (reported)
+      ▼
+edited PlayerRoster + ConversionReport
+```
+
+### Output pipeline
+
+```
+edited PlayerRoster + edit session
+      │ RosterValidator (9 named rules; errors block the export)
+      │ RosterExporter  (byte-faithful write; per-row change accounting)
+      ▼
+Output/Generated_Roster.csv  +  Output/Generation_Report.txt
+```
+
+---
+
+# Milestone 1 foundation (reference)
 
 ## Purpose of this milestone
 
@@ -21,41 +82,34 @@ can add it without reworking this layer.
 ## Project structure
 
 ```
-roster-generator/
+cfb27-roster-generator/
 ├── RosterGenerator.sln
-├── docs/
-│   ├── Architecture.md          ← this file
-│   └── Schema.md                ← column-level ground truth
+├── docs/                        ← Architecture, Schema, Status, Historical_CSV_Format
+├── data/                        ← editable mapping files (shipped next to the exe)
+│   ├── TeamMappings.json            optional school-alias overlay
+│   └── PositionMappings.json        position aliases + interchangeability groups
+├── templates/
+│   └── HistoricalRosterTemplate.csv ← the user-facing input template
+├── HistoricalData/2023/FloridaState.json  ← curated example dataset (JSON form)
+├── Tests/                       ← 2023 FSU regression fixtures (input, donor, expected)
+├── Output/                      ← generated deliverables
 ├── src/
 │   ├── RosterGenerator.Core/    ← the reusable library (no GUI, no I/O policy)
-│   │   ├── Csv/                 ← parsing & serialization
-│   │   │   ├── CsvFormat.cs         RFC 4180-tolerant tokenizer, CFB27-convention writer
-│   │   │   ├── CsvDocument.cs       raw cell table, byte-preserving round-trip
-│   │   │   └── CsvSchemaException.cs
-│   │   ├── Schema/              ← empirical knowledge as code
-│   │   │   ├── PlayerColumns.cs     canonical column names (Groups 1–4)
-│   │   │   └── PlayerSchema.cs      enums, bounds, sentinels, rating list
-│   │   ├── Model/               ← typed representation
-│   │   │   ├── Player.cs            typed view over one CSV row
-│   │   │   └── PlayerRoster.cs      table + load-time snapshot for change tracking
-│   │   ├── Editing/             ← business logic (mutations with intent)
-│   │   │   ├── EditIntent.cs        Rename / ReplaceIdentity / Transfer / AttributeChange
-│   │   │   ├── EditRecord.cs
-│   │   │   └── RosterEditSession.cs operations that apply companion-field updates
-│   │   ├── Validation/          ← named rules over roster + declared intents
-│   │   │   ├── IValidationRule.cs   (+ State vs ChangeDriven rule kinds)
-│   │   │   ├── ValidationIssue.cs / ValidationReport.cs
-│   │   │   ├── RosterValidationContext.cs
-│   │   │   ├── RosterValidator.cs   runs rules, downgrades pre-existing anomalies
-│   │   │   └── Rules/               one class per rule (8 rules)
-│   │   └── Export/
-│   │       ├── RosterExporter.cs    validate-then-write, returns per-row change proof
-│   │       ├── ExportResult.cs
-│   │       └── RosterExportException.cs
-│   └── RosterGenerator.Poc/     ← console proof-of-concept (rename + jersey pipeline)
+│   │   ├── Csv/                 ← byte-preserving CSV parse/serialize
+│   │   ├── Schema/              ← empirical knowledge as code (columns, enums, bounds)
+│   │   ├── Model/               ← Player / PlayerRoster typed views + change tracking
+│   │   ├── Editing/             ← intent-recording mutations (rename/replace/transfer)
+│   │   ├── Validation/          ← 9 named rules (State vs ChangeDriven)
+│   │   ├── Export/              ← validate-then-write with per-row change proof
+│   │   ├── Historical/          ← HistoricalPlayer/Roster model + simple-CSV reader
+│   │   ├── Mapping/             ← TeamMappingSet / PositionMappingSet (external files)
+│   │   ├── Dynasty/             ← DynastyExport: discover tables/teams in any export
+│   │   ├── Conversion/          ← HistoricalTeamConverter + ConversionReport (+ClassYear)
+│   │   └── Comparison/          ← RosterComparer (generated vs benchmark)
+│   ├── RosterGenerator.Cli/     ← end-user commands: generate / list-teams / compare
+│   └── RosterGenerator.Poc/     ← Milestone 1 proof-of-concept (rename + jersey)
 └── tests/
-    └── RosterGenerator.Core.Tests/  25 xunit tests + real-data fixture
-        └── Fixtures/PlayerSample.csv  slice of a real export (286 columns, 6 rows)
+    └── RosterGenerator.Core.Tests/  65 xunit tests + real-data fixtures
 ```
 
 Parsing (`Csv/`), business logic (`Editing/`), validation (`Validation/`)

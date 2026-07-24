@@ -70,6 +70,106 @@ public sealed class ConversionReport
     /// <summary>Players that could not be placed.</summary>
     public IEnumerable<PlayerConversionEntry> Skipped => Entries.Where(e => e.AssignedRowKey is null);
 
+    /// <summary>
+    /// Renders the plain-text generation report (the end-user format written
+    /// to <c>Generation_Report.txt</c>).
+    /// </summary>
+    public string ToText()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Generation Report — {Source.Season} {Source.School} (team {TeamId})");
+        sb.AppendLine();
+        sb.AppendLine($"Players Processed: {Entries.Count}");
+        sb.AppendLine($"Players Mapped:    {Converted.Count()}");
+        sb.AppendLine($"Players Skipped:   {Skipped.Count()}");
+        sb.AppendLine($"Donor Slots Left:  {LeftoverDonorSlots.Count}");
+        if (Source.Source is not null)
+        {
+            sb.AppendLine($"Data Source:       {Source.Source}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("Assumptions:");
+        foreach (var assumption in GlobalAssumptions)
+        {
+            sb.AppendLine($"- {assumption}");
+        }
+
+        if (GlobalWarnings.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Warnings:");
+            foreach (var warning in GlobalWarnings)
+            {
+                sb.AppendLine($"- {warning}");
+            }
+        }
+
+        var withIssues = Entries
+            .Where(e => e.MissingFields.Count > 0 || e.DefaultsUsed.Count > 0 || e.Warnings.Count > 0)
+            .ToList();
+        sb.AppendLine();
+        sb.AppendLine("Players with missing information, defaults, or warnings:");
+        if (withIssues.Count == 0)
+        {
+            sb.AppendLine("(none)");
+        }
+
+        foreach (var entry in withIssues)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Player: {entry.Player.FirstName} {entry.Player.LastName}");
+            if (entry.MissingFields.Count > 0)
+            {
+                sb.AppendLine("  Missing:");
+                foreach (var field in entry.MissingFields)
+                {
+                    sb.AppendLine($"  - {field}");
+                }
+            }
+
+            if (entry.DefaultsUsed.Count > 0)
+            {
+                sb.AppendLine("  Default used:");
+                foreach (var d in entry.DefaultsUsed)
+                {
+                    sb.AppendLine($"  - {d}");
+                }
+            }
+
+            if (entry.Warnings.Count > 0)
+            {
+                sb.AppendLine("  Warnings:");
+                foreach (var warning in entry.Warnings)
+                {
+                    sb.AppendLine($"  - {warning}");
+                }
+            }
+        }
+
+        if (Skipped.Any())
+        {
+            sb.AppendLine();
+            sb.AppendLine("Skipped players (no roster slot available):");
+            foreach (var entry in Skipped)
+            {
+                sb.AppendLine($"- {entry.Player}");
+            }
+        }
+
+        if (LeftoverDonorSlots.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Roster slots not replaced (original players remain):");
+            foreach (var slot in LeftoverDonorSlots)
+            {
+                sb.AppendLine($"- {slot}");
+            }
+        }
+
+        return sb.ToString();
+    }
+
     /// <summary>Renders the Markdown validation report.</summary>
     public string ToMarkdown()
     {

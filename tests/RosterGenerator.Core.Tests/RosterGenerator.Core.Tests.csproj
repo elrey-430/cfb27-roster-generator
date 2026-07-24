@@ -31,6 +31,8 @@
     <!-- Tests run against the real mapping files so the shipped data stays valid. -->
     <None Include="..\..\data\TeamMappings.json" Link="Fixtures\TeamMappings.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\PositionMappings.json" Link="Fixtures\PositionMappings.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The 2023 FSU regression fixtures (input, donor dynasty, expected output). -->
+    <None Include="..\..\Tests\**" Link="Tests\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

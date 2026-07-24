@@ -131,6 +131,70 @@ public sealed class HistoricalPipelineTests
         }
     }
 
+    // -- Simple historical CSV ----------------------------------------------
+
+    [Theory]
+    [InlineData("74", 74)]
+    [InlineData("6-2", 74)]
+    [InlineData("6'2", 74)]
+    [InlineData("6'2\"", 74)]
+    [InlineData("6 2", 74)]
+    [InlineData("5-11", 71)]
+    public void HeightParserAcceptsInchesAndFeetInches(string value, int expected)
+    {
+        var warnings = new List<string>();
+
+        Assert.Equal(expected, HistoricalCsv.ParseHeight(value, "row 2", warnings));
+        Assert.Empty(warnings);
+    }
+
+    [Theory]
+    [InlineData("tall")]
+    [InlineData("12")]
+    [InlineData("6-15")]
+    public void HeightParserRejectsNonsenseWithWarning(string value)
+    {
+        var warnings = new List<string>();
+
+        Assert.Null(HistoricalCsv.ParseHeight(value, "row 2", warnings));
+        Assert.Single(warnings);
+    }
+
+    [Fact]
+    public void SimpleCsvMissingRequiredColumnFailsWithGuidance()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".csv");
+        File.WriteAllText(path, "FirstName,LastName\r\nJohn,Smith\r\n");
+        try
+        {
+            var ex = Assert.Throws<Csv.CsvSchemaException>(() => HistoricalCsv.Read(path));
+            Assert.Contains("position", ex.Message);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void SimpleCsvCallerTeamOverridesFileTeamColumn()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".csv");
+        File.WriteAllText(path,
+            "FirstName,LastName,Position,Team,Season\r\nJohn,Smith,QB,Alabama,2015\r\n");
+        try
+        {
+            var result = HistoricalCsv.Read(path, school: "Florida State", season: 2013);
+
+            Assert.Equal("Florida State", result.Roster.School);
+            Assert.Equal(2013, result.Roster.Season);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     // -- Converter -----------------------------------------------------------
 
     [Fact]
