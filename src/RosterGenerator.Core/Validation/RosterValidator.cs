@@ -41,6 +41,7 @@ public sealed class RosterValidator
         new TeamChangeConsistencyRule(),
         new IdentityChangeConsistencyRule(),
         new OpaqueFieldGuardRule(),
+        new WeightRangeRule(),
     };
 
     /// <summary>Runs every rule and returns the combined report.</summary>

@@ -99,14 +99,24 @@ rename does **not** require touching any other field.
 
 ---
 
-## Group 2 — Confirmed columns with an unresolved encoding (do NOT write)
+## Group 2 — Offset-encoded columns (encoding RESOLVED)
 
-| Column | Status |
+| Column | Encoding |
 |---|---|
-| `Weight` | **NOT raw pounds.** Observed values (league-wide 0–240, with FSU-diff examples 20, 35, 55, 100, 166) do not correspond to realistic player weights. Very likely an index/offset into a weight curve or spline — `Spline.csv` / `PositionSplineTable` tables exist in the export and are candidate lookup targets. **Open research item for Milestone 2**; until resolved, the library exposes `Weight` read-only (`Player.WeightRaw`) and the `OpaqueFieldGuard` validation rule blocks any change to it. |
+| `Weight` | **Stored value = real pounds − 160.** Valid stored range 0–240 = 160–400 lb (both bounds observed league-wide). Write via `Player.WeightPounds` / `RosterEditSession.SetWeightPounds`; the `WeightRange` validation rule enforces the stored range. The earlier weight-curve/spline hypothesis is refuted — it is a plain fixed offset (the same convention EA franchise files use). |
 
-*Assumption to verify:* the weight-curve/spline hypothesis is plausible but
-unproven. Reverse-engineering it is explicitly out of scope for Milestone 1.
+**Evidence (2026-07, replacing the earlier "unresolved" status):**
+
+1. Correlating the manually edited `DYNASTY-2023FSU` save against real
+   listed 2023 weights across 47 matched players: residuals of
+   `stored − (pounds − 160)` center on 0 (mean 1.1, median 1), with exact
+   zero residuals wherever the editor's input value is known precisely
+   (e.g. Jordan Travis 212 lb → 52; Jared Verse 260 lb → 100; Keon Coleman
+   215 lb → 55). Non-zero residuals track discrepancies between roster
+   listings, not encoding noise.
+2. Decoding the full 16,257-player base save with +160 yields textbook
+   position averages — QB 203 lb, WR 187 lb, OL 299–307 lb, DT 296 lb,
+   CB 185 lb, K 189 lb — and a plausible league range of 160–400 lb.
 
 ---
 

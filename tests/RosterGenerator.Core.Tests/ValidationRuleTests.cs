@@ -249,17 +249,40 @@ public sealed class ValidationRuleTests
         Assert.Contains(report.Warnings, i => i.RuleName == "IdentityChangeConsistency");
     }
 
-    // -- Group 2: unresolved encodings stay locked ---------------------------
+    // -- Group 2: weight encoding (stored = pounds − 160) --------------------
 
     [Fact]
-    public void WeightChangeIsBlockedUntilEncodingIsResolved()
+    public void WeightPoundsAppliesTheConfirmedOffsetBothWays()
     {
         var roster = TestFixtures.LoadSampleRoster();
-        roster.Players.First().SetRaw(PlayerColumns.Weight, "215");
+        var player = roster.Players.First();
+
+        player.WeightPounds = 215;
+
+        Assert.Equal("55", player.GetRaw(PlayerColumns.Weight));
+        Assert.Equal(215, player.WeightPounds);
+        Assert.True(Validate(roster).IsValid);
+    }
+
+    [Theory]
+    [InlineData(159)]
+    [InlineData(401)]
+    public void WeightOutsideRepresentableRangeIsRejected(int pounds)
+    {
+        var roster = TestFixtures.LoadSampleRoster();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => roster.Players.First().WeightPounds = pounds);
+    }
+
+    [Fact]
+    public void StoredWeightOutsideRangeIsAValidationError()
+    {
+        var roster = TestFixtures.LoadSampleRoster();
+        roster.Players.First().SetRaw(PlayerColumns.Weight, "241");
 
         var report = Validate(roster);
 
-        Assert.Contains(report.Errors, i => i.RuleName == "OpaqueFieldGuard" && i.Column == PlayerColumns.Weight);
+        Assert.Contains(report.Errors, i => i.RuleName == "WeightRange" && i.Column == PlayerColumns.Weight);
     }
 
     [Fact]

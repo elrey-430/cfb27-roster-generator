@@ -142,7 +142,8 @@ public sealed class HistoricalPipelineTests
             new HistoricalPlayer
             {
                 FirstName = "Jordan", LastName = "Travis", Position = "QB",
-                JerseyNumber = 13, HeightInches = 73, ClassYear = "Redshirt Senior",
+                JerseyNumber = 13, HeightInches = 73, WeightPounds = 212,
+                ClassYear = "Redshirt Senior",
             },
             new HistoricalPlayer
             {
@@ -169,6 +170,8 @@ public sealed class HistoricalPipelineTests
         Assert.Equal(13, travis.JerseyNumber);
         Assert.Equal("Senior", travis.SchoolYear);
         Assert.Equal("Previous", travis.RedshirtStatus);
+        Assert.Equal(212, travis.WeightPounds);
+        Assert.Equal("52", travis.WeightRaw);
 
         var verse = roster.Players.Single(p => p.LastName == "Verse");
         Assert.Equal("RE", verse.Position);

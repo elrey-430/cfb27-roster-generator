@@ -86,12 +86,32 @@ public sealed class Player
     public int OverallRating => GetInt(PlayerColumns.OverallRating);
 
     /// <summary>
-    /// The raw <c>Weight</c> cell. Intentionally exposed as an opaque value
-    /// with no setter: the encoding is an unresolved research item (it is NOT
-    /// pounds — see Schema.md Group 2). Writing real-world weights here would
-    /// corrupt the save.
+    /// The raw <c>Weight</c> cell (stored value, not pounds). Kept for
+    /// diagnostics; use <see cref="WeightPounds"/> for real-world weights.
     /// </summary>
     public string WeightRaw => GetRaw(PlayerColumns.Weight);
+
+    /// <summary>
+    /// Weight in real pounds. The save stores pounds − 160 (see Schema.md
+    /// Group 2 for the confirming evidence); this property applies the
+    /// offset both ways and rejects values outside the representable
+    /// 160–400 lb range.
+    /// </summary>
+    public int WeightPounds
+    {
+        get => GetInt(PlayerColumns.Weight) + PlayerSchema.WeightOffsetPounds;
+        set
+        {
+            if (value is < PlayerSchema.WeightPoundsMin or > PlayerSchema.WeightPoundsMax)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value),
+                    $"Weight {value} lb is outside the representable range " +
+                    $"{PlayerSchema.WeightPoundsMin}–{PlayerSchema.WeightPoundsMax} lb.");
+            }
+
+            SetInt(PlayerColumns.Weight, value - PlayerSchema.WeightOffsetPounds);
+        }
+    }
 
     /// <summary>Current team index; 255 means no team.</summary>
     public int TeamIndex => GetInt(PlayerColumns.TeamIndex);

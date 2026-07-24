@@ -14,6 +14,21 @@ public static class PlayerSchema
     /// <summary>Inclusive upper bound for all numeric rating columns.</summary>
     public const int RatingMax = 99;
 
+    /// <summary>
+    /// Offset of the stored <c>Weight</c> value from real pounds:
+    /// stored = pounds − 160. Confirmed by correlating the manually edited
+    /// 2023 FSU save against real listed weights (exact matches where the
+    /// editor's input is known) and by league-wide decoded position
+    /// averages (QB ≈ 203 lb, OL ≈ 306 lb, CB ≈ 185 lb).
+    /// </summary>
+    public const int WeightOffsetPounds = 160;
+
+    /// <summary>Minimum representable weight in pounds (stored 0).</summary>
+    public const int WeightPoundsMin = 160;
+
+    /// <summary>Maximum representable weight in pounds (stored 240; both bounds observed).</summary>
+    public const int WeightPoundsMax = 400;
+
     /// <summary>Inclusive bounds for jersey numbers (observed 0–99).</summary>
     public const int JerseyNumMin = 0;
 

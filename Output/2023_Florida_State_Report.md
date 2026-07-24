@@ -10,7 +10,7 @@
 ## Global assumptions
 
 - Ratings are inherited from the donor slot each player replaces — automatic rating generation is out of scope for this milestone.
-- Weight is NOT written: the save's Weight encoding is unresolved (values are not pounds). Historical weights are preserved in the dataset for when the encoding is decoded.
+- Weight is written using the confirmed encoding (stored value = pounds − 160, representable range 160–400 lb); weights outside that range or missing from the dataset inherit the donor slot's weight.
 - Identity asset fields (PLYR_ASSETNAME, GenericHeadAssetName, PLYR_PORTRAIT) keep the donor slot's values, so in-game portraits/head models belong to the replaced fictional players. Face mapping is a later milestone.
 - Hometown/previous-school data is carried in the dataset but not exported — the candidate columns (PLYR_HOME_TOWN, PLYR_HOME_STATE) are not yet empirically confirmed as safe to write.
 - Slot assignment prefers a donor slot at the same position (or an interchangeable one, e.g. LE/RE); players placed in an unrelated slot get an explicit position change.

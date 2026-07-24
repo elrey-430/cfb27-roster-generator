@@ -96,7 +96,9 @@ brief).
   `TeamAssignment` (range + optional membership in the save's team list),
   **`TeamChangeConsistency`** (the Group 4 multi-field dependency),
   **`IdentityChangeConsistency`** (rename-vs-replace intent enforcement),
-  and `OpaqueFieldGuard` (blocks writes to `Weight` / `PLYR_COMMENT`).
+  and `OpaqueFieldGuard` (blocks writes to `PLYR_COMMENT`; it also locked
+  `Weight` until the encoding was confirmed — now range-checked by
+  `WeightRange` instead).
   Anomalies already present in the source file downgrade to warnings so
   genuine EA exports — which contain blank-name placeholder rows — always
   remain exportable; the same anomaly introduced by an edit is an error.
@@ -116,12 +118,12 @@ brief).
 Tracked open research items — all are locked or out of scope in code, not
 guessed at (details in `docs/Schema.md`):
 
-1. **`Weight` encoding (Group 2).** NOT raw pounds; observed values
-   (20–240) don't match real weights. Hypothesis: index/offset into a
-   weight curve/spline (`Spline.csv` / `PositionSplineTable` tables in the
-   export are candidate lookup targets) — plausible but unproven. Until
-   resolved, the library exposes it read-only and `OpaqueFieldGuard`
-   blocks changes. **Blocks correct weights in generated rosters.**
+1. ~~**`Weight` encoding (Group 2).**~~ **RESOLVED (2026-07):** stored
+   value = pounds − 160 (range 160–400 lb), confirmed by correlating the
+   manually edited 2023 FSU save against real listed weights and by
+   league-wide decoded position averages. The spline hypothesis is
+   refuted. Writable via `Player.WeightPounds`; the converter now writes
+   real weights. See Schema.md Group 2 for the evidence.
 2. **Derived league-wide `Player[]` array tables (Group 5).** ~200 array
    tables reshuffled across dozens of teams from a two-player team change —
    evidence of game-recomputed sorted/indexed lists. Never loaded or
@@ -157,9 +159,9 @@ guessed at (details in `docs/Schema.md`):
 2. **Dataset accuracy pass**: resolve the jersey numbers and roster
    statuses marked "verify"/unconfirmed in `FloridaState.json` (~25
    entries), and fill missing walk-on depth.
-3. **Weight decoding research**: correlate known real weights against the
-   save's `Weight` values and `Spline` tables; unlock the field only if
-   the encoding is confirmed.
+3. ~~**Weight decoding research**~~ — done: encoding confirmed
+   (pounds − 160) and the field unlocked; generated output now carries
+   real weights.
 4. **Ratings generation**: replace inherited donor ratings with generated
    ones (from historical stats/usage tiers) — the biggest realism gap.
 5. **Asset-field study**: learn how `PLYR_ASSETNAME` /

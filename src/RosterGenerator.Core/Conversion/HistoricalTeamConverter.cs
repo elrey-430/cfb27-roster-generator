@@ -47,8 +47,9 @@ public sealed class HistoricalTeamConverter
             "Ratings are inherited from the donor slot each player replaces — automatic rating " +
             "generation is out of scope for this milestone.");
         report.GlobalAssumptions.Add(
-            "Weight is NOT written: the save's Weight encoding is unresolved (values are not pounds). " +
-            "Historical weights are preserved in the dataset for when the encoding is decoded.");
+            "Weight is written using the confirmed encoding (stored value = pounds − 160, representable " +
+            "range 160–400 lb); weights outside that range or missing from the dataset inherit the donor " +
+            "slot's weight.");
         report.GlobalAssumptions.Add(
             "Identity asset fields (PLYR_ASSETNAME, GenericHeadAssetName, PLYR_PORTRAIT) keep the donor " +
             "slot's values, so in-game portraits/head models belong to the replaced fictional players. " +
@@ -164,9 +165,24 @@ public sealed class HistoricalTeamConverter
             entry.DefaultsUsed.Add($"Height: {slot.HeightInches}\" (inherited from donor slot)");
         }
 
-        if (historicalPlayer.WeightPounds is null)
+        if (historicalPlayer.WeightPounds is int weight)
+        {
+            if (weight is >= PlayerSchema.WeightPoundsMin and <= PlayerSchema.WeightPoundsMax)
+            {
+                session.SetWeightPounds(slot, weight);
+            }
+            else
+            {
+                entry.Warnings.Add(
+                    $"Weight {weight} lb is outside the representable {PlayerSchema.WeightPoundsMin}–" +
+                    $"{PlayerSchema.WeightPoundsMax} lb range.");
+                entry.DefaultsUsed.Add($"Weight: {slot.WeightPounds} lb (inherited from donor slot)");
+            }
+        }
+        else
         {
             entry.MissingFields.Add("Weight");
+            entry.DefaultsUsed.Add($"Weight: {slot.WeightPounds} lb (inherited from donor slot)");
         }
 
         if (historicalPlayer.ClassYear is string classYear)

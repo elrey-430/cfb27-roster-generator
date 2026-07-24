@@ -120,6 +120,15 @@ public sealed class RosterEditSession
         Record(player, EditIntent.AttributeChange, $"Set height of {player} to {heightInches}\"");
     }
 
+    /// <summary>
+    /// Sets weight in real pounds (160–400 lb; the save stores pounds − 160).
+    /// </summary>
+    public void SetWeightPounds(Player player, int weightPounds)
+    {
+        player.WeightPounds = weightPounds;
+        Record(player, EditIntent.AttributeChange, $"Set weight of {player} to {weightPounds} lb");
+    }
+
     /// <summary>Sets the class standing (Freshman/Sophomore/Junior/Senior).</summary>
     public void SetSchoolYear(Player player, string schoolYear)
     {

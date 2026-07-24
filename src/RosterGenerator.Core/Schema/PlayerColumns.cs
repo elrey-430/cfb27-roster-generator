@@ -48,12 +48,13 @@ public static class PlayerColumns
     /// <summary>Overall rating, integer 0–99.</summary>
     public const string OverallRating = "OverallRating";
 
-    // -- Group 2: known encoding quirk (do NOT write real-world values) ------
+    // -- Group 2: offset-encoded fields (encoding confirmed) -----------------
 
     /// <summary>
-    /// NOT raw pounds — observed values (20, 35, 55, 100, 166...) are far off
-    /// realistic weights and are believed to index a weight curve/spline.
-    /// Unresolved research item; treated as opaque by this library.
+    /// Weight stored as pounds minus 160 (stored 0–240 = 160–400 lb).
+    /// Encoding confirmed by correlating a manually edited save's values
+    /// against real listed weights and by league-wide position averages;
+    /// use <c>Player.WeightPounds</c> rather than writing raw values.
     /// </summary>
     public const string Weight = "Weight";
 
