@@ -1,8 +1,25 @@
 # Project Status
 
-_Last updated: 2026-07-24 — end of Milestone 1._
+_Last updated: 2026-07-24 — end of Milestone 2._
 
 ## Current status
+
+**Milestone 2 (Historical Roster Pipeline & 2023 Florida State recreation)
+is complete.** The pipeline independently generated a complete 2023 FSU
+roster from a public-information dataset and exported it as a
+CFB27-compatible full `Player.csv`:
+
+- `HistoricalData/2023/FloridaState.json` — 75-player dataset compiled from
+  public sources (seminoles.com, Tomahawk Nation, ESPN, SI/247Sports), not
+  from any dynasty export
+- `Output/2023_Florida_State_CFB27.csv` — the deliverable: the base save's
+  player table with FSU's roster replaced (75 rows changed, all on team 27,
+  only the seven confirmed-safe columns touched; byte-verified)
+- `Output/2023_Florida_State_Report.md` — the generated validation report
+  (counts, missing fields, defaults, assumptions, warnings)
+- `dotnet run --project src/RosterGenerator.Cli -- generate|compare ...` —
+  repeatable for any team/season given a dataset and the mapping files
+- Tests: 50/50 passing
 
 **Milestone 1 (Foundation & Proof of Concept) is complete and verified.**
 The library can reliably load a CFB27 dynasty save `Player.csv` export,
@@ -30,6 +47,34 @@ brief).
   clean Windows 10/11 machine with no runtime installed
 
 ## Completed features
+
+### Milestone 2 — historical pipeline
+
+- **Historical data model** (`Historical/`) — platform-independent
+  `HistoricalPlayer`/`HistoricalRoster` JSON model (season, school, name,
+  position, jersey, height, weight, class year + optional hometown,
+  previous school, notes); every non-identity field may be missing.
+- **Team mapping system** (`data/TeamMappings.json`) — external
+  alias→TeamIndex file generated from the save's own Team table (138 teams);
+  no team ids are hard-coded; lookups are case/punctuation-insensitive.
+- **Position mapping system** (`data/PositionMappings.json`) — external
+  alias→CFB27-position file (Tailback→HB, Cornerback→CB, ...) plus
+  interchangeability groups (LT/LG/C/RG/RT, LE/RE, LOLB/MLB/ROLB, FS/SS).
+- **Historical→CFB27 converter** (`Conversion/`) — replaces one team's
+  players inside a donor save via replace-identity edits: writes the
+  confirmed-safe fields, inherits donor values for anything missing or
+  unresolved (ratings, Weight, identity assets), assigns slots
+  position-first with group fallback, and records every default and
+  assumption in a Markdown `ConversionReport`.
+- **Class-year parser** — "Redshirt Junior"/"RS Fr"/"Graduate" →
+  `SchoolYear` + `RedshirtStatus` pairs.
+- **Comparison utility** (`Comparison/RosterComparer.cs`) — field-by-field
+  team comparison between two Player tables (name-matched, configurable
+  column set, Markdown report) ready for the generated-vs-manual FSU
+  benchmark.
+- **CLI** (`RosterGenerator.Cli`) — `generate` and `compare` commands.
+
+### Milestone 1 — foundation
 
 - **Byte-preserving CSV layer** (`Csv/`) — an unedited file round-trips
   byte-identically; exports can only differ in cells an edit deliberately
@@ -101,38 +146,25 @@ guessed at (details in `docs/Schema.md`):
 
 ## Next recommended milestone
 
-**Milestone 2 — Full-team replacement engine (the 2023-FSU scenario as a
-library operation).**
+**Milestone 3 — Benchmark validation & the accuracy gaps.**
 
-Rationale: the provided `DYNASTY-2023FSU` export is a complete worked
-example of the target operation — one team's roster fully replaced with a
-real historical roster. Rebuilding that transformation with this library,
-then diffing the output against the real `DYNASTY-2023FSU` export as
-ground truth, is the highest-value next step: it exercises replace-identity
-at scale, surfaces every field the FSU edit touched that the tool doesn't
-model yet, and produces a reusable "replace a whole team" operation that
-historical generation (Milestone 3) can drive.
+1. **Import + benchmark comparison**: import
+   `Output/2023_Florida_State_CFB27.csv` into the roster editor/game and
+   verify it loads; then run the `compare` command against the manually
+   created 2023 FSU dynasty export (held back as a benchmark) to score the
+   generated roster field by field. Every difference becomes a data fix, a
+   new schema fact, or a documented gap.
+2. **Dataset accuracy pass**: resolve the jersey numbers and roster
+   statuses marked "verify"/unconfirmed in `FloridaState.json` (~25
+   entries), and fill missing walk-on depth.
+3. **Weight decoding research**: correlate known real weights against the
+   save's `Weight` values and `Spline` tables; unlock the field only if
+   the encoding is confirmed.
+4. **Ratings generation**: replace inherited donor ratings with generated
+   ones (from historical stats/usage tiers) — the biggest realism gap.
+5. **Asset-field study**: learn how `PLYR_ASSETNAME` /
+   `GenericHeadAssetName` / `PLYR_PORTRAIT` are regenerated so replaced
+   players stop wearing the donor players' faces.
 
-Suggested scope:
-
-1. **Weight decoding research** (prerequisite for correct weights):
-   correlate the FSU players' known real weights against their `Weight`
-   values and the `Spline` tables; confirm or refute the spline hypothesis.
-   Unlock the field in code only if confirmed.
-2. **Asset-field study**: diff `PLYR_ASSETNAME` / `GenericHeadAssetName` /
-   `PLYR_PORTRAIT` between base and FSU exports across all ~85 replaced
-   players to learn the regeneration pattern well enough to synthesize
-   safe values (or to confirm the import tool regenerates them).
-3. **Team-roster replacement operation**: `ReplaceTeamRoster(teamIndex,
-   IReadOnlyList<HistoricalPlayer>)` built on the existing edit session —
-   slot matching, jersey/height/class/redshirt/ratings application, and
-   validation of the whole team in one report.
-4. **Roster-source abstraction**: define the `HistoricalPlayer` input model
-   (CSV/JSON to start) so Milestone 3 can plug in real data sources without
-   touching the engine.
-5. **Acceptance test**: reproduce the 2023 FSU roster from the base save
-   and diff against the real `DYNASTY-2023FSU` export; every unexplained
-   difference becomes either a new schema fact or a documented gap.
-
-Explicitly still deferred: rating *generation*, equipment/face mapping,
-GUI, scraping, dynasty editing, and the derived-array recompute.
+Explicitly still deferred: equipment/face mapping, GUI, scraping, dynasty
+editing, multiple seasons, and the derived-array recompute.

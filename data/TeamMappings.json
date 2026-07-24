@@ -1,0 +1,983 @@
+{
+  "description": "Maps school names/aliases to CFB27 TeamIndex values. Generated from the base save's Team table (2225_Team.csv); aliases are editable and lookups are case/punctuation-insensitive.",
+  "teams": [
+    {
+      "teamId": 0,
+      "names": [
+        "Air Force",
+        "AFA"
+      ]
+    },
+    {
+      "teamId": 1,
+      "names": [
+        "Akron",
+        "AKRN",
+        "AKR"
+      ]
+    },
+    {
+      "teamId": 2,
+      "names": [
+        "Alabama",
+        "BAMA",
+        "ALA"
+      ]
+    },
+    {
+      "teamId": 3,
+      "names": [
+        "Arizona",
+        "ZONA",
+        "ARIZ"
+      ]
+    },
+    {
+      "teamId": 4,
+      "names": [
+        "Arizona State",
+        "ASU"
+      ]
+    },
+    {
+      "teamId": 5,
+      "names": [
+        "Arkansas",
+        "ARK"
+      ]
+    },
+    {
+      "teamId": 6,
+      "names": [
+        "Arkansas State",
+        "ARST"
+      ]
+    },
+    {
+      "teamId": 7,
+      "names": [
+        "Army",
+        "ARMY"
+      ]
+    },
+    {
+      "teamId": 8,
+      "names": [
+        "Auburn",
+        "AUB"
+      ]
+    },
+    {
+      "teamId": 9,
+      "names": [
+        "Ball State",
+        "BALL"
+      ]
+    },
+    {
+      "teamId": 10,
+      "names": [
+        "Baylor",
+        "BAY"
+      ]
+    },
+    {
+      "teamId": 11,
+      "names": [
+        "Boise State",
+        "BOI",
+        "BSU"
+      ]
+    },
+    {
+      "teamId": 12,
+      "names": [
+        "Boston College",
+        "BC"
+      ]
+    },
+    {
+      "teamId": 13,
+      "names": [
+        "Bowling Green",
+        "BGSU"
+      ]
+    },
+    {
+      "teamId": 14,
+      "names": [
+        "Buffalo",
+        "BUFF"
+      ]
+    },
+    {
+      "teamId": 15,
+      "names": [
+        "BYU"
+      ]
+    },
+    {
+      "teamId": 16,
+      "names": [
+        "California",
+        "CAL"
+      ]
+    },
+    {
+      "teamId": 17,
+      "names": [
+        "UCF"
+      ]
+    },
+    {
+      "teamId": 18,
+      "names": [
+        "C. Michigan",
+        "CMU"
+      ]
+    },
+    {
+      "teamId": 19,
+      "names": [
+        "Cincinnati",
+        "CIN"
+      ]
+    },
+    {
+      "teamId": 20,
+      "names": [
+        "Clemson",
+        "CLEM"
+      ]
+    },
+    {
+      "teamId": 21,
+      "names": [
+        "Colorado",
+        "CU",
+        "COLO"
+      ]
+    },
+    {
+      "teamId": 22,
+      "names": [
+        "Colorado State",
+        "CSU"
+      ]
+    },
+    {
+      "teamId": 23,
+      "names": [
+        "Duke",
+        "DUKE"
+      ]
+    },
+    {
+      "teamId": 24,
+      "names": [
+        "East Carolina",
+        "ECU"
+      ]
+    },
+    {
+      "teamId": 25,
+      "names": [
+        "E. Michigan",
+        "EMU"
+      ]
+    },
+    {
+      "teamId": 26,
+      "names": [
+        "Florida",
+        "UF",
+        "FLA"
+      ]
+    },
+    {
+      "teamId": 27,
+      "names": [
+        "Florida State",
+        "FSU",
+        "Florida State University",
+        "Florida State Seminoles",
+        "Seminoles"
+      ]
+    },
+    {
+      "teamId": 28,
+      "names": [
+        "Fresno State",
+        "FRES"
+      ]
+    },
+    {
+      "teamId": 29,
+      "names": [
+        "Georgia",
+        "UGA"
+      ]
+    },
+    {
+      "teamId": 30,
+      "names": [
+        "Georgia Tech",
+        "GT"
+      ]
+    },
+    {
+      "teamId": 31,
+      "names": [
+        "Hawai'i",
+        "HAW"
+      ]
+    },
+    {
+      "teamId": 32,
+      "names": [
+        "Houston",
+        "HOU"
+      ]
+    },
+    {
+      "teamId": 33,
+      "names": [
+        "Illinois",
+        "ILL"
+      ]
+    },
+    {
+      "teamId": 34,
+      "names": [
+        "Indiana",
+        "IU",
+        "IND"
+      ]
+    },
+    {
+      "teamId": 35,
+      "names": [
+        "Iowa",
+        "IOWA"
+      ]
+    },
+    {
+      "teamId": 36,
+      "names": [
+        "Iowa State",
+        "ISU"
+      ]
+    },
+    {
+      "teamId": 37,
+      "names": [
+        "Kansas",
+        "KU"
+      ]
+    },
+    {
+      "teamId": 38,
+      "names": [
+        "Kansas State",
+        "KSU"
+      ]
+    },
+    {
+      "teamId": 39,
+      "names": [
+        "Kent State",
+        "KENT"
+      ]
+    },
+    {
+      "teamId": 40,
+      "names": [
+        "Kentucky",
+        "UK"
+      ]
+    },
+    {
+      "teamId": 41,
+      "names": [
+        "Louisiana Tech",
+        "LTU",
+        "LT"
+      ]
+    },
+    {
+      "teamId": 42,
+      "names": [
+        "Louisville",
+        "LOU"
+      ]
+    },
+    {
+      "teamId": 43,
+      "names": [
+        "LSU"
+      ]
+    },
+    {
+      "teamId": 44,
+      "names": [
+        "Marshall",
+        "MRSH"
+      ]
+    },
+    {
+      "teamId": 45,
+      "names": [
+        "Maryland",
+        "TERPS",
+        "UMD"
+      ]
+    },
+    {
+      "teamId": 46,
+      "names": [
+        "Memphis",
+        "MEM"
+      ]
+    },
+    {
+      "teamId": 47,
+      "names": [
+        "Miami",
+        "MIA"
+      ]
+    },
+    {
+      "teamId": 48,
+      "names": [
+        "Miami (OH)",
+        "M-OH",
+        "MIAOH"
+      ]
+    },
+    {
+      "teamId": 49,
+      "names": [
+        "Michigan",
+        "MICH"
+      ]
+    },
+    {
+      "teamId": 50,
+      "names": [
+        "Michigan State",
+        "MSU"
+      ]
+    },
+    {
+      "teamId": 51,
+      "names": [
+        "Middle Tenn",
+        "MTSU"
+      ]
+    },
+    {
+      "teamId": 52,
+      "names": [
+        "Minnesota",
+        "MINN"
+      ]
+    },
+    {
+      "teamId": 53,
+      "names": [
+        "Mississippi St",
+        "MSST"
+      ]
+    },
+    {
+      "teamId": 54,
+      "names": [
+        "Missouri",
+        "MIZZ"
+      ]
+    },
+    {
+      "teamId": 55,
+      "names": [
+        "Navy",
+        "NAVY"
+      ]
+    },
+    {
+      "teamId": 56,
+      "names": [
+        "Nebraska",
+        "NEB"
+      ]
+    },
+    {
+      "teamId": 57,
+      "names": [
+        "Nevada",
+        "NEV"
+      ]
+    },
+    {
+      "teamId": 58,
+      "names": [
+        "New Mexico",
+        "UNM"
+      ]
+    },
+    {
+      "teamId": 59,
+      "names": [
+        "New Mexico St.",
+        "NMSU"
+      ]
+    },
+    {
+      "teamId": 60,
+      "names": [
+        "North Carolina",
+        "UNC"
+      ]
+    },
+    {
+      "teamId": 61,
+      "names": [
+        "NC State",
+        "NCST"
+      ]
+    },
+    {
+      "teamId": 62,
+      "names": [
+        "North Texas",
+        "UNT"
+      ]
+    },
+    {
+      "teamId": 63,
+      "names": [
+        "UL Monroe",
+        "ULM"
+      ]
+    },
+    {
+      "teamId": 64,
+      "names": [
+        "NIU"
+      ]
+    },
+    {
+      "teamId": 65,
+      "names": [
+        "Northwestern",
+        "NW"
+      ]
+    },
+    {
+      "teamId": 66,
+      "names": [
+        "Notre Dame",
+        "ND"
+      ]
+    },
+    {
+      "teamId": 67,
+      "names": [
+        "Ohio",
+        "OHIO"
+      ]
+    },
+    {
+      "teamId": 68,
+      "names": [
+        "Ohio State",
+        "OSU"
+      ]
+    },
+    {
+      "teamId": 69,
+      "names": [
+        "Oklahoma",
+        "OKLA",
+        "OU"
+      ]
+    },
+    {
+      "teamId": 70,
+      "names": [
+        "Oklahoma State",
+        "OKST"
+      ]
+    },
+    {
+      "teamId": 71,
+      "names": [
+        "Ole Miss",
+        "MISS"
+      ]
+    },
+    {
+      "teamId": 72,
+      "names": [
+        "Oregon",
+        "ORE"
+      ]
+    },
+    {
+      "teamId": 73,
+      "names": [
+        "Oregon State",
+        "ORST"
+      ]
+    },
+    {
+      "teamId": 74,
+      "names": [
+        "Penn State",
+        "PSU"
+      ]
+    },
+    {
+      "teamId": 75,
+      "names": [
+        "Pittsburgh",
+        "PITT"
+      ]
+    },
+    {
+      "teamId": 76,
+      "names": [
+        "Purdue",
+        "PUR"
+      ]
+    },
+    {
+      "teamId": 77,
+      "names": [
+        "Rice",
+        "RICE"
+      ]
+    },
+    {
+      "teamId": 78,
+      "names": [
+        "Rutgers",
+        "RU",
+        "RUTG"
+      ]
+    },
+    {
+      "teamId": 79,
+      "names": [
+        "San Diego St.",
+        "SDSU"
+      ]
+    },
+    {
+      "teamId": 80,
+      "names": [
+        "San Jose State",
+        "SJSU"
+      ]
+    },
+    {
+      "teamId": 81,
+      "names": [
+        "SMU"
+      ]
+    },
+    {
+      "teamId": 82,
+      "names": [
+        "South Carolina",
+        "SCAR",
+        "SC"
+      ]
+    },
+    {
+      "teamId": 83,
+      "names": [
+        "Southern Miss",
+        "USM"
+      ]
+    },
+    {
+      "teamId": 84,
+      "names": [
+        "Louisiana",
+        "UL",
+        "ULL"
+      ]
+    },
+    {
+      "teamId": 85,
+      "names": [
+        "Stanford",
+        "STAN"
+      ]
+    },
+    {
+      "teamId": 86,
+      "names": [
+        "Syracuse",
+        "CUSE",
+        "SYR"
+      ]
+    },
+    {
+      "teamId": 87,
+      "names": [
+        "TCU"
+      ]
+    },
+    {
+      "teamId": 88,
+      "names": [
+        "Temple",
+        "TEM"
+      ]
+    },
+    {
+      "teamId": 89,
+      "names": [
+        "Tennessee",
+        "TENN"
+      ]
+    },
+    {
+      "teamId": 90,
+      "names": [
+        "Texas",
+        "TEX"
+      ]
+    },
+    {
+      "teamId": 91,
+      "names": [
+        "Texas A&M",
+        "TAMU"
+      ]
+    },
+    {
+      "teamId": 92,
+      "names": [
+        "Texas Tech",
+        "TTU"
+      ]
+    },
+    {
+      "teamId": 93,
+      "names": [
+        "Toledo",
+        "TOL"
+      ]
+    },
+    {
+      "teamId": 94,
+      "names": [
+        "Tulane",
+        "TUL",
+        "TULN"
+      ]
+    },
+    {
+      "teamId": 95,
+      "names": [
+        "Tulsa",
+        "TLSA"
+      ]
+    },
+    {
+      "teamId": 96,
+      "names": [
+        "UAB"
+      ]
+    },
+    {
+      "teamId": 97,
+      "names": [
+        "UCLA"
+      ]
+    },
+    {
+      "teamId": 98,
+      "names": [
+        "UConn",
+        "CONN"
+      ]
+    },
+    {
+      "teamId": 99,
+      "names": [
+        "UNLV"
+      ]
+    },
+    {
+      "teamId": 100,
+      "names": [
+        "USC"
+      ]
+    },
+    {
+      "teamId": 101,
+      "names": [
+        "Utah",
+        "UTAH"
+      ]
+    },
+    {
+      "teamId": 102,
+      "names": [
+        "Utah State",
+        "USU"
+      ]
+    },
+    {
+      "teamId": 103,
+      "names": [
+        "UTEP"
+      ]
+    },
+    {
+      "teamId": 104,
+      "names": [
+        "Vanderbilt",
+        "VAND",
+        "VAN"
+      ]
+    },
+    {
+      "teamId": 105,
+      "names": [
+        "Virginia",
+        "UVA"
+      ]
+    },
+    {
+      "teamId": 106,
+      "names": [
+        "Virginia Tech",
+        "VT"
+      ]
+    },
+    {
+      "teamId": 107,
+      "names": [
+        "Wake Forest",
+        "WAKE"
+      ]
+    },
+    {
+      "teamId": 108,
+      "names": [
+        "Washington",
+        "WASH"
+      ]
+    },
+    {
+      "teamId": 109,
+      "names": [
+        "Washington St.",
+        "WSU"
+      ]
+    },
+    {
+      "teamId": 110,
+      "names": [
+        "West Virginia",
+        "WVU"
+      ]
+    },
+    {
+      "teamId": 111,
+      "names": [
+        "W. Michigan",
+        "WMU"
+      ]
+    },
+    {
+      "teamId": 112,
+      "names": [
+        "Wisconsin",
+        "WISC",
+        "WIS"
+      ]
+    },
+    {
+      "teamId": 113,
+      "names": [
+        "Wyoming",
+        "WYO"
+      ]
+    },
+    {
+      "teamId": 114,
+      "names": [
+        "FLA Atlantic",
+        "FAU"
+      ]
+    },
+    {
+      "teamId": 115,
+      "names": [
+        "FIU"
+      ]
+    },
+    {
+      "teamId": 116,
+      "names": [
+        "Georgia State",
+        "GAST",
+        "GSU"
+      ]
+    },
+    {
+      "teamId": 117,
+      "names": [
+        "UTSA"
+      ]
+    },
+    {
+      "teamId": 118,
+      "names": [
+        "Old Dominion",
+        "ODU"
+      ]
+    },
+    {
+      "teamId": 119,
+      "names": [
+        "UMass",
+        "MASS",
+        "UMASS"
+      ]
+    },
+    {
+      "teamId": 120,
+      "names": [
+        "South Alabama",
+        "USA"
+      ]
+    },
+    {
+      "teamId": 121,
+      "names": [
+        "USF"
+      ]
+    },
+    {
+      "teamId": 122,
+      "names": [
+        "Troy",
+        "TROY"
+      ]
+    },
+    {
+      "teamId": 123,
+      "names": [
+        "W. Kentucky",
+        "WKU"
+      ]
+    },
+    {
+      "teamId": 124,
+      "names": [
+        "Texas State",
+        "TXST"
+      ]
+    },
+    {
+      "teamId": 125,
+      "names": [
+        "App St.",
+        "APP"
+      ]
+    },
+    {
+      "teamId": 126,
+      "names": [
+        "Charlotte",
+        "CLT",
+        "CHAR"
+      ]
+    },
+    {
+      "teamId": 127,
+      "names": [
+        "C. Carolina",
+        "CCAR"
+      ]
+    },
+    {
+      "teamId": 128,
+      "names": [
+        "Ga Southern",
+        "GASO"
+      ]
+    },
+    {
+      "teamId": 129,
+      "names": [
+        "Jax State",
+        "JXST",
+        "JVST"
+      ]
+    },
+    {
+      "teamId": 130,
+      "names": [
+        "James Madison",
+        "JMU"
+      ]
+    },
+    {
+      "teamId": 131,
+      "names": [
+        "Liberty",
+        "LU",
+        "LIB"
+      ]
+    },
+    {
+      "teamId": 132,
+      "names": [
+        "Sam Houston",
+        "SHSU"
+      ]
+    },
+    {
+      "teamId": 133,
+      "names": [
+        "Kennesaw St.",
+        "KENN",
+        "Kenn"
+      ]
+    },
+    {
+      "teamId": 134,
+      "names": [
+        "Delaware",
+        "DEL"
+      ]
+    },
+    {
+      "teamId": 135,
+      "names": [
+        "Missouri State",
+        "MOST"
+      ]
+    },
+    {
+      "teamId": 136,
+      "names": [
+        "NDSU"
+      ]
+    },
+    {
+      "teamId": 137,
+      "names": [
+        "Sac State",
+        "SAC"
+      ]
+    }
+  ]
+}
