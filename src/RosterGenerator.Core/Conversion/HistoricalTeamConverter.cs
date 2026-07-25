@@ -314,6 +314,39 @@ public sealed class HistoricalTeamConverter
     /// </summary>
     private const int StarterOverallThreshold = 75;
 
+    /// <summary>
+    /// Returns a value only when it is present AND inside the range the game
+    /// accepts; otherwise reports it and returns null so the caller falls back
+    /// to the donor slot.
+    ///
+    /// Every field here is optional, and a user filling one in from a sparse
+    /// source will sometimes get it wrong. A typo must degrade to exactly what
+    /// a blank cell does — inherit and say so — because the alternative is
+    /// writing a value the validator then rejects, which fails the whole
+    /// export and produces no file at all. One mistyped jersey number is not a
+    /// reason to hand back nothing for an 85-player roster.
+    /// </summary>
+    private static int? Usable(
+        int? value, int min, int max, string label, string inherited, PlayerConversionEntry entry)
+    {
+        if (value is not int number)
+        {
+            entry.MissingFields.Add(label);
+            entry.DefaultsUsed.Add($"{label}: {inherited} (inherited from donor slot)");
+            return null;
+        }
+
+        if (number < min || number > max)
+        {
+            entry.Warnings.Add(
+                $"{label} {number} is outside the {min}–{max} the game accepts — check the roster CSV.");
+            entry.DefaultsUsed.Add($"{label}: {inherited} (inherited from donor slot)");
+            return null;
+        }
+
+        return number;
+    }
+
     private void ApplyPlayer(
         RosterEditSession session,
         Player slot,
@@ -349,24 +382,16 @@ public sealed class HistoricalTeamConverter
                 "so the slot's inherited ratings fit the old position.");
         }
 
-        if (historicalPlayer.JerseyNumber is int jersey)
+        if (Usable(historicalPlayer.JerseyNumber, PlayerSchema.JerseyNumMin, PlayerSchema.JerseyNumMax,
+                "Jersey number", $"{slot.JerseyNumber}", entry) is int jersey)
         {
             session.SetJerseyNumber(slot, jersey);
         }
-        else
-        {
-            entry.MissingFields.Add("Jersey number");
-            entry.DefaultsUsed.Add($"Jersey number: {slot.JerseyNumber} (inherited from donor slot)");
-        }
 
-        if (historicalPlayer.HeightInches is int height)
+        if (Usable(historicalPlayer.HeightInches, PlayerSchema.HeightInchesMin, PlayerSchema.HeightInchesMax,
+                "Height", $"{slot.HeightInches}\"", entry) is int height)
         {
             session.SetHeight(slot, height);
-        }
-        else
-        {
-            entry.MissingFields.Add("Height");
-            entry.DefaultsUsed.Add($"Height: {slot.HeightInches}\" (inherited from donor slot)");
         }
 
         // Previous school. This is written even when the player has none:
@@ -407,24 +432,10 @@ public sealed class HistoricalTeamConverter
                 "(inherited from donor slot)");
         }
 
-        if (historicalPlayer.WeightPounds is int weight)
+        if (Usable(historicalPlayer.WeightPounds, PlayerSchema.WeightPoundsMin, PlayerSchema.WeightPoundsMax,
+                "Weight", $"{slot.WeightPounds} lb", entry) is int weight)
         {
-            if (weight is >= PlayerSchema.WeightPoundsMin and <= PlayerSchema.WeightPoundsMax)
-            {
-                session.SetWeightPounds(slot, weight);
-            }
-            else
-            {
-                entry.Warnings.Add(
-                    $"Weight {weight} lb is outside the representable {PlayerSchema.WeightPoundsMin}–" +
-                    $"{PlayerSchema.WeightPoundsMax} lb range.");
-                entry.DefaultsUsed.Add($"Weight: {slot.WeightPounds} lb (inherited from donor slot)");
-            }
-        }
-        else
-        {
-            entry.MissingFields.Add("Weight");
-            entry.DefaultsUsed.Add($"Weight: {slot.WeightPounds} lb (inherited from donor slot)");
+            session.SetWeightPounds(slot, weight);
         }
 
         if (historicalPlayer.ClassYear is string classYear)

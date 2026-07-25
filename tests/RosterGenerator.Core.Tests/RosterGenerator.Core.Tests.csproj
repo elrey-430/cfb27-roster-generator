@@ -37,6 +37,8 @@
     <None Include="..\..\data\RosterDepth.json" Link="Fixtures\RosterDepth.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- The 2023 FSU regression fixtures (input, donor dynasty, expected output). -->
     <None Include="..\..\Tests\**" Link="Tests\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The shipped templates, so the one users start from stays usable. -->
+    <None Include="..\..\templates\*.csv" Link="Templates\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

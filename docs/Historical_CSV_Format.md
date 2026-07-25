@@ -14,18 +14,48 @@
 This is the **user-facing** input format for the roster generator. You fill
 in real-world roster information — the application handles every CFB27
 internal detail (team ids, position enums, redshirt flags, the weight
-encoding). A ready-to-fill template lives at
-`templates/HistoricalRosterTemplate.csv`.
+encoding).
+
+## Start here: you only need the basics
+
+Old rosters are badly documented and you will not find a full record for
+every player. **You are not expected to.** This works:
+
+```csv
+FirstName,LastName,Position,Number,Class,Team,Season
+Jordan,Travis,QB,13,RS Senior,Florida State,2023
+Trey,Benson,Tailback,3,RS Junior,Florida State,2023
+```
+
+That is `templates/HistoricalRosterTemplate_Basics.csv` — start from it.
+Strictly, even **Number** and **Class** are optional: a row needs only a
+first name, a last name and a position.
+
+Everything you leave out is filled in for you — height, weight, hometown,
+all 56 attributes, the archetype — and **every single substitution is listed
+in `Generation_Report.txt`**, so you always know what the tool decided
+rather than what you told it. The rest of the 85-man roster is filled in
+too, so you never have to research a team's walk-ons.
+
+Use the full `templates/HistoricalRosterTemplate.csv` when you *do* have
+statistics, draft slots or awards. More detail buys better ratings; it is
+never required.
 
 ## Rules
 
 - One file describes **one team's roster for one season**.
-- The first line is the header. Column order does not matter and header
-  names are case-insensitive.
+- The first line is the header. Column order does not matter, header names
+  are case-insensitive, and spaces are ignored (`First Name` works).
+  Columns the tool does not recognize are left alone.
 - Every value is optional except **FirstName**, **LastName** and
   **Position** — rows missing one of those are skipped (with a warning in
   the generation report). Anything else you leave blank is filled with a
   sensible default and listed in the report.
+- **A mistake in one cell never costs you the file.** A jersey number,
+  height or weight outside what the game accepts is reported and that
+  player keeps the replaced player's value; the other 84 are unaffected.
+- Saving from Excel is fine — the byte-order mark it adds and the empty
+  rows it leaves behind are both ignored.
 - If a value contains a comma (e.g. `Tampa, FL`), wrap it in double quotes
   — any spreadsheet program does this automatically when saving as CSV.
 

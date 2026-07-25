@@ -36,6 +36,16 @@ public static class PlayerSchema
     public const int JerseyNumMax = 99;
 
     /// <summary>
+    /// Minimum height in inches. The shortest player in a 16,257-player base
+    /// save is 65" (5'5"); the bound is a little wider so a real outlier is
+    /// never rejected, while a typo — inches entered as feet, say — is.
+    /// </summary>
+    public const int HeightInchesMin = 60;
+
+    /// <summary>Maximum height in inches. The tallest observed is 82" (6'10").</summary>
+    public const int HeightInchesMax = 90;
+
+    /// <summary>
     /// Sentinel used by <c>TeamIndex</c>/<c>PrevTeamIndex</c> for "no team".
     /// FCS generic squads also carry this value in the Team table.
     /// </summary>

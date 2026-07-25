@@ -8,7 +8,7 @@ did — no programming knowledge, CFB27 schema knowledge, or database ids
 required.
 
 - **`docs/Historical_CSV_Format.md`** — the simple roster CSV you fill in
-  (template: `templates/HistoricalRosterTemplate.csv`).
+  (start from `templates/HistoricalRosterTemplate_Basics.csv`).
 - **`docs/Architecture.md`** — project structure, pipelines, and design
   rationale.
 - **`docs/Schema.md`** — column-level ground truth for the CFB27 player
@@ -26,10 +26,21 @@ required.
 1. **Export your dynasty** with the community save-export tool (it writes a
    folder of CSVs, one per table).
 2. **Fill in a roster CSV** — copy
-   `templates/HistoricalRosterTemplate.csv`, one row per player:
-   `FirstName,LastName,Position,Number,Height,Weight,Class,Team,Season`
-   (only the first three are required; real-world values like `Tailback`,
-   `6-2`, `RS Junior` are expected).
+   `templates/HistoricalRosterTemplate_Basics.csv`, one row per player:
+
+   ```csv
+   FirstName,LastName,Position,Number,Class,Team,Season
+   Jordan,Travis,QB,13,RS Senior,Florida State,2023
+   ```
+
+   Old rosters are badly documented and you are **not** expected to find a
+   full record for every player. Only the name and position are required;
+   real-world values like `Tailback`, `6-2` and `RS Junior` are what the
+   tool expects. Anything you leave out is filled in for you and listed in
+   the report, and a mistake in one cell never costs you the file. Use the
+   fuller `templates/HistoricalRosterTemplate.csv` when you *do* have
+   statistics, draft positions or awards — more detail buys better ratings,
+   but it is never required.
 3. **Run the generator:**
 
    ```

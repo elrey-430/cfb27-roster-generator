@@ -67,8 +67,14 @@ static int Usage()
         below your weakest player at that position. Their names and jersey
         numbers do not change. --fill leave keeps them exactly as they are.
 
-        The roster CSV format is documented in docs/Historical_CSV_Format.md
-        (template: templates/HistoricalRosterTemplate.csv). Defaults:
+        Your roster CSV needs only FirstName, LastName and Position per player;
+        Number, Class, Team and Season are worth adding when you have them.
+        Start from templates/HistoricalRosterTemplate_Basics.csv. Anything you
+        leave out is filled in and listed in the report, and a bad value in one
+        cell is reported without failing the export. The fuller
+        templates/HistoricalRosterTemplate.csv adds statistics, draft positions
+        and awards, which improve the ratings but are never required. Format
+        reference: docs/Historical_CSV_Format.md. Defaults:
         --output Output/Generated_Roster.csv, --report Output/Generation_Report.txt.
         """);
     return 1;
