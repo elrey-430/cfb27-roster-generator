@@ -31,7 +31,10 @@ _Last updated: 2026-07-25 — end of Milestone 8._
   of EA's *generic* Florida State roster, and 2023 was an unusually
   top-heavy team — ten NFL draft picks — so rating its best player higher
   moves away from the generic curve on purpose.
-- Tests: 229/229.
+- Tests: 229/229. Shipped as
+  [v0.2.0-alpha](https://github.com/elrey-430/cfb27-historical-rosters/releases)
+  from the distribution repository, which builds and tests on Windows before
+  packaging.
 
 **Milestone 7 (Ship it) is complete.** The tool is no longer something only
 this repository can run.
