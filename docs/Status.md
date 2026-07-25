@@ -1,6 +1,6 @@
 # Project Status
 
-_Last updated: 2026-07-25 — end of Milestone 5._
+_Last updated: 2026-07-25 — end of Milestone 5; Milestone 6 planned._
 
 ## Current status
 
@@ -289,26 +289,69 @@ guessed at (details in `docs/Schema.md`):
 
 ## Next recommended milestone
 
-**Milestone 5 — Archetypes, roster size, and benchmark scoring.**
+**Milestone 6 — Roster completion and fidelity benchmark.**
 
-The pipeline is now general and reliable; the remaining gaps are about how
-*convincing* a generated roster is once it is in the game.
+Everything through Milestone 5 makes each *individual* player right. What
+remains is making the roster **as a whole** right, and proving it with a
+measured number rather than an impression.
 
-1. ~~**Ratings generation**~~ — done in Milestone 4.
-2. **Roster-size handling** — when the historical roster has fewer players
-   than the team's slots, leftover fictional players remain (10 in the FSU
-   run). Decide and implement a policy (leave, deactivate, or fill from
-   the historical dataset's walk-ons) rather than only reporting it.
-3. ~~**Archetype selection**~~ — done in Milestone 5.
-4. **Asset-field study** — learn how `PLYR_ASSETNAME` /
-   `GenericHeadAssetName` / `PLYR_PORTRAIT` are generated so replaced
-   players stop wearing the donor players' faces.
-4. **Benchmark scoring** — run `compare` against the manually created 2023
-   FSU dynasty export and turn each difference into a data fix, a new
-   schema fact, or a documented gap. (Also resolve the ~25 "verify"
-   jersey/status flags in `FloridaState.json`.)
-5. ~~**Hometown export**~~ — done in Milestone 5. `PreviousSchool` still has
-   no confirmed target column.
+### 1. Roster-size policy — highest impact, and the only item felt in-game
+
+When the historical roster has fewer players than the team's slots, the
+leftover fictional players stay (10 in the FSU run). The player table has
+no depth-chart column — `DepthChart` / `DepthChartConfig` are team-level,
+and the game builds its two-deep from ratings. So a leftover 82-OVR
+fictional quarterback simply takes the job from the historical starter,
+and every rating decision made upstream (EA's own overall formula,
+calibrated attributes, selected archetypes) is overridden at the position
+that matters most.
+
+Implement a policy instead of only reporting the count. In preference
+order:
+
+1. **Fill from the dataset** — take remaining slots from the historical
+   roster's walk-ons and scout-team players. Best fidelity; requires the
+   input CSV to carry them.
+2. **Rate leftovers to a floor** so they cannot crack the two-deep. Safe,
+   no schema risk, no new confirmed fields needed.
+3. **Deactivate the slot** — highest fidelity, but depends on confirming
+   the `_isEmpty` pool-slot mechanics first (243 such rows exist in the
+   base save). That is genuine research, not a configuration change, and
+   should not be attempted casually.
+
+### 2. Benchmark scoring against the manual 2023 FSU export
+
+`Comparison/RosterComparer.cs` was built for this and has never been used
+for it. Run generated-vs-manual field by field and resolve every
+difference into exactly one of three outcomes: a data fix, a newly
+confirmed schema fact, or a documented gap.
+
+This is the method that has already paid: independently recomputing
+overalls caught a CLI wiring failure that had silently disabled the
+rating engine, and an overall/archetype coherence test caught the
+community editor's missing recompute. It also produces a single fidelity
+percentage to track across future changes. Resolve the ~25 "verify"
+jersey/status flags in `HistoricalData/2023/FloridaState.json` in the same
+pass.
+
+### 3. `PreviousSchool` target column — timeboxed
+
+The field is collected, stored and reported, but never written, because no
+target column is confirmed. The transfer-related columns
+(`PLYR_PREVTEAMID`, `PrevTeamIndex`) are partly mapped already, so a
+bounded investigation is reasonable. If it does not resolve quickly,
+document the finding and move on — do not guess a column.
+
+### Deliberately *not* next: the asset-field study
+
+`PLYR_ASSETNAME` / `GenericHeadAssetName` / `PLYR_PORTRAIT` remain
+unmapped (Known unknown 6), so replaced players still wear the donor
+players' faces. That is worth fixing eventually but is the wrong trade
+now: it is purely cosmetic, most inherited heads are generic to begin
+with, and the payoff requires reverse-engineering a generation algorithm —
+high effort, uncertain outcome, and adjacent to the reverse-engineering
+scoped out in the Milestone 1 brief. Leftover starters are a functional
+defect; borrowed faces are not.
 
 Explicitly still deferred: GUI polish, automatic historical data
 gathering, equipment/face generation, multi-season bulk generation,
