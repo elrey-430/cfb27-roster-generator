@@ -14,7 +14,7 @@ namespace RosterGenerator.Gui;
 
 /// <summary>
 /// The whole application in one window, laid out as the job is actually done:
-/// point at the dynasty, point at the roster, check it, choose the team,
+/// point at the exported CSVs, point at the roster, check it, choose the team,
 /// generate.
 ///
 /// Every decision it makes goes through <see cref="RosterGenerationService"/>
@@ -24,7 +24,11 @@ namespace RosterGenerator.Gui;
 /// </summary>
 public sealed class MainWindow : Window
 {
-    private readonly TextBox _dynastyBox = new() { Watermark = "Your dynasty export folder", IsReadOnly = true };
+    private readonly TextBox _dynastyBox = new()
+    {
+        Watermark = "Folder of CSV files exported from your dynasty",
+        IsReadOnly = true,
+    };
     private readonly TextBox _rosterBox = new() { Watermark = "Your roster CSV", IsReadOnly = true };
     private readonly ComboBox _teamBox = new() { PlaceholderText = "Choose a team", MinWidth = 260 };
     private readonly TextBox _seasonBox = new() { Watermark = "Season (optional)", Width = 160 };
@@ -82,14 +86,24 @@ public sealed class MainWindow : Window
         });
         panel.Children.Add(new TextBlock
         {
-            Text = "Only a name and a position are required per player. Anything you leave out is filled " +
-                   "in for you and listed in the report.",
+            Text = "Works on the CSV files the community tool exports from your dynasty, and writes a " +
+                   "new CSV for you to import with the roster editor — your save is never opened or " +
+                   "changed. Only a name and a position are required per player; anything you leave " +
+                   "out is filled in for you and listed in the report.",
             TextWrapping = TextWrapping.Wrap,
             Opacity = 0.75,
         });
 
-        panel.Children.Add(Labelled("1.  Dynasty export", Row(_dynastyBox, browseDynasty)));
-        panel.Children.Add(Labelled("2.  Roster CSV", Row(_rosterBox, browseRoster, openTemplates)));
+        panel.Children.Add(Labelled(
+            "1.  Exported dynasty CSVs",
+            Row(_dynastyBox, browseDynasty),
+            "This tool does not read your save file. Export your dynasty with the community " +
+            "export tool first — it writes a folder of CSV files, one per table — and choose that " +
+            "folder here. The Player and Team tables are found for you."));
+        panel.Children.Add(Labelled(
+            "2.  Roster CSV",
+            Row(_rosterBox, browseRoster, openTemplates),
+            "The historical roster you filled in yourself, from templates\\."));
 
         var teamRow = new StackPanel
         {
@@ -124,16 +138,25 @@ public sealed class MainWindow : Window
         return new ScrollViewer { Content = panel };
     }
 
-    private static Control Labelled(string label, Control content) =>
-        new StackPanel
+    private static Control Labelled(string label, Control content, string? hint = null)
+    {
+        var panel = new StackPanel { Spacing = 4 };
+        panel.Children.Add(new TextBlock { Text = label, FontWeight = FontWeight.SemiBold });
+
+        if (hint is not null)
         {
-            Spacing = 4,
-            Children =
+            panel.Children.Add(new TextBlock
             {
-                new TextBlock { Text = label, FontWeight = FontWeight.SemiBold },
-                content,
-            },
-        };
+                Text = hint,
+                TextWrapping = TextWrapping.Wrap,
+                FontSize = 12,
+                Opacity = 0.7,
+            });
+        }
+
+        panel.Children.Add(content);
+        return panel;
+    }
 
     private static Control Row(TextBox box, params Button[] buttons)
     {
@@ -156,7 +179,7 @@ public sealed class MainWindow : Window
     {
         var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Select your dynasty export folder",
+            Title = "Select the folder of CSV files exported from your dynasty",
             AllowMultiple = false,
         });
 
@@ -178,11 +201,16 @@ public sealed class MainWindow : Window
         {
             _dynasty = RosterGenerationService.OpenDynasty(_dynastyBox.Text ?? "");
             _teamBox.ItemsSource = _dynasty.Teams.Select(t => t.DisplayName).ToList();
-            SetStatus($"Dynasty loaded — {_dynasty.Teams.Count} teams.", ok: true);
+            SetStatus(
+                $"Read {_dynasty.Teams.Count} teams from {Path.GetFileName(_dynasty.PlayerTablePath)}.",
+                ok: true);
         }
         catch (Exception ex)
         {
-            SetStatus($"That folder could not be read as a dynasty export: {ex.Message}", ok: false);
+            SetStatus(
+                $"No player table was found in that folder. Choose the folder the dynasty export " +
+                $"tool wrote its CSV files into. ({ex.Message})",
+                ok: false);
         }
 
         UpdateButtons();
@@ -290,7 +318,7 @@ public sealed class MainWindow : Window
 
         _generateButton.IsEnabled = false;
         _checkButton.IsEnabled = false;
-        SetStatus("Generating… this takes a few seconds for a 16,500-row save.", ok: null);
+        SetStatus("Generating… this takes a few seconds for a 16,500-row player table.", ok: null);
 
         try
         {

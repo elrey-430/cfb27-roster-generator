@@ -42,6 +42,26 @@ public sealed class GuiSmokeTests
                 Assert.NotNull(generate);
                 Assert.False(generate!.IsEnabled);
 
+                // The single most confusable thing about this tool is what
+                // step 1 wants. It is a folder of CSVs the community export
+                // tool produced, not a save file, and the window has to say
+                // so — a user who points it at a save gets an error with no
+                // idea what to do instead.
+                var lines = window.GetVisualDescendants().OfType<TextBlock>()
+                    .Select(t => t.Text ?? "")
+                    .ToList();
+
+                // The step-1 heading has to name CSVs; "Dynasty export" alone
+                // reads as "your save" to someone who has not used the export
+                // tool yet.
+                Assert.Contains(lines, l => l.StartsWith("1.", StringComparison.Ordinal)
+                    && l.Contains("CSV", StringComparison.OrdinalIgnoreCase));
+
+                // And somewhere it has to say the save itself is not the input.
+                var text = string.Join(" ", lines);
+                Assert.Contains("save", text, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("export tool", text, StringComparison.OrdinalIgnoreCase);
+
                 window.Close();
             }
             catch (Exception ex)

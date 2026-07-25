@@ -160,7 +160,7 @@ public sealed class RosterGenerationService
             ? export.BuildTeamMappings(teamAliases)
             : TeamMappingSet.Load(teamAliases
                 ?? throw new FileNotFoundException(
-                    "The dynasty export has no Team table and TeamMappings.json was not found."));
+                    "The exported CSVs contain no Team table and TeamMappings.json was not found."));
 
         var roster = ReadRoster(request);
 

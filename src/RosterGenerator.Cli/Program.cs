@@ -12,12 +12,17 @@ using RosterGenerator.Core.Validation;
 
 // End-user front end for the historical roster pipeline.
 //
-//   generate   --dynasty <export folder or Player.csv> --roster <simple .csv or .json>
+// --dynasty is the folder of CSV files the community export tool wrote out of
+// a dynasty, not a save file: this program never opens a save. The Player and
+// Team tables are discovered inside that folder, so the Player CSV on its own
+// is also accepted.
+//
+//   generate   --dynasty <folder of exported CSVs> --roster <simple .csv or .json>
 //              [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
 //              [--ratings generate|inherit] [--team-mappings <json>] [--position-mappings <json>]
-//   list-teams --dynasty <export folder or Player.csv>
+//   list-teams --dynasty <folder of exported CSVs>
 //   compare    --left <Player.csv> --right <Player.csv> --team <name or id>
-//              [--dynasty <export>] [--output <md>]
+//              [--dynasty <folder of exported CSVs>] [--output <md>]
 //
 // When --team / --season are omitted and the roster CSV does not supply
 // them, generate asks interactively (listing the dynasty's own teams).
@@ -46,21 +51,28 @@ static int Usage()
         Historical CFB27 Roster Generator
 
         Usage:
-          generate   --dynasty <export folder or Player.csv> --roster <historical roster .csv>
+          generate   --dynasty <folder of exported CSVs> --roster <historical roster .csv>
                      [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
                      [--ratings generate|inherit] [--archetypes select|inherit]
                      [--fill fill|leave]
                      [--team-mappings <json>] [--position-mappings <json>]
           validate   --roster <historical roster .csv>
-                     [--dynasty <export folder or Player.csv>] [--team <name>] [--season <year>]
-          list-teams --dynasty <export folder or Player.csv>
+                     [--dynasty <folder of exported CSVs>] [--team <name>] [--season <year>]
+          list-teams --dynasty <folder of exported CSVs>
           compare    --left <Player.csv> --right <Player.csv> --team <name or id>
-                     [--dynasty <export>] [--output <md>]
+                     [--dynasty <folder of exported CSVs>] [--output <md>]
+
+        --dynasty is the folder of CSV files the community export tool writes
+        out of a dynasty — one CSV per table. This program never opens a save
+        file: export first, point it at that folder, and it finds the Player
+        and Team tables itself. The Player CSV on its own also works, though
+        team names then have to be given with --team.
 
         validate checks your roster CSV without generating anything, so a
         mistake shows up in a few lines instead of inside a 27 MB file's report.
         Add --dynasty to also check the team name and the roster size against
-        your save. It exits non-zero only when something would stop generation.
+        the exported tables. It exits non-zero only when something would stop
+        generation.
 
         --ratings generate (the default) builds each player's attributes from the
         historical evidence in the roster CSV; --ratings inherit keeps the ratings
@@ -144,9 +156,11 @@ static DynastyExport OpenDynasty(Dictionary<string, string> options)
         ? dynasty
         : options.TryGetValue("base", out var basePath)
             ? basePath
-            : throw new ArgumentException("Missing required option --dynasty (your dynasty export folder or its Player table CSV).");
+            : throw new ArgumentException(
+                "Missing required option --dynasty (the folder of CSV files exported from your " +
+                "dynasty, or the Player table CSV itself).");
     var export = DynastyExport.Open(path);
-    Console.WriteLine($"Dynasty loaded: {export.PlayerTablePath}");
+    Console.WriteLine($"Player table: {export.PlayerTablePath}");
     Console.WriteLine($"  {export.Teams.Count} teams discovered");
     return export;
 }
@@ -328,7 +342,8 @@ static string DynastyPathOption(Dictionary<string, string> options) =>
         : options.TryGetValue("base", out var legacy)
             ? legacy
             : throw new ArgumentException(
-                "Missing required option --dynasty (your dynasty export folder or its Player table CSV).");
+                "Missing required option --dynasty (the folder of CSV files exported from your " +
+                "dynasty, or the Player table CSV itself).");
 
 static bool CsvHasTeam(string rosterPath)
 {
@@ -342,8 +357,8 @@ static string SelectTeamInteractively(DynastyExport export)
     if (export.Teams.Count == 0)
     {
         throw new ArgumentException(
-            "The roster CSV has no Team column, no --team was given, and the dynasty export has no Team " +
-            "table to choose from. Pass --team <name>.");
+            "The roster CSV has no Team column, no --team was given, and the exported CSVs contain no " +
+            "Team table to choose from. Pass --team <name>.");
     }
 
     if (Console.IsInputRedirected)

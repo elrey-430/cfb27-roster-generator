@@ -1,14 +1,16 @@
 # Historical Roster CSV Format
 
 > **This file is an *input*, not something you import into the roster
-> editor.** You fill it in, the generator reads it, and the generator writes
-> the importable file to `Output/Generated_Roster.csv`. Handing this format
-> straight to the roster editor produces
-> *"CSV file is missing required column `_tableIndex`"* — that means the
-> generator step was skipped.
+> editor.** You fill it in, the generator reads it alongside the CSVs
+> exported from your dynasty, and writes the importable file to
+> `Output/Generated_Roster.csv`. Handing this format straight to the roster
+> editor produces *"CSV file is missing required column `_tableIndex`"* —
+> that means the generator step was skipped.
 >
 > ```
-> your roster CSV  →  [generator]  →  Output/Generated_Roster.csv  →  roster editor
+> your roster CSV      ┐
+>                      ├→ [generator] → Output/Generated_Roster.csv → roster editor
+> exported dynasty CSVs┘
 > ```
 
 This is the **user-facing** input format for the roster generator. You fill
@@ -149,8 +151,8 @@ have — percentages and per-carry averages are derived automatically.
 
 | Column | Example | Notes |
 |---|---|---|
-| `Hometown` | `"Tampa, FL"` | **Written to the save.** Accepts `FL`, `Florida` or `West Virginia`; anything that is not a US state (e.g. `Melbourne, Australia`) is stored as `NonUS` and reported |
-| `PreviousSchool` | `Oregon` | **Written to the save.** A school your dynasty does not carry (an FCS school such as `Albany`) is recorded the way real FCS transfers are, and reported. Leave blank for a player who never transferred |
+| `Hometown` | `"Tampa, FL"` | **Written to the generated roster.** Accepts `FL`, `Florida` or `West Virginia`; anything that is not a US state (e.g. `Melbourne, Australia`) is stored as `NonUS` and reported |
+| `PreviousSchool` | `Oregon` | **Written to the generated roster.** A school your dynasty does not carry (an FCS school such as `Albany`) is recorded the way real FCS transfers are, and reported. Leave blank for a player who never transferred |
 | `Notes` | `Team captain` | Free text for your own bookkeeping; appears in reports |
 
 ## Example
@@ -165,7 +167,7 @@ Ryan,Fitzgerald,K,88,6-1,190,RS Junior,Florida State,2023,"Colquitt, GA",,
 
 ## What happens to your data
 
-| You provide | Written to the save as |
+| You provide | Written to the generated roster as |
 |---|---|
 | Names | `FirstName` / `LastName` (replace-identity edit) |
 | Position | Normalized CFB27 position; players are placed into matching roster slots where possible (a generic DE may take an LE or RE slot) |

@@ -1,11 +1,16 @@
 # Historical CFB27 Roster Generator
 
-Recreate real historical college football rosters inside a CFB27 dynasty
-save. You provide your own dynasty export and a simple spreadsheet-style
-roster CSV; the generator replaces the chosen team's players and produces
-an import-ready `Player.csv` plus a plain-English report of everything it
-did — no programming knowledge, CFB27 schema knowledge, or database ids
-required.
+Recreate real historical college football rosters inside a CFB27 dynasty.
+
+The tool works on **CSV files, not save files**: you export your dynasty to
+CSVs with the community export tool, point this at that folder along with a
+simple spreadsheet-style roster CSV you fill in yourself, and it writes an
+import-ready player table plus a plain-English report of everything it did.
+No programming knowledge, CFB27 schema knowledge, or database ids required.
+
+```
+your dynasty → [export tool] → CSV files → [this tool] → new CSV → [roster editor]
+```
 
 - **`docs/Historical_CSV_Format.md`** — the simple roster CSV you fill in
   (start from `templates/HistoricalRosterTemplate_Basics.csv`).
@@ -25,8 +30,11 @@ required.
 
 ## End-user workflow
 
-1. **Export your dynasty** with the community save-export tool (it writes a
-   folder of CSVs, one per table).
+1. **Export your dynasty to CSVs** with the community export tool. It writes
+   a folder of CSV files, one per table; that folder is what you point the
+   generator at. The Player and Team tables are discovered inside it, so you
+   never have to identify a particular file (the Player CSV on its own also
+   works, with the team named explicitly).
 2. **Fill in a roster CSV** — copy
    `templates/HistoricalRosterTemplate_Basics.csv`, one row per player:
 
@@ -53,8 +61,8 @@ required.
    steps, or from a command prompt:
 
    ```
-   RosterGenerator.Cli validate --roster MyRoster.csv --dynasty <your export folder>
-   RosterGenerator.Cli generate --roster MyRoster.csv --dynasty <your export folder>
+   RosterGenerator.Cli validate --roster MyRoster.csv --dynasty <folder of exported CSVs>
+   RosterGenerator.Cli generate --roster MyRoster.csv --dynasty <folder of exported CSVs>
    ```
 
    `validate` checks your roster file and writes nothing, so a mistake shows
@@ -77,8 +85,8 @@ required.
    - `Generation_Report.txt` — players processed/mapped, missing fields,
      defaults used, and warnings.
 
-The generator works with **any compatible dynasty export** — teams, ids
-and roster structure are discovered from your own file, never hard-coded.
+The generator works with **any compatible export** — teams, ids and roster
+structure are discovered from your own CSVs, never hard-coded.
 Position names are normalized via the editable
 `data/PositionMappings.json`; extra school aliases (e.g. "FSU") can be
 added to `data/TeamMappings.json`.
@@ -86,9 +94,9 @@ added to `data/TeamMappings.json`.
 ## Example
 
 ```
-RosterGenerator.Cli list-teams --dynasty MyDynastyExport/
-RosterGenerator.Cli generate --dynasty MyDynastyExport/ --roster 2013_FSU.csv --team "Florida State" --season 2013
-RosterGenerator.Cli compare --left Output/Generated_Roster.csv --right OtherExport/Player.csv --team "Florida State" --dynasty MyDynastyExport/
+RosterGenerator.Cli list-teams --dynasty MyExportedCsvs/
+RosterGenerator.Cli generate --dynasty MyExportedCsvs/ --roster 2013_FSU.csv --team "Florida State" --season 2013
+RosterGenerator.Cli compare --left Output/Generated_Roster.csv --right OtherExport/Player.csv --team "Florida State" --dynasty MyExportedCsvs/
 ```
 
 ## Distribution (Windows 10/11)

@@ -134,7 +134,7 @@ public sealed class DynastyExport
         }
         else
         {
-            throw new FileNotFoundException($"Dynasty export '{path}' does not exist.");
+            throw new FileNotFoundException($"'{path}' does not exist.");
         }
 
         var teamCandidates = new List<(string Path, List<DynastyTeam> Teams)>();
@@ -158,9 +158,9 @@ public sealed class DynastyExport
         if (playerPath is null)
         {
             throw new CsvSchemaException(
-                $"No Player table found under '{path}'. Point at a dynasty export folder produced by the " +
-                "save-export tool (it contains one CSV per table, including the Player table), or at the " +
-                "Player CSV itself.");
+                $"No Player table found under '{path}'. Point at the folder of CSV files the community " +
+                "export tool wrote out of your dynasty — one CSV per table, including the Player table " +
+                "— or at that Player CSV itself. A save file cannot be read directly; export it first.");
         }
 
         // The main Team table is the one listing the most teams; the export

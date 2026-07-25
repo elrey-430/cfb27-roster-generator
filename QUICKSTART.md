@@ -1,6 +1,15 @@
 # Historical CFB27 Roster Generator — Quick start
 
-Recreate a historical college football roster inside your CFB27 dynasty save.
+Recreate a historical college football roster inside your CFB27 dynasty.
+
+This tool works on **CSV files, not save files.** You export your dynasty to
+CSVs with the community export tool, this program reads those and writes a new
+CSV, and the community roster editor imports it back. Your save is never
+opened or changed here.
+
+```
+your dynasty  →  [export tool]  →  CSV files  →  [this tool]  →  new CSV  →  [roster editor]
+```
 
 Nothing to install. Both programs in this folder are self-contained: they run
 on a clean Windows 10 or 11 machine with no .NET runtime, no Python, and no
@@ -17,10 +26,15 @@ Keep the `data` and `templates` folders next to the executables.
 
 ---
 
-## 1. Export your dynasty
+## 1. Export your dynasty to CSVs
 
-Use the community save-export tool. It writes a folder of CSV files, one per
-table. Point the generator at that folder — it finds what it needs itself.
+Run the community export tool on your dynasty. It writes a **folder of CSV
+files, one per table** — `Player`, `Team`, and dozens more.
+
+That folder is what you point this tool at. You do not need to know which file
+is which: the Player and Team tables are found for you, and the rest are
+ignored. (If you only have the Player CSV, that works too — you just have to
+name the team yourself.)
 
 ## 2. Fill in a roster
 
@@ -56,7 +70,7 @@ end-of-roster depth.
 
 Open `RosterGenerator.Gui.exe`:
 
-1. **Browse** to your dynasty export folder.
+1. **Browse** to the folder of exported CSVs from step 1.
 2. **Browse** to your roster CSV. It is checked immediately and tells you
    about anything wrong — before anything is written.
 3. Confirm the **team** and **season**.
@@ -74,10 +88,12 @@ You get two files in `Output\`:
 
 Same engine, same results.
 
+`--dynasty` takes the folder of exported CSVs (or the Player CSV itself).
+
 ```
-RosterGenerator.Cli.exe validate --roster MyRoster.csv --dynasty C:\path\to\export
-RosterGenerator.Cli.exe generate --roster MyRoster.csv --dynasty C:\path\to\export
-RosterGenerator.Cli.exe list-teams --dynasty C:\path\to\export
+RosterGenerator.Cli.exe validate --roster MyRoster.csv --dynasty C:\path\to\exported-csvs
+RosterGenerator.Cli.exe generate --roster MyRoster.csv --dynasty C:\path\to\exported-csvs
+RosterGenerator.Cli.exe list-teams --dynasty C:\path\to\exported-csvs
 ```
 
 `validate` checks your file and writes nothing. It exits non-zero only when
@@ -101,6 +117,11 @@ Run it with no arguments for the full list.
 
 **"Could not find the data file …"** — the `data` folder must sit next to the
 executable. Unzip the whole folder, not just the .exe.
+
+**"No Player table found under …"** — the folder you chose is not the one the
+export tool wrote. It should contain many CSV files, one of which is the
+Player table. If you picked a save file or the folder your save lives in,
+export it to CSVs first.
 
 **"… is missing the required 'firstname' column"** — the first line of your
 CSV must be the header. Check you did not delete it.
