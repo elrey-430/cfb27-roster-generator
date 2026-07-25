@@ -1,0 +1,125 @@
+name: Release
+
+# Builds the Windows release on a real Windows runner and publishes it to the
+# public distribution repository.
+#
+# Building on windows-latest rather than cross-compiling means the binaries
+# that reach users are produced on the platform they run on, and the test
+# suite runs there too.
+#
+# One-time setup: a repository secret named RELEASE_TOKEN holding a fine-grained
+# personal access token with "Contents: read and write" on
+# elrey-430/cfb27-historical-rosters. A cross-repository release cannot use the
+# workflow's own GITHUB_TOKEN, which is scoped to this repository only.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version, e.g. 0.1.0-alpha'
+        required: true
+        default: '0.1.0-alpha'
+      prerelease:
+        description: 'Mark as a pre-release'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    env:
+      TARGET_REPO: elrey-430/cfb27-historical-rosters
+      PACKAGE: CFB27-Roster-Generator-${{ inputs.version }}-win-x64
+      # Read at job level so the publish step can test for it: the `secrets`
+      # context is not available in a step's `if`.
+      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # A release that fails its own tests should never reach a user.
+      - name: Test
+        run: dotnet test --configuration Release --nologo
+
+      - name: Publish
+        shell: pwsh
+        run: |
+          $out = "dist/$env:PACKAGE"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $common = @(
+            '--configuration', 'Release',
+            '--runtime', 'win-x64',
+            '--self-contained',
+            '-p:PublishSingleFile=true',
+            '-p:EnableCompressionInSingleFile=true',
+            '-p:DebugType=none',
+            '-p:GenerateDocumentationFile=false',
+            "-p:Version=${{ inputs.version }}",
+            '--nologo'
+          )
+          dotnet publish src/RosterGenerator.Gui @common --output $out
+          dotnet publish src/RosterGenerator.Cli @common --output $out
+          Copy-Item QUICKSTART.md "$out/README.txt"
+
+      # Proves the executable actually starts on Windows, which cross-compiling
+      # here cannot. `validate` exercises the whole read-and-check path against
+      # the committed fixtures without needing a dynasty export.
+      - name: Smoke test on Windows
+        shell: pwsh
+        run: |
+          $exe = "dist/$env:PACKAGE/RosterGenerator.Cli.exe"
+          & $exe validate --roster Tests/2023_FSU_Input.csv
+          if ($LASTEXITCODE -ne 0) { throw "validate exited $LASTEXITCODE" }
+          & $exe list-teams --dynasty Tests/DonorDynasty | Select-Object -First 5
+          if ($LASTEXITCODE -ne 0) { throw "list-teams exited $LASTEXITCODE" }
+
+      - name: Package
+        shell: pwsh
+        run: Compress-Archive -Path "dist/$env:PACKAGE" -DestinationPath "dist/$env:PACKAGE.zip"
+
+      # Kept even when publishing succeeds: it is the fallback download if the
+      # release step is not yet configured.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PACKAGE }}
+          path: dist/${{ env.PACKAGE }}.zip
+          retention-days: 30
+
+      - name: Publish release
+        if: ${{ env.RELEASE_TOKEN != '' }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          # The written notes live in the distribution repository, where they
+          # also serve as its changelog; pull them rather than keeping a second
+          # copy here that could drift.
+          gh api "repos/$env:TARGET_REPO/contents/RELEASE_NOTES.md" `
+            --jq '.content' | ForEach-Object {
+              [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_))
+            } | Set-Content -Path notes.md -Encoding utf8
+
+          $releaseArgs = @(
+            'release', 'create', "v${{ inputs.version }}",
+            "dist/$env:PACKAGE.zip",
+            '--repo', $env:TARGET_REPO,
+            '--title', "v${{ inputs.version }}",
+            '--notes-file', 'notes.md'
+          )
+          if ('${{ inputs.prerelease }}' -eq 'true') { $releaseArgs += '--prerelease' }
+          gh @releaseArgs
+
+      - name: Say what to do if the token is missing
+        if: ${{ env.RELEASE_TOKEN == '' }}
+        run: |
+          echo "::notice::No RELEASE_TOKEN secret, so no release was published."
+          echo "::notice::The build succeeded and the zip is attached to this run as an artifact."
+          echo "::notice::Add a fine-grained PAT with Contents:write on $TARGET_REPO as RELEASE_TOKEN, then re-run."

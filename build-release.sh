@@ -24,6 +24,10 @@ COMMON=(
   -r win-x64
   --self-contained
   -p:PublishSingleFile=true
+  # Roughly halves each executable (67 MB -> 34 MB). It costs a moment of
+  # decompression on first launch, which is a good trade for a download an
+  # end user has to fetch over a home connection.
+  -p:EnableCompressionInSingleFile=true
   -p:DebugType=none
   -p:GenerateDocumentationFile=false
   -p:Version="${VERSION}"
