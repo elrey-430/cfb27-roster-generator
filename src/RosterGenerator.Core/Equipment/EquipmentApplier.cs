@@ -41,7 +41,13 @@ public sealed class EquipmentReport
             return $"Equipment: left as it was — no era covers {Season}.";
         }
 
-        var text = $"Equipment: {Era.Name} — {Era.Helmet.DisplayName} on {Changed.Count} player(s)";
+        var byHelmet = Changed
+            .GroupBy(c => c.After.Helmet.Replace("GearHelmet_", ""))
+            .OrderByDescending(g => g.Count())
+            .Select(g => $"{g.Count()} x {g.Key}");
+
+        var text = $"Equipment: {Era.Name} — {Changed.Count} player(s) rehelmeted"
+                   + (Changed.Count > 0 ? $" ({string.Join(", ", byHelmet)})" : "");
         if (AlreadyCorrect > 0)
         {
             text += $", {AlreadyCorrect} already wearing it";
@@ -60,10 +66,17 @@ public sealed class EquipmentReport
 /// Puts period-correct helmets on a team.
 ///
 /// <para>The season the user is already recreating picks the era, so this
-/// costs them nothing extra. Every player on the team is treated the same,
-/// including the depth slots the generator filled — a roster where the
-/// starters are in 2014 helmets and the walk-ons are in 2027 ones would look
-/// worse than leaving it alone.</para>
+/// costs them nothing extra. Every player on the team is covered, including
+/// the depth slots the generator filled — a roster where the starters are in
+/// 2014 helmets and the walk-ons are in 2027 ones would look worse than
+/// leaving it alone.</para>
+///
+/// <para><b>Each player is moved within their own brand.</b> Their current
+/// helmet names a manufacturer and they take that manufacturer's model for
+/// the era, so a squad stays as mixed as it started rather than collapsing
+/// into 85 identical helmets. Only players whose brand did not exist yet fall
+/// back to the era's common shell, because there is no same-brand answer to
+/// give them.</para>
 /// </summary>
 public sealed class EquipmentApplier
 {
@@ -89,7 +102,6 @@ public sealed class EquipmentApplier
             return new EquipmentReport { Era = null, Season = season };
         }
 
-        var target = era.Helmet.ToHeadGear();
         var changed = new List<EquipmentChange>();
         var unresolved = new List<string>();
         var alreadyCorrect = 0;
@@ -109,6 +121,11 @@ public sealed class EquipmentApplier
                 unresolved.Add(Name(player));
                 continue;
             }
+
+            // The helmet they are wearing decides which manufacturer's model
+            // they move to; an unlisted helmet has no known brand and takes
+            // the fallback rather than being left in the wrong decade.
+            var target = era.ForBrand(_eras.BrandOf(before.Value.Helmet)).ToHeadGear();
 
             if (before.Value == target)
             {

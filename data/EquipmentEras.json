@@ -6,37 +6,86 @@
     "table. Each entry names a helmet and the face mask moulded to fit it;",
     "the two are always written together, because a mask belongs to a shell.",
     "",
+    "BRAND CARRIES OVER, THE MODEL CHANGES. A player's current helmet names a",
+    "manufacturer, and they move to that manufacturer's model for the era --",
+    "Riddell to Riddell, Schutt to Schutt. That keeps a squad looking mixed,",
+    "the way real ones were. Brands that did not exist yet (Vicis shipped",
+    "nothing until 2016, Light little earlier) have no same-brand model to",
+    "move to, so those players take the era's fallback.",
+    "",
     "Every asset name here has been confirmed to exist in the game by making",
     "the change in the community roster editor and diffing the export. A",
     "season not covered by an era leaves equipment untouched -- an invented",
     "asset name would be a guess with a broken helmet at the end of it.",
     "",
-    "To add an era: make the change in the editor for one player, export, and",
+    "To add one: make the change in the editor for one player, export, and",
     "read the helmet and face mask names out of the diff. No code change."
   ],
+
+  "brands": {
+    "GearHelmet_Axiom": "Riddell",
+    "GearHelmet_Speed_Flex": "Riddell",
+    "GearHelmet_RevolutionSpeed": "Riddell",
+    "GearHelmet_Revolution": "Riddell",
+
+    "GearHelmet_SchuttF7": "Schutt",
+    "GearHelmet_SchuttF7Pro": "Schutt",
+    "GearHelmet_AirXP": "Schutt",
+
+    "GearHelmet_VicisZero1": "Vicis",
+    "GearHelmet_VicisZero2": "Vicis",
+    "GearHelmet_VicisZero2Trench": "Vicis",
+
+    "GearHelmet_LightGladiator": "Light",
+    "GearHelmet_LightLS2": "Light"
+  },
 
   "eras": [
     {
       "name": "2010-2016",
       "fromSeason": 2010,
       "toSeason": 2016,
-      "helmet": {
-        "helmet": "GearHelmet_RevolutionSpeed",
-        "faceMask": "GearFaceMask_revospeed2bar",
-        "displayName": "Riddell Revolution Speed"
-      },
-      "alternates": [
-        {
-          "helmet": "GearHelmet_Revolution",
-          "faceMask": "GearFaceMask_RevoNormal",
-          "displayName": "Riddell Revolution"
+      "byBrand": {
+        "Riddell": {
+          "helmet": "GearHelmet_RevolutionSpeed",
+          "faceMask": "GearFaceMask_revospeed2bar",
+          "displayName": "Riddell Revolution Speed"
         },
-        {
+        "Schutt": {
           "helmet": "GearHelmet_AirXP",
           "faceMask": "GearFaceMask_2Bar",
           "displayName": "Schutt Air XP PRO VTD"
         }
-      ]
+      },
+      "fallback": {
+        "helmet": "GearHelmet_RevolutionSpeed",
+        "faceMask": "GearFaceMask_revospeed2bar",
+        "displayName": "Riddell Revolution Speed"
+      }
+    },
+
+    {
+      "//": [
+        "The Riddell Revolution is confirmed; Schutt's 2000s shells (Air",
+        "Advantage, DNA) have not been demonstrated yet, so a Schutt wearer",
+        "in this era falls back to the Revolution. Add a 'Schutt' entry here",
+        "once one has been confirmed in the editor."
+      ],
+      "name": "2000-2009",
+      "fromSeason": 2000,
+      "toSeason": 2009,
+      "byBrand": {
+        "Riddell": {
+          "helmet": "GearHelmet_Revolution",
+          "faceMask": "GearFaceMask_RevoNormal",
+          "displayName": "Riddell Revolution"
+        }
+      },
+      "fallback": {
+        "helmet": "GearHelmet_Revolution",
+        "faceMask": "GearFaceMask_RevoNormal",
+        "displayName": "Riddell Revolution"
+      }
     }
   ]
 }

@@ -31,11 +31,18 @@ _Last updated: 2026-07-25 — end of Milestone 9._
   be demonstrated in the editor one helmet at a time. Confirmed so far:
   Revolution Speed, Revolution, Air XP. Only 2010–2016 is defined, and a
   season no era covers changes nothing.
-- **Known limit — one helmet per era.** Real teams were never uniform, and
-  the sample deliberately included two players in different shells. Assigning
-  a distribution needs evidence of how common each was; the alternates are
-  recorded in `data/EquipmentEras.json` awaiting it.
-- Tests: 240/240.
+- **Brand carries over, the model changes.** A player's current helmet names
+  a manufacturer and the era moves them to that manufacturer's model, so a
+  squad stays mixed rather than collapsing into 85 identical helmets. Brands
+  that did not exist yet (Vicis, Light) take the era's fallback. Six of the
+  eight demonstrated edits follow this exactly; the two that do not
+  (Howard, Schutt → Riddell; Lester, Light → the 2000s Revolution) are
+  recorded in `docs/Schema.md` as open questions rather than fitted to.
+- **Two eras defined**, 2010–2016 and 2000–2009. The largest gaps are a
+  Schutt shell for the 2000s and position-specific masks — a kicker and a
+  nose tackle currently get the same 2-bar, though the base save shows the
+  game distinguishes them.
+- Tests: 245/245.
 
 **Milestone 8 (Draft slot measures the wrong season) is complete.**
 

@@ -208,8 +208,25 @@ A 2013 roster in 2027 helmets looks wrong in a way no rating fixes, so the
 There is nothing extra to fill in.
 
 When the season falls inside a known era, every player on the team — the ones
-you supplied and the depth slots filled in for you — is given that era's
-helmet and the face mask moulded to fit it. That produces a second file:
+you supplied and the depth slots filled in for you — moves to a helmet from
+that era, along with the face mask moulded to fit it.
+
+**Each player keeps their manufacturer.** Someone in a Riddell moves to the
+Riddell of the day and someone in a Schutt to the Schutt, so the squad stays
+as varied as it started instead of turning into 85 identical helmets. Players
+wearing a brand that did not exist yet — Vicis, Light — take the era's common
+shell, because there is no same-brand answer for them.
+
+| Wearing now | 2010–2016 | 2000–2009 |
+|---|---|---|
+| Riddell Axiom or SpeedFlex | Riddell Revolution Speed | Riddell Revolution |
+| Schutt F7 or F7 Pro | Schutt Air XP PRO VTD | Riddell Revolution\* |
+| Vicis or Light | Riddell Revolution Speed | Riddell Revolution |
+
+\* A Schutt shell from the 2000s has not been confirmed in the game yet, so
+those players fall back to the Riddell for now.
+
+That produces a second file:
 
 ```
 Output\Generated_Equipment.csv
@@ -228,10 +245,6 @@ Eras live in `data/EquipmentEras.json` and are editable like everything else
 in `data/`. Adding one takes no code: change a single player's helmet in the
 roster editor, export, and read the helmet and face mask names out of the
 diff.
-
-| Seasons | Helmet |
-|---|---|
-| 2010–2016 | Riddell Revolution Speed |
 
 ## Team strength
 

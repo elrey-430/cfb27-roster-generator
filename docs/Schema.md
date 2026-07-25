@@ -350,6 +350,36 @@ A base save carries **10 helmet models, all modern**:
 
 …and 88 face mask models, family-scoped by name.
 
+### The era rule: brand carries over, the model changes
+
+A player's current helmet names a manufacturer, and the era moves them to
+that manufacturer's model of the day. Applying one helmet to a whole team
+would flatten a squad that was never uniform, and the demonstration
+deliberately included players in several shells.
+
+| Wearing now | Brand | 2010–2016 | 2000–2009 |
+|---|---|---|---|
+| Axiom, SpeedFlex | Riddell | Revolution Speed | Revolution |
+| F7, F7 Pro | Schutt | Air XP PRO VTD | *not yet demonstrated* |
+| Zero1, Zero2, Zero2 Trench | Vicis | *fallback* | *fallback* |
+| Gladiator, LS2 | Light | *fallback* | *fallback* |
+
+Vicis shipped nothing until 2016 and Light little earlier, so those players
+have no same-brand model to move to and take the era's fallback shell.
+
+**Six of the eight demonstrated edits follow this rule exactly.** Two do not,
+and are recorded rather than fitted to:
+
+- **Jamari Howard**, Schutt F7 Pro → Riddell Revolution Speed. The stated
+  rule sends any Schutt to the Air XP.
+- **Charles Lester III**, Light Gladiator → Riddell Revolution. The other
+  five brand-less players went to the Revolution *Speed*; the plain
+  Revolution is the 2000s shell, so this reads as a vocabulary
+  demonstration rather than a 2014 assignment.
+
+Both are open questions for the next demonstration, not assumptions in the
+data file.
+
 **Retro helmets are not among them.** `GearHelmet_RevolutionSpeed` and
 `GearHelmet_Revolution` appear on **zero** of 12,586 players, as do the masks
 `revospeed2bar`, `RevoNormal` and `2Bar`. The assets exist and the editor can
@@ -359,6 +389,24 @@ the editor and read out of the diff. That is why `data/EquipmentEras.json`
 lists only confirmed names, and why a season no era covers changes nothing:
 writing an asset name the game may not carry is a guess with a broken helmet
 at the end of it.
+
+### Confirmed period vocabulary
+
+| Helmet | Face mask | Era |
+|---|---|---|
+| `GearHelmet_RevolutionSpeed` | `GearFaceMask_revospeed2bar` | 2010s |
+| `GearHelmet_Revolution` | `GearFaceMask_RevoNormal` | 2000s |
+| `GearHelmet_AirXP` | `GearFaceMask_2Bar` | 2010s |
+
+Known gaps, in rough order of value:
+
+1. **A Schutt shell for the 2000s** (Air Advantage or DNA) — without it, a
+   Schutt wearer in 2005 falls back to a Riddell.
+2. **Position-specific masks.** Every player in an era currently gets the
+   same 2-bar, so a kicker and a nose tackle end up identical. The base save
+   shows the game distinguishes them (`SpeedFlexKicker`, `F7Kicker`,
+   `Speedflex3BarLB`), so the retro shells very likely have equivalents.
+3. **Anything before 2000.**
 
 ---
 

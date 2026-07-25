@@ -154,7 +154,7 @@ public sealed class EquipmentTests
     }
 
     [Fact]
-    public void AnEraPutsItsHelmetOnEveryPlayerOnTheTeam()
+    public void AnEraCoversEveryPlayerOnTheTeam()
     {
         var visuals = Before();
         var report = new EquipmentApplier(Eras()).Apply(Players(), visuals, teamIndex: 27, season: 2014);
@@ -162,11 +162,70 @@ public sealed class EquipmentTests
         Assert.NotNull(report.Era);
         Assert.Equal("2010-2016", report.Era!.Name);
 
-        // Everyone on the roster ends up in the era helmet, whether they were
-        // supplied by the user or filled in as depth.
+        // Everyone on the roster is accounted for, whether they were supplied
+        // by the user or filled in as depth.
         Assert.Equal(85, report.Changed.Count + report.AlreadyCorrect + report.Unresolved.Count);
         Assert.Empty(report.Unresolved);
-        Assert.All(report.Changed, c => Assert.Equal(RevolutionSpeed, c.After));
+    }
+
+    [Fact]
+    public void ARiddellWearerStaysRiddellAndASchuttWearerStaysSchutt()
+    {
+        // The rule that keeps a squad looking mixed: brand carries over, the
+        // model changes. Collapsing 85 players into one helmet would be a
+        // worse likeness than leaving them alone.
+        var visuals = Before();
+        new EquipmentApplier(Eras()).Apply(Players(), visuals, teamIndex: 27, season: 2014);
+
+        // Nehemiah Chandler wore a Riddell Axiom; Quindarrius Jones a Schutt F7.
+        Assert.Equal(RevolutionSpeed, visuals.GetHeadGear(2066));
+        Assert.Equal(
+            new HeadGear("GearHelmet_AirXP", "GearFaceMask_2Bar"),
+            visuals.GetHeadGear(5930));
+    }
+
+    [Fact]
+    public void ABrandThatDidNotExistYetTakesTheEraFallback()
+    {
+        // Vicis shipped nothing until 2016, so a Vicis wearer has no
+        // same-brand model to move to in 2014.
+        var visuals = Before();
+        var eras = Eras();
+        Assert.Equal("Vicis", eras.BrandOf("GearHelmet_VicisZero1"));
+
+        new EquipmentApplier(eras).Apply(Players(), visuals, teamIndex: 27, season: 2014);
+
+        Assert.Equal(RevolutionSpeed, visuals.GetHeadGear(5098));   // Karson Hobbs
+        Assert.Equal(RevolutionSpeed, visuals.GetHeadGear(15462));  // Zae Thomas
+    }
+
+    [Fact]
+    public void TheDemonstratedEditsAreReproducedWhereTheyFollowTheRule()
+    {
+        // Six of the eight demonstrated changes follow brand lineage. The two
+        // that do not are recorded in docs/Schema.md rather than fitted to:
+        // Jamari Howard (Schutt -> Riddell) and Charles Lester (Light ->
+        // Revolution, a 2000s shell), both left for a follow-up demonstration.
+        var visuals = Before();
+        new EquipmentApplier(Eras()).Apply(Players(), visuals, teamIndex: 27, season: 2014);
+
+        var editor = After();
+        int[] followTheRule = { 2066, 5098, 5921, 5930, 9120, 15462 };
+        foreach (var row in followTheRule)
+        {
+            Assert.Equal(editor.GetHeadGear(row), visuals.GetHeadGear(row));
+        }
+    }
+
+    [Fact]
+    public void TheTwoThousandsEraUsesTheOlderRiddellShell()
+    {
+        var visuals = Before();
+        new EquipmentApplier(Eras()).Apply(Players(), visuals, teamIndex: 27, season: 2005);
+
+        Assert.Equal(
+            new HeadGear("GearHelmet_Revolution", "GearFaceMask_RevoNormal"),
+            visuals.GetHeadGear(2066));
     }
 
     [Fact]
@@ -204,15 +263,32 @@ public sealed class EquipmentTests
     {
         // A helmet without the mask moulded to it leaves a mismatched pair in
         // the save, so the data file is not allowed to describe one.
-        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".json");
-        File.WriteAllText(path, """
+        var error = LoadEras("""
             { "eras": [ { "name": "broken", "fromSeason": 2010, "toSeason": 2016,
-                          "helmet": { "helmet": "GearHelmet_RevolutionSpeed" } } ] }
+                          "fallback": { "helmet": "GearHelmet_RevolutionSpeed" } } ] }
             """);
+        Assert.Contains("face mask", error.Message);
+    }
+
+    [Fact]
+    public void AnEraWithNoFallbackIsRefused()
+    {
+        // Without one, a Vicis wearer in 2014 has nothing to be given.
+        var error = LoadEras("""
+            { "eras": [ { "name": "no fallback", "fromSeason": 2010, "toSeason": 2016,
+                          "byBrand": { "Riddell": { "helmet": "GearHelmet_RevolutionSpeed",
+                                                    "faceMask": "GearFaceMask_revospeed2bar" } } } ] }
+            """);
+        Assert.Contains("fallback", error.Message);
+    }
+
+    private static InvalidDataException LoadEras(string json)
+    {
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".json");
+        File.WriteAllText(path, json);
         try
         {
-            var error = Assert.Throws<InvalidDataException>(() => EquipmentEraSet.Load(path));
-            Assert.Contains("face mask", error.Message);
+            return Assert.Throws<InvalidDataException>(() => EquipmentEraSet.Load(path));
         }
         finally
         {
