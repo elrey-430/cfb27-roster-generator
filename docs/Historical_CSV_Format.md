@@ -77,6 +77,8 @@ never required.
   `4.49s` and `1,250` are all understood, and the report says what each was
   read as. Something with no number in it at all (`twelve`) is still
   reported and skipped rather than guessed at.
+- If a value contains a comma (e.g. `Tampa, FL`), wrap it in double quotes
+  — any spreadsheet program does this automatically when saving as CSV.
 
 Every correction and every substitution is listed in
 `Generation_Report.txt` — the tool never changes your data silently.
@@ -93,8 +95,6 @@ Every correction and every substitution is listed in
 | Wrote a hometown that is not a US state | Stored as `NonUS` and reported |
 | Listed more players than the team has slots | The first 85 are used and the rest are named |
 | Supplied a header with no player rows | Refused outright, rather than replacing the team with 85 strangers |
-- If a value contains a comma (e.g. `Tampa, FL`), wrap it in double quotes
-  — any spreadsheet program does this automatically when saving as CSV.
 
 ## Required columns
 
@@ -130,8 +130,9 @@ from position and class defaults and reported as Low confidence).
 | `Vertical` | `38` | Inches → jumping |
 | `Shuttle` | `4.15` | 20-yard shuttle → agility |
 | `ThreeCone` | `6.95` | Three-cone → change of direction |
-| `DraftRound` / `DraftPick` | `2` / `41` | NFL draft. `DraftPick` is the **overall** pick and is the single strongest signal. Put `UDFA` in `DraftPick` for undrafted free agents |
+| `DraftRound` / `DraftPick` | `2` / `41` | NFL draft. `DraftPick` is the **overall** pick and the strongest single signal — but see below. Put `UDFA` in `DraftPick` for undrafted free agents |
 | `Awards` | `Heisman; Consensus All-American` | **Semicolon-separated.** Only the best award counts |
+| `AwardContender` | `Heisman` | Awards the player was **in contention for** without winning — a finalist, a semifinalist, someone in the conversation. Same names as `Awards`, scored a few points lower. Worth more than winning a smaller award: a Heisman finalist out-rates an all-conference pick. Often the only evidence that survives when an injury ends a season early |
 
 ### Statistics
 
@@ -206,3 +207,30 @@ generator measures the team you selected against a typical one and adjusts
 players you gave little evidence for. Players with a draft slot, awards or a
 stat line are rated on their own record and are unaffected. Nothing extra is
 required from you — the adjustment comes from the dynasty you loaded.
+
+## A note on draft position
+
+Draft position is the heaviest signal the generator uses, and the only one
+that looks *backwards* from the season you are recreating. It records where
+the NFL took a player months later, which is a different question from how
+they played.
+
+Sometimes those answers disagree badly. Jordan Travis was the 2023 ACC
+Player of the Year and went in the fifth round, because he broke his leg in
+November. Taken at face value, his draft slot rated him seven points below
+his own season.
+
+So when a draft slot sits well below what a player's awards and statistics
+say, the generator trusts the record of the season more and says so in the
+report:
+
+```
+Draft position counted for less: Drafted #171 overall sits 14 points below
+this player's awards (conference player of the year). A draft slot records
+where the NFL took someone months later, not how they played in this season.
+```
+
+The draft slot is not ignored — a late pick is still information — it just
+stops outvoting the season itself. **This is the case `AwardContender` is
+for:** if a player's season ended early, what they were in contention for
+before it ended is often the truest thing left in the record.

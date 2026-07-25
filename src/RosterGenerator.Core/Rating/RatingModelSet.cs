@@ -180,6 +180,29 @@ public sealed class RatingModelSet
     /// <summary>Position group → the stats that make up its production score.</summary>
     public Dictionary<string, List<ProductionStatModel>> Production { get; init; } = new();
 
+    /// <summary>
+    /// Points deducted from an award's score when the player was only in
+    /// contention for it rather than winning it. Set so a Heisman finalist
+    /// still outranks a first-team all-conference winner, which is the right
+    /// ordering — being in the conversation for the biggest award in the sport
+    /// says more than winning a league honour.
+    /// </summary>
+    public double AwardContenderDiscount { get; init; } = 5;
+
+    /// <summary>
+    /// How far the draft signal may sit below the contemporaneous evidence
+    /// (awards, production) before it is treated as answering a different
+    /// question. See <c>TalentScorer.DemoteDraftIfItDisagrees</c>.
+    /// </summary>
+    public double DraftDisagreementTolerance { get; init; } = 6;
+
+    /// <summary>
+    /// The share of its weight the draft signal keeps once it disagrees. Not
+    /// zero: a late pick is still evidence, just weaker evidence about the
+    /// season being recreated than the season's own record.
+    /// </summary>
+    public double DraftDisagreementWeightFactor { get; init; } = 0.35;
+
     /// <summary>Absolute attribute floor/ceiling.</summary>
     public GlobalCapsModel GlobalCaps { get; init; } = new();
 

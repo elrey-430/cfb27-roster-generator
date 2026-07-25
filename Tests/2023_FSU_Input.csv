@@ -1,76 +1,76 @@
-FirstName,LastName,Position,Number,Height,Weight,Class,Team,Season,Hometown,PreviousSchool,Role,DraftRound,DraftPick,Awards,GamesPlayed,GamesStarted,Completions,Attempts,PassYards,PassTD,PassInt,RushAttempts,RushYards,RushTD,Receptions,RecYards,RecTD,Tackles,TacklesForLoss,Sacks,Interceptions,PassesDefended,ForcedFumbles,FieldGoalsMade,FieldGoalsAttempted,PuntAverage,Notes
-Jordan,Travis,QB,13,6-1,212,Redshirt Senior,Florida State,2023,"West Palm Beach, FL",Louisville,Starter,5,171,first-team all-conference,11,11,206,303,2790,21,5,,343,4,,,,,,,,,,,,,Starter; season-ending injury vs North Alabama (Nov 18)
-Tate,Rodemaker,QB,18,6-4,195,Redshirt Junior,Florida State,2023,"Valdosta, GA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,"Primary backup; started ACC Championship prep, injured; verify height"
-Brock,Glenn,QB,11,6-2,200,Freshman,Florida State,2023,"Memphis, TN",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Started ACC Championship Game and Orange Bowl
-Trey,Benson,RB,3,6-1,216,Redshirt Junior,Florida State,2023,"Greenville, MS",Oregon,Starter,3,66,second-team all-conference,13,12,,,,,,158,906,10,,,,,,,,,,,,,Starting running back
-Lawrance,Toafili,RB,9,5-11,191,Redshirt Junior,Florida State,2023,"Pinellas Park, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Primary change-of-pace back
-Rodney,Hill,RB,21,5-10,185,Redshirt Freshman,Florida State,2023,"Statesboro, GA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
-Caziah,Holmes,RB,24,5-11,205,Redshirt Junior,Florida State,2023,"Cocoa, FL",Penn State,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
-Samuel,Singleton,RB,28,5-11,185,Freshman,Florida State,2023,"Jacksonville, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release
-Keon,Coleman,WR,4,6-4,215,Junior,Florida State,2023,"Opelousas, LA",Michigan State,Starter,2,33,first-team all-conference,12,12,,,,,,,,,50,658,11,,,,,,,,,,Jersey confirmed from 2023 newcomer release
-Johnny,Wilson,WR,14,6-7,235,Redshirt Junior,Florida State,2023,"Pacoima, CA",Arizona State,Starter,6,185,,12,,,,,,,,,,,,,,,,,,,,,,
-Ja'Khi,Douglas,WR,0,5-11,192,Redshirt Junior,Florida State,2023,"Houma, LA",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey (0)
-Destyn,Hill,WR,7,6-0,195,Freshman,Florida State,2023,"New Orleans, LA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release; 2021 signee who enrolled in 2023
-Hykeem,Williams,WR,8,6-3,210,Freshman,Florida State,2023,"Fort Lauderdale, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,
-Deuce,Spann,WR,12,6-4,200,Redshirt Junior,Florida State,2023,"St. Petersburg, FL",Illinois,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
-Kentron,Poitier,WR,,6-3,205,Redshirt Senior,Florida State,2023,"Miami, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Vandrevius,Jacobs,WR,16,6-0,175,Freshman,Florida State,2023,"Vero Beach, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
-Joshua,Burrell,WR,,6-2,205,Redshirt Freshman,Florida State,2023,"Columbia, SC",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Darion,Williamson,WR,,6-3,200,Redshirt Sophomore,Florida State,2023,"Tampa, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; reserve
-Jaheim,Bell,TE,6,6-3,250,Redshirt Junior,Florida State,2023,"Lake City, FL",South Carolina,Starter,7,231,,13,9,,,,,,,,,39,503,2,,,,,,,,,,Jersey confirmed (No. 6)
-Kyle,Morlock,TE,84,6-6,245,Redshirt Senior,Florida State,2023,"Douglasville, GA",Shorter,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed (No. 84)
-Markeston,Douglas,TE,,6-4,260,Redshirt Junior,Florida State,2023,"Phenix City, AL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Brian,Courtney,TE,,6-2,235,Redshirt Sophomore,Florida State,2023,"Ashburn, VA",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; H-back/TE reserve
-Preston,Daniel,TE,,6-3,240,Redshirt Sophomore,Florida State,2023,"Tallahassee, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; reserve
-Jerrale,Powers,TE,,6-4,230,Freshman,Florida State,2023,"Duncanville, TX",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; 2023 signee
-Robert,Scott,OT,74,6-5,320,Redshirt Junior,Florida State,2023,"Winnsboro, LA",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Starting left tackle; verify jersey
-Jeremiah,Byers,OT,63,6-5,315,Redshirt Senior,Florida State,2023,"El Paso, TX",UTEP,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Starting right tackle; jersey confirmed (No. 63)
-Casey,Roddick,OG,70,6-5,320,Redshirt Senior,Florida State,2023,"Oxnard, CA",Colorado,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Starting left guard; jersey confirmed (No. 70)
-D'Mitri,Emmanuel,OG,71,6-3,305,Redshirt Senior,Florida State,2023,"Charlotte, NC",Charlotte,Starter,,,first-team all-conference,,,,,,,,,,,,,,,,,,,,,,,Starting right guard; jersey confirmed (No. 71)
-Maurice,Smith,C,54,6-3,300,Redshirt Senior,Florida State,2023,"Miami, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Starting center; verify jersey
-Darius,Washington,OL,76,6-3,300,Redshirt Junior,Florida State,2023,"Pensacola, FL",,Starter,,,first-team all-conference,,,,,,,,,,,,,,,,,,,,,,,Sixth man — tackle/center; verify jersey
-Keiondre,Jones,OG,,6-4,325,Redshirt Senior,Florida State,2023,"LaGrange, GA",Auburn,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Bless,Harris,OT,75,6-5,310,Redshirt Senior,Florida State,2023,"Lake Charles, LA",LSU,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
-Julian,Armella,OL,,6-6,315,Redshirt Freshman,Florida State,2023,"Miami, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Jaylen,Early,OL,,6-4,310,Redshirt Freshman,Florida State,2023,"Duncanville, TX",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Qae'shon,Sapp,OL,,6-4,320,Redshirt Freshman,Florida State,2023,"Leesburg, GA",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Lloyd,Willis,OT,,6-7,310,Freshman,Florida State,2023,"Miami, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; 2023 signee
-Antavious,Woody,OL,,6-4,305,Redshirt Freshman,Florida State,2023,"LaFayette, AL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Andre,Otto,OL,,6-5,310,Redshirt Sophomore,Florida State,2023,,,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; verify roster status
-Jared,Verse,DE,5,6-4,260,Redshirt Senior,Florida State,2023,"Dade City, FL",Albany,Starter,1,19,second-team all-american; first-team all-conference,12,12,,,,,,,,,,,,41,12.5,9,,3,1,,,,Starting edge; consensus All-American
-Patrick,Payton,DE,11,6-5,250,Redshirt Sophomore,Florida State,2023,"Miami, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Starting edge opposite Verse
-Gilber,Edmond,DE,,6-4,250,Redshirt Junior,Florida State,2023,"Fort Lauderdale, FL",South Carolina,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; rotation edge/LB
-Byron,Turner,DE,,6-4,265,Redshirt Sophomore,Florida State,2023,"New Orleans, LA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; rotation
-Fabien,Lovett,DT,0,6-4,315,Redshirt Senior,Florida State,2023,"Vicksburg, MS",Mississippi State,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Starting DT; verify jersey (0)
-Braden,Fiske,DT,55,6-5,295,Redshirt Senior,Florida State,2023,"Michigan City, IN",Western Michigan,Starter,2,39,third-team all-american; second-team all-conference,13,13,,,,,,,,,,,,43,9,6,,,,,,,Starting DT; verify jersey
-Joshua,Farmer,DT,47,6-3,305,Redshirt Sophomore,Florida State,2023,"Port St. Joe, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Rotation DT; verify jersey
-Malcolm,Ray,DT,99,6-2,300,Redshirt Junior,Florida State,2023,"Miami, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Rotation DT; verify jersey
-Darrell,Jackson,DT,,6-5,330,Junior,Florida State,2023,"Havana, FL",Miami,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,On 2023 roster; did not play while awaiting transfer eligibility — verify
-KJ,Sampson,DT,,6-3,290,Freshman,Florida State,2023,"Deerfield Beach, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; 2023 signee
-Ayobami,Tifase,DT,,6-4,305,Redshirt Freshman,Florida State,2023,"Baltimore, MD",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Daniel,Lyons,DT,,6-3,290,Redshirt Freshman,Florida State,2023,"Homestead, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Kalen,DeLoach,LB,4,6-1,225,Redshirt Senior,Florida State,2023,"Savannah, GA",,Starter,,UDFA,first-team all-conference,13,13,,,,,,,,,,,,68,10.5,7,1,2,2,,,,Starting LB
-Tatum,Bethune,LB,15,6-1,230,Redshirt Senior,Florida State,2023,"Miami, FL",UCF,Starter,7,251,,13,,,,,,,,,,,,,,,,,,,,,,Starting LB; verify jersey
-DJ,Lundy,LB,10,6-1,245,Redshirt Junior,Florida State,2023,"Ocilla, GA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Rotation LB; verify jersey
-Blake,Nichelson,LB,18,6-3,215,Freshman,Florida State,2023,"Manteca, CA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release
-Omar,Graham,LB,,6-1,220,Freshman,Florida State,2023,"Fort Lauderdale, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; 2023 signee
-Justin,Cryer,LB,,6-1,225,Redshirt Freshman,Florida State,2023,"Miami, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Jayion,McCluster,LB,,6-0,220,Redshirt Freshman,Florida State,2023,"Largo, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Fentrell,Cypress,CB,23,6-0,185,Redshirt Senior,Florida State,2023,"Rock Hill, SC",Virginia,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed (No. 23)
-Jarrian,Jones,CB,7,5-11,190,Redshirt Senior,Florida State,2023,"Magee, MS",Mississippi State,Starter,3,96,,13,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed (No. 7)
-Renardo,Green,CB,8,6-0,195,Redshirt Senior,Florida State,2023,"Orlando, FL",,Starter,3,64,second-team all-conference,13,13,,,,,,,,,,,,43,2.5,0.5,1,13,,,,,Jersey confirmed (No. 8)
-Azareye'h,Thomas,CB,13,6-2,195,Sophomore,Florida State,2023,"Niceville, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
-Kevin,Knowles,DB,3,5-10,180,Junior,Florida State,2023,"Hollywood, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Nickel; jersey confirmed (No. 3)
-Greedy,Vance,CB,,5-11,175,Redshirt Junior,Florida State,2023,"New Orleans, LA",Louisville,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; verify 2023 roster status
-Omarion,Cooper,CB,,6-0,190,Junior,Florida State,2023,"Lehigh Acres, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Quindarrius,Jones,DB,,6-2,190,Redshirt Freshman,Florida State,2023,"Meridian, MS",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
-Conrad,Hussey,DB,12,6-0,190,Freshman,Florida State,2023,"Palm Beach Gardens, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release
-Edwin,Joseph,DB,13,6-0,190,Freshman,Florida State,2023,"Miami, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release
-Akeem,Dent,S,1,6-1,195,Redshirt Senior,Florida State,2023,"Pahokee, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey per 2023 sources (previously 27); verify
-Shyheim,Brown,S,38,6-2,200,Redshirt Sophomore,Florida State,2023,"Lakeland, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed (No. 38)
-Ashlynd,Barker,DB,27,6-3,200,Redshirt Freshman,Florida State,2023,"Gainesville, GA",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release
-Kenton,Kirkland,DB,,6-0,190,Freshman,Florida State,2023,"Jacksonville, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; 2023 signee
-Ryan,Fitzgerald,K,88,6-1,190,Redshirt Junior,Florida State,2023,"Colquitt, GA",,Starter,,,first-team all-american,,,,,,,,,,,,,,,,,,,,19,21,,Starting placekicker; verify jersey
-Tyler,Keltner,K,,6-1,185,Redshirt Senior,Florida State,2023,"Tallahassee, FL",East Tennessee State,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,Kickoff specialist; jersey unconfirmed; verify roster status
-Alex,Mastromanno,P,29,6-2,220,Senior,Florida State,2023,"Melbourne, Australia",,Starter,,,first-team all-american,,,,,,,,,,,,,,,,,,,,,,49.3,Starting punter; verify jersey
-James,Rosenberry,LS,,6-1,230,Redshirt Senior,Florida State,2023,"Tallahassee, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,Long snapper; jersey unconfirmed
+FirstName,LastName,Position,Number,Height,Weight,Class,Team,Season,Hometown,PreviousSchool,Role,DraftRound,DraftPick,Awards,AwardContender,GamesPlayed,GamesStarted,Completions,Attempts,PassYards,PassTD,PassInt,RushAttempts,RushYards,RushTD,Receptions,RecYards,RecTD,Tackles,TacklesForLoss,Sacks,Interceptions,PassesDefended,ForcedFumbles,FieldGoalsMade,FieldGoalsAttempted,PuntAverage,Notes
+Jordan,Travis,QB,13,6-1,212,Redshirt Senior,Florida State,2023,"West Palm Beach, FL",Louisville,Starter,5,171,conference player of the year; conference offensive player of the year; first-team all-conference,heisman,11,11,206,303,2790,21,5,,343,4,,,,,,,,,,,,,Starter; season-ending injury vs North Alabama (Nov 18)
+Tate,Rodemaker,QB,18,6-4,195,Redshirt Junior,Florida State,2023,"Valdosta, GA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,"Primary backup; started ACC Championship prep, injured; verify height"
+Brock,Glenn,QB,11,6-2,200,Freshman,Florida State,2023,"Memphis, TN",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Started ACC Championship Game and Orange Bowl
+Trey,Benson,RB,3,6-1,216,Redshirt Junior,Florida State,2023,"Greenville, MS",Oregon,Starter,3,66,second-team all-conference,,13,12,,,,,,158,906,10,,,,,,,,,,,,,Starting running back
+Lawrance,Toafili,RB,9,5-11,191,Redshirt Junior,Florida State,2023,"Pinellas Park, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Primary change-of-pace back
+Rodney,Hill,RB,21,5-10,185,Redshirt Freshman,Florida State,2023,"Statesboro, GA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
+Caziah,Holmes,RB,24,5-11,205,Redshirt Junior,Florida State,2023,"Cocoa, FL",Penn State,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
+Samuel,Singleton,RB,28,5-11,185,Freshman,Florida State,2023,"Jacksonville, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release
+Keon,Coleman,WR,4,6-4,215,Junior,Florida State,2023,"Opelousas, LA",Michigan State,Starter,2,33,first-team all-conference,,12,12,,,,,,,,,50,658,11,,,,,,,,,,Jersey confirmed from 2023 newcomer release
+Johnny,Wilson,WR,14,6-7,235,Redshirt Junior,Florida State,2023,"Pacoima, CA",Arizona State,Starter,6,185,,,12,,,,,,,,,,,,,,,,,,,,,,
+Ja'Khi,Douglas,WR,0,5-11,192,Redshirt Junior,Florida State,2023,"Houma, LA",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey (0)
+Destyn,Hill,WR,7,6-0,195,Freshman,Florida State,2023,"New Orleans, LA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release; 2021 signee who enrolled in 2023
+Hykeem,Williams,WR,8,6-3,210,Freshman,Florida State,2023,"Fort Lauderdale, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Deuce,Spann,WR,12,6-4,200,Redshirt Junior,Florida State,2023,"St. Petersburg, FL",Illinois,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
+Kentron,Poitier,WR,,6-3,205,Redshirt Senior,Florida State,2023,"Miami, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Vandrevius,Jacobs,WR,16,6-0,175,Freshman,Florida State,2023,"Vero Beach, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
+Joshua,Burrell,WR,,6-2,205,Redshirt Freshman,Florida State,2023,"Columbia, SC",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Darion,Williamson,WR,,6-3,200,Redshirt Sophomore,Florida State,2023,"Tampa, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; reserve
+Jaheim,Bell,TE,6,6-3,250,Redshirt Junior,Florida State,2023,"Lake City, FL",South Carolina,Starter,7,231,,,13,9,,,,,,,,,39,503,2,,,,,,,,,,Jersey confirmed (No. 6)
+Kyle,Morlock,TE,84,6-6,245,Redshirt Senior,Florida State,2023,"Douglasville, GA",Shorter,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed (No. 84)
+Markeston,Douglas,TE,,6-4,260,Redshirt Junior,Florida State,2023,"Phenix City, AL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Brian,Courtney,TE,,6-2,235,Redshirt Sophomore,Florida State,2023,"Ashburn, VA",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; H-back/TE reserve
+Preston,Daniel,TE,,6-3,240,Redshirt Sophomore,Florida State,2023,"Tallahassee, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; reserve
+Jerrale,Powers,TE,,6-4,230,Freshman,Florida State,2023,"Duncanville, TX",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; 2023 signee
+Robert,Scott,OT,74,6-5,320,Redshirt Junior,Florida State,2023,"Winnsboro, LA",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Starting left tackle; verify jersey
+Jeremiah,Byers,OT,63,6-5,315,Redshirt Senior,Florida State,2023,"El Paso, TX",UTEP,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Starting right tackle; jersey confirmed (No. 63)
+Casey,Roddick,OG,70,6-5,320,Redshirt Senior,Florida State,2023,"Oxnard, CA",Colorado,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Starting left guard; jersey confirmed (No. 70)
+D'Mitri,Emmanuel,OG,71,6-3,305,Redshirt Senior,Florida State,2023,"Charlotte, NC",Charlotte,Starter,,,first-team all-conference,,,,,,,,,,,,,,,,,,,,,,,,Starting right guard; jersey confirmed (No. 71)
+Maurice,Smith,C,54,6-3,300,Redshirt Senior,Florida State,2023,"Miami, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Starting center; verify jersey
+Darius,Washington,OL,76,6-3,300,Redshirt Junior,Florida State,2023,"Pensacola, FL",,Starter,,,first-team all-conference,,,,,,,,,,,,,,,,,,,,,,,,Sixth man — tackle/center; verify jersey
+Keiondre,Jones,OG,,6-4,325,Redshirt Senior,Florida State,2023,"LaGrange, GA",Auburn,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Bless,Harris,OT,75,6-5,310,Redshirt Senior,Florida State,2023,"Lake Charles, LA",LSU,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
+Julian,Armella,OL,,6-6,315,Redshirt Freshman,Florida State,2023,"Miami, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Jaylen,Early,OL,,6-4,310,Redshirt Freshman,Florida State,2023,"Duncanville, TX",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Qae'shon,Sapp,OL,,6-4,320,Redshirt Freshman,Florida State,2023,"Leesburg, GA",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Lloyd,Willis,OT,,6-7,310,Freshman,Florida State,2023,"Miami, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; 2023 signee
+Antavious,Woody,OL,,6-4,305,Redshirt Freshman,Florida State,2023,"LaFayette, AL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Andre,Otto,OL,,6-5,310,Redshirt Sophomore,Florida State,2023,,,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; verify roster status
+Jared,Verse,DE,5,6-4,260,Redshirt Senior,Florida State,2023,"Dade City, FL",Albany,Starter,1,19,second-team all-american; first-team all-conference,,12,12,,,,,,,,,,,,41,12.5,9,,3,1,,,,Starting edge; consensus All-American
+Patrick,Payton,DE,11,6-5,250,Redshirt Sophomore,Florida State,2023,"Miami, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Starting edge opposite Verse
+Gilber,Edmond,DE,,6-4,250,Redshirt Junior,Florida State,2023,"Fort Lauderdale, FL",South Carolina,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; rotation edge/LB
+Byron,Turner,DE,,6-4,265,Redshirt Sophomore,Florida State,2023,"New Orleans, LA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; rotation
+Fabien,Lovett,DT,0,6-4,315,Redshirt Senior,Florida State,2023,"Vicksburg, MS",Mississippi State,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Starting DT; verify jersey (0)
+Braden,Fiske,DT,55,6-5,295,Redshirt Senior,Florida State,2023,"Michigan City, IN",Western Michigan,Starter,2,39,third-team all-american; second-team all-conference,,13,13,,,,,,,,,,,,43,9,6,,,,,,,Starting DT; verify jersey
+Joshua,Farmer,DT,47,6-3,305,Redshirt Sophomore,Florida State,2023,"Port St. Joe, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Rotation DT; verify jersey
+Malcolm,Ray,DT,99,6-2,300,Redshirt Junior,Florida State,2023,"Miami, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Rotation DT; verify jersey
+Darrell,Jackson,DT,,6-5,330,Junior,Florida State,2023,"Havana, FL",Miami,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,On 2023 roster; did not play while awaiting transfer eligibility — verify
+KJ,Sampson,DT,,6-3,290,Freshman,Florida State,2023,"Deerfield Beach, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; 2023 signee
+Ayobami,Tifase,DT,,6-4,305,Redshirt Freshman,Florida State,2023,"Baltimore, MD",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Daniel,Lyons,DT,,6-3,290,Redshirt Freshman,Florida State,2023,"Homestead, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Kalen,DeLoach,LB,4,6-1,225,Redshirt Senior,Florida State,2023,"Savannah, GA",,Starter,,UDFA,first-team all-conference,,13,13,,,,,,,,,,,,68,10.5,7,1,2,2,,,,Starting LB
+Tatum,Bethune,LB,15,6-1,230,Redshirt Senior,Florida State,2023,"Miami, FL",UCF,Starter,7,251,,,13,,,,,,,,,,,,,,,,,,,,,,Starting LB; verify jersey
+DJ,Lundy,LB,10,6-1,245,Redshirt Junior,Florida State,2023,"Ocilla, GA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Rotation LB; verify jersey
+Blake,Nichelson,LB,18,6-3,215,Freshman,Florida State,2023,"Manteca, CA",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release
+Omar,Graham,LB,,6-1,220,Freshman,Florida State,2023,"Fort Lauderdale, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; 2023 signee
+Justin,Cryer,LB,,6-1,225,Redshirt Freshman,Florida State,2023,"Miami, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Jayion,McCluster,LB,,6-0,220,Redshirt Freshman,Florida State,2023,"Largo, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Fentrell,Cypress,CB,23,6-0,185,Redshirt Senior,Florida State,2023,"Rock Hill, SC",Virginia,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed (No. 23)
+Jarrian,Jones,CB,7,5-11,190,Redshirt Senior,Florida State,2023,"Magee, MS",Mississippi State,Starter,3,96,,,13,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed (No. 7)
+Renardo,Green,CB,8,6-0,195,Redshirt Senior,Florida State,2023,"Orlando, FL",,Starter,3,64,second-team all-conference,,13,13,,,,,,,,,,,,43,2.5,0.5,1,13,,,,,Jersey confirmed (No. 8)
+Azareye'h,Thomas,CB,13,6-2,195,Sophomore,Florida State,2023,"Niceville, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,verify jersey
+Kevin,Knowles,DB,3,5-10,180,Junior,Florida State,2023,"Hollywood, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Nickel; jersey confirmed (No. 3)
+Greedy,Vance,CB,,5-11,175,Redshirt Junior,Florida State,2023,"New Orleans, LA",Louisville,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; verify 2023 roster status
+Omarion,Cooper,CB,,6-0,190,Junior,Florida State,2023,"Lehigh Acres, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Quindarrius,Jones,DB,,6-2,190,Redshirt Freshman,Florida State,2023,"Meridian, MS",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed
+Conrad,Hussey,DB,12,6-0,190,Freshman,Florida State,2023,"Palm Beach Gardens, FL",,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release
+Edwin,Joseph,DB,13,6-0,190,Freshman,Florida State,2023,"Miami, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release
+Akeem,Dent,S,1,6-1,195,Redshirt Senior,Florida State,2023,"Pahokee, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey per 2023 sources (previously 27); verify
+Shyheim,Brown,S,38,6-2,200,Redshirt Sophomore,Florida State,2023,"Lakeland, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed (No. 38)
+Ashlynd,Barker,DB,27,6-3,200,Redshirt Freshman,Florida State,2023,"Gainesville, GA",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey confirmed from 2023 newcomer release
+Kenton,Kirkland,DB,,6-0,190,Freshman,Florida State,2023,"Jacksonville, FL",,Reserve,,,,,,,,,,,,,,,,,,,,,,,,,,,Jersey unconfirmed; 2023 signee
+Ryan,Fitzgerald,K,88,6-1,190,Redshirt Junior,Florida State,2023,"Colquitt, GA",,Starter,,,first-team all-american,,,,,,,,,,,,,,,,,,,,,19,21,,Starting placekicker; verify jersey
+Tyler,Keltner,K,,6-1,185,Redshirt Senior,Florida State,2023,"Tallahassee, FL",East Tennessee State,Backup,,,,,,,,,,,,,,,,,,,,,,,,,,,Kickoff specialist; jersey unconfirmed; verify roster status
+Alex,Mastromanno,P,29,6-2,220,Senior,Florida State,2023,"Melbourne, Australia",,Starter,,,first-team all-american,,,,,,,,,,,,,,,,,,,,,,,49.3,Starting punter; verify jersey
+James,Rosenberry,LS,,6-1,230,Redshirt Senior,Florida State,2023,"Tallahassee, FL",,Starter,,,,,,,,,,,,,,,,,,,,,,,,,,,Long snapper; jersey unconfirmed

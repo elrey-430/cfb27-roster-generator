@@ -215,6 +215,18 @@ public static class HistoricalCsv
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList();
 
+        // Accepted under two spellings because both read naturally in a
+        // spreadsheet header and neither is obviously the right one.
+        var contenderCell = cell(row, "awardcontender");
+        if (contenderCell.Length == 0)
+        {
+            contenderCell = cell(row, "awardfinalist");
+        }
+
+        var awardContender = contenderCell
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+
         var draftPickText = cell(row, "draftpick");
         var undrafted = draftPickText.Equals("UDFA", StringComparison.OrdinalIgnoreCase) ||
                         draftPickText.Equals("Undrafted", StringComparison.OrdinalIgnoreCase);
@@ -232,6 +244,7 @@ public static class HistoricalCsv
             DraftRound = ParseInt(cell(row, "draftround"), rowLabel, "DraftRound", warnings, corrections),
             UndraftedFreeAgent = undrafted,
             Awards = awards,
+            AwardContender = awardContender,
             Stats = stats,
         };
     }

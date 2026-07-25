@@ -36,6 +36,8 @@ public sealed class TalentScorer
         AddRecruitingSignal(evidence, signals, missing);
         AddRoleSignal(evidence, signals, missing);
 
+        var demotionNote = DemoteDraftIfItDisagrees(signals);
+
         var totalWeight = _model.SignalWeights.Values.Sum();
         var coveredWeight = signals.Sum(s => s.Weight);
         var coverage = totalWeight > 0 ? coveredWeight / totalWeight : 0;
@@ -73,7 +75,69 @@ public sealed class TalentScorer
             : coverage >= medium ? RatingConfidence.Medium
             : RatingConfidence.Low;
 
-        return new TalentAssessment(score, confidence, coverage, signals, missing, floorNote);
+        return new TalentAssessment(score, confidence, coverage, signals, missing, floorNote, demotionNote);
+    }
+
+    /// <summary>
+    /// Reduces the draft signal's weight when it contradicts what the player
+    /// actually did that season.
+    ///
+    /// Draft position is the heaviest signal in the model and the only
+    /// backward-looking one: it records where the NFL took a player months
+    /// later, which answers a different question from "how good was this
+    /// player in this season". A leg injury in November, a position the
+    /// league does not value, or a bad combine all move a draft slot without
+    /// moving anything that happened on the field.
+    ///
+    /// Jordan Travis is the case that prompted this. He threw for 2,790 yards
+    /// with 21 touchdowns and made first-team All-ACC, then went in the fifth
+    /// round because he broke his leg in game eleven. The draft signal pulled
+    /// him seven points below where his season belonged.
+    ///
+    /// The signal is not discarded — a late pick is still information — but
+    /// when the contemporaneous evidence disagrees by more than the model's
+    /// tolerance, the evidence measuring the right season is trusted more.
+    /// </summary>
+    private string? DemoteDraftIfItDisagrees(List<TalentSignal> signals)
+    {
+        var tolerance = _model.DraftDisagreementTolerance;
+        var factor = _model.DraftDisagreementWeightFactor;
+        if (tolerance <= 0 || factor >= 1)
+        {
+            return null;
+        }
+
+        var draftIndex = signals.FindIndex(s => s.Name == "draft");
+        if (draftIndex < 0)
+        {
+            return null;
+        }
+
+        var draft = signals[draftIndex];
+
+        // Only the signals that measure the season being recreated count as
+        // contradicting it. Recruiting stars are also backward-looking (they
+        // predate the season), and a depth-chart role is too coarse.
+        var contemporaneous = signals
+            .Where(s => s.Name is "awards" or "production")
+            .ToList();
+        if (contemporaneous.Count == 0)
+        {
+            return null;
+        }
+
+        var best = contemporaneous.MaxBy(s => s.Score)!;
+        var gap = best.Score - draft.Score;
+        if (gap <= tolerance)
+        {
+            return null;
+        }
+
+        signals[draftIndex] = draft with { Weight = draft.Weight * factor };
+        return
+            $"Draft position counted for less: {draft.Explanation} sits {gap:0} points below this " +
+            $"player's {best.Name} ({best.Explanation}). A draft slot records where the NFL took " +
+            "someone months later, not how they played in this season.";
     }
 
     private void AddDraftSignal(RatingEvidence evidence, List<TalentSignal> signals, List<string> missing)
@@ -116,17 +180,43 @@ public sealed class TalentScorer
             }
         }
 
-        if (bestAward is not null)
+        // Being a contender counts, at a discount. It uses the same award
+        // vocabulary so there is no second list to learn, and it competes with
+        // the won awards rather than stacking on them: a Heisman finalist is
+        // worth more than a first-team all-conference nod, and the model
+        // should say so instead of taking whichever happens to be a "win".
+        var discount = _model.AwardContenderDiscount;
+        string? bestContender = null;
+        foreach (var award in evidence.AwardContender)
+        {
+            var key = award.Trim().ToLowerInvariant();
+            if (_model.AwardScores.TryGetValue(key, out var score) && score - discount > best)
+            {
+                best = score - discount;
+                bestAward = null;
+                bestContender = award.Trim();
+            }
+        }
+
+        if (bestContender is not null)
+        {
+            var others = evidence.Awards.Count + evidence.AwardContender.Count - 1;
+            signals.Add(new TalentSignal("awards", best, weight,
+                $"In contention for {bestContender}" +
+                (others > 0 ? $" (+{others} other honour{(others > 1 ? "s" : "")})" : "")));
+        }
+        else if (bestAward is not null)
         {
             // The best award drives the signal; extras are noted, not stacked,
             // so a long honours list cannot inflate a player past its ceiling.
-            var others = evidence.Awards.Count - 1;
+            var others = evidence.Awards.Count + evidence.AwardContender.Count - 1;
             signals.Add(new TalentSignal("awards", best, weight,
-                $"{bestAward}{(others > 0 ? $" (+{others} other award{(others > 1 ? "s" : "")})" : "")}"));
+                $"{bestAward}{(others > 0 ? $" (+{others} other honour{(others > 1 ? "s" : "")})" : "")}"));
         }
-        else if (evidence.Awards.Count > 0)
+        else if (evidence.Awards.Count > 0 || evidence.AwardContender.Count > 0)
         {
-            missing.Add($"recognized awards (none of '{string.Join(", ", evidence.Awards)}' are in the award table)");
+            var supplied = evidence.Awards.Concat(evidence.AwardContender);
+            missing.Add($"recognized awards (none of '{string.Join(", ", supplied)}' are in the award table)");
         }
         else
         {

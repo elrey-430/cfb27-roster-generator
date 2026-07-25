@@ -49,6 +49,20 @@ public sealed record RatingEvidence
     /// <summary>Award names (matched case-insensitively against the model's award table).</summary>
     public IReadOnlyList<string> Awards { get; init; } = Array.Empty<string>();
 
+    /// <summary>
+    /// Awards the player was a contender for without winning — a Heisman
+    /// finalist, a conference player-of-the-year candidate, an All-America
+    /// watch-list name.
+    ///
+    /// Being in the conversation for a major award is real evidence about a
+    /// season and often the only evidence that survives when something else
+    /// distorts the record: an injury in November, a team that collapsed
+    /// around the player, a position the NFL does not value. It is scored
+    /// from the same vocabulary as <see cref="Awards"/>, discounted, so a
+    /// user needs no second list of names.
+    /// </summary>
+    public IReadOnlyList<string> AwardContender { get; init; } = Array.Empty<string>();
+
     /// <summary>Season statistics keyed by canonical stat name.</summary>
     public IReadOnlyDictionary<string, double> Stats { get; init; } =
         new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -58,7 +72,7 @@ public sealed record RatingEvidence
         Role is null && StarRating is null && FortyYardDash is null && BenchPressReps is null &&
         VerticalJumpInches is null && ShuttleSeconds is null && ThreeConeSeconds is null &&
         DraftPickOverall is null && DraftRound is null && !UndraftedFreeAgent &&
-        Awards.Count == 0 && Stats.Count == 0;
+        Awards.Count == 0 && AwardContender.Count == 0 && Stats.Count == 0;
 }
 
 /// <summary>

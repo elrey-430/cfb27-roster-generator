@@ -164,6 +164,11 @@ Warnings:
 - Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
 - Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
 
+### Jaheim Bell
+
+Warnings:
+- Target overall moved 79 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Medium confidence.
+
 ### Kyle Morlock
 
 Warnings:

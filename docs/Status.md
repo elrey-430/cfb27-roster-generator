@@ -1,8 +1,37 @@
 # Project Status
 
-_Last updated: 2026-07-25 — end of Milestone 7._
+_Last updated: 2026-07-25 — end of Milestone 8._
 
 ## Current status
+
+**Milestone 8 (Draft slot measures the wrong season) is complete.**
+
+- **The defect.** Draft position is the heaviest signal in the model and the
+  only backward-looking one: it records where the NFL took a player months
+  later, which is a different question from how they played in the season
+  being recreated. An injury, a position the league does not value or a bad
+  combine all move it without moving anything that happened on the field.
+- **The fix.** When a draft slot sits more than 6 points below the
+  contemporaneous evidence (awards, production), its weight drops to 35% and
+  the report says why. It is not discarded — a late pick is still
+  information — it just stops outvoting the season itself. The rule is
+  narrow: it fired on 3 of 75 Florida State players.
+- **`AwardContender`.** A new optional column for awards a player was in
+  contention for without winning, scored from the same vocabulary 5 points
+  lower. A Heisman finalist therefore out-rates a first-team all-conference
+  winner, which is the right ordering. It is often the only evidence left
+  when a season ends early.
+- **A data error the work exposed.** Jordan Travis *won* the 2023 ACC
+  Player of the Year and Offensive Player of the Year, and finished fifth in
+  Heisman voting; the dataset had him at first-team all-conference, two
+  tiers low. Corrected. He now generates at **88, up from 83**, led by the
+  award rather than his draft slot.
+- **Fidelity: 2.07** (was 2.01), still inside the 3.00 bar and better than
+  the human recreation's 3.02. The metric measures agreement with the shape
+  of EA's *generic* Florida State roster, and 2023 was an unusually
+  top-heavy team — ten NFL draft picks — so rating its best player higher
+  moves away from the generic curve on purpose.
+- Tests: 229/229.
 
 **Milestone 7 (Ship it) is complete.** The tool is no longer something only
 this repository can run.
