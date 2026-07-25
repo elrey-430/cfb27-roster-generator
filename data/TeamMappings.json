@@ -133,7 +133,8 @@
       "teamId": 18,
       "names": [
         "C. Michigan",
-        "CMU"
+        "CMU",
+        "Central Michigan"
       ]
     },
     {
@@ -183,7 +184,8 @@
       "teamId": 25,
       "names": [
         "E. Michigan",
-        "EMU"
+        "EMU",
+        "Eastern Michigan"
       ]
     },
     {
@@ -343,7 +345,9 @@
       "teamId": 47,
       "names": [
         "Miami",
-        "MIA"
+        "MIA",
+        "Miami (FL)",
+        "Miami Florida"
       ]
     },
     {
@@ -351,7 +355,9 @@
       "names": [
         "Miami (OH)",
         "M-OH",
-        "MIAOH"
+        "MIAOH",
+        "Miami Ohio",
+        "Miami (Ohio)"
       ]
     },
     {
@@ -386,7 +392,8 @@
       "teamId": 53,
       "names": [
         "Mississippi St",
-        "MSST"
+        "MSST",
+        "Mississippi State"
       ]
     },
     {
@@ -428,7 +435,8 @@
       "teamId": 59,
       "names": [
         "New Mexico St.",
-        "NMSU"
+        "NMSU",
+        "New Mexico State"
       ]
     },
     {
@@ -512,7 +520,8 @@
       "teamId": 71,
       "names": [
         "Ole Miss",
-        "MISS"
+        "MISS",
+        "Mississippi"
       ]
     },
     {
@@ -569,7 +578,8 @@
       "teamId": 79,
       "names": [
         "San Diego St.",
-        "SDSU"
+        "SDSU",
+        "San Diego State"
       ]
     },
     {
@@ -777,7 +787,8 @@
       "teamId": 109,
       "names": [
         "Washington St.",
-        "WSU"
+        "WSU",
+        "Washington State"
       ]
     },
     {
@@ -791,7 +802,8 @@
       "teamId": 111,
       "names": [
         "W. Michigan",
-        "WMU"
+        "WMU",
+        "Western Michigan"
       ]
     },
     {
@@ -813,7 +825,8 @@
       "teamId": 114,
       "names": [
         "FLA Atlantic",
-        "FAU"
+        "FAU",
+        "Florida Atlantic"
       ]
     },
     {
@@ -875,7 +888,8 @@
       "teamId": 123,
       "names": [
         "W. Kentucky",
-        "WKU"
+        "WKU",
+        "Western Kentucky"
       ]
     },
     {
@@ -889,7 +903,8 @@
       "teamId": 125,
       "names": [
         "App St.",
-        "APP"
+        "APP",
+        "Appalachian State"
       ]
     },
     {
@@ -904,7 +919,8 @@
       "teamId": 127,
       "names": [
         "C. Carolina",
-        "CCAR"
+        "CCAR",
+        "Coastal Carolina"
       ]
     },
     {
@@ -949,7 +965,8 @@
       "names": [
         "Kennesaw St.",
         "KENN",
-        "Kenn"
+        "Kenn",
+        "Kennesaw State"
       ]
     },
     {

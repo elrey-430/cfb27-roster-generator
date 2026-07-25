@@ -9,7 +9,11 @@ namespace RosterGenerator.Core.Dynasty;
 /// <param name="TeamIndex">The save's team index.</param>
 /// <param name="DisplayName">Full display name (e.g. "Florida State").</param>
 /// <param name="ShortName">Short code (e.g. "FSU"), may be empty.</param>
-public sealed record DynastyTeam(int TeamIndex, string DisplayName, string ShortName)
+/// <param name="OriginalId">
+/// The school's <c>TEAM_ORIGID</c>, the id <c>PLYR_PREVTEAMID</c> uses to
+/// name a transfer's previous school. 0 when the export has no such column.
+/// </param>
+public sealed record DynastyTeam(int TeamIndex, string DisplayName, string ShortName, int OriginalId = 0)
 {
     /// <summary>"Florida State (FSU) — team 27" for listings.</summary>
     public override string ToString() =>
@@ -66,6 +70,45 @@ public sealed class DynastyExport
             // a stale mapping file can never introduce a phantom team.
             entries.AddRange(TeamMappingSet.LoadEntries(aliasOverlayPath)
                 .Where(e => knownIds.Count == 0 || knownIds.Contains(e.TeamId)));
+        }
+
+        return TeamMappingSet.Build(entries);
+    }
+
+    /// <summary>
+    /// Builds a school-name → <c>TEAM_ORIGID</c> lookup for writing a
+    /// transfer's previous school into <c>PLYR_PREVTEAMID</c>.
+    ///
+    /// This is a different id space from the team index that
+    /// <see cref="BuildTeamMappings"/> resolves, which is why it is a separate
+    /// lookup rather than a second use of the same one. Returns null when the
+    /// export's Team table carries no <c>TEAM_ORIGID</c> column, in which case
+    /// previous schools cannot be written.
+    /// </summary>
+    public TeamMappingSet? BuildPreviousSchoolMappings(string? aliasOverlayPath = null)
+    {
+        var withOriginalId = Teams.Where(t => t.OriginalId > 0).ToList();
+        if (withOriginalId.Count == 0)
+        {
+            return null;
+        }
+
+        var entries = withOriginalId
+            .Select(t => (TeamId: t.OriginalId, Names: (IReadOnlyList<string>)new[] { t.DisplayName, t.ShortName }
+                .Where(n => n.Length > 0)
+                .ToList()))
+            .ToList();
+
+        // The save spells schools its own way — "Mississippi St", "W.
+        // Michigan" — while a user writes them out in full. The alias overlay
+        // already carries those spellings against the team index, so translate
+        // it into this id space rather than duplicating the aliases.
+        if (aliasOverlayPath is not null && File.Exists(aliasOverlayPath))
+        {
+            var originalIdByTeamIndex = withOriginalId.ToDictionary(t => t.TeamIndex, t => t.OriginalId);
+            entries.AddRange(TeamMappingSet.LoadEntries(aliasOverlayPath)
+                .Where(e => originalIdByTeamIndex.ContainsKey(e.TeamId))
+                .Select(e => (TeamId: originalIdByTeamIndex[e.TeamId], e.Names)));
         }
 
         return TeamMappingSet.Build(entries);
@@ -190,7 +233,11 @@ public sealed class DynastyExport
             var shortName = document.HasColumn("ShortName")
                 ? document.GetCell(row, "ShortName").Trim()
                 : "";
-            teams.Add(new DynastyTeam(teamIndex, displayName, shortName));
+            var originalId = document.HasColumn("TEAM_ORIGID") &&
+                             int.TryParse(document.GetCell(row, "TEAM_ORIGID"), out var origId)
+                ? origId
+                : 0;
+            teams.Add(new DynastyTeam(teamIndex, displayName, shortName, originalId));
         }
 
         return teams;

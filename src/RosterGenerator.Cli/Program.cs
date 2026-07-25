@@ -289,7 +289,9 @@ static int Generate(Dictionary<string, string> options)
     var donor = export.LoadPlayerRoster();
     var session = new RosterEditSession(donor);
     var report = new HistoricalTeamConverter(
-            teamMappings, positionMappings, ratingEngine, archetypeSelector, rosterFiller, rosterDepth)
+            teamMappings, positionMappings, ratingEngine, archetypeSelector, rosterFiller, rosterDepth,
+            export.BuildPreviousSchoolMappings(
+                FindDataFile(options, "team-mappings", "TeamMappings.json", required: false)))
         .Convert(session, historical);
     var slotSummary = report.FilledSlots.Count > 0
         ? $"{report.FilledSlots.Count} slots filled as depth"

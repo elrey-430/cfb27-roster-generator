@@ -14,6 +14,7 @@
 - Identity asset fields (PLYR_ASSETNAME, GenericHeadAssetName, PLYR_PORTRAIT) keep the donor slot's values, so in-game portraits/head models belong to the replaced fictional players. Face mapping is a later milestone.
 - Hometown is written: PLYR_HOME_TOWN takes the town as free text and PLYR_HOME_STATE the matching state from the save's 51-value enum (NonUS for anything not a US state).
 - Player archetype (PlayerType) is chosen from each player's historical profile and the overall rating is recomputed with that archetype's EA formula, so the two always agree.
+- PreviousSchool is written to PLYR_PREVTEAMID as that school's TEAM_ORIGID, and cleared to 0 for players who did not transfer. A school your dynasty does not carry is recorded as 1009, the value real FCS transfers carry.
 - Slot assignment prefers a donor slot at the same position (or an interchangeable one, e.g. LE/RE); players placed in an unrelated slot get an explicit position change.
 - The team's existing roster rates 5 point(s) above a typical program, so players you supplied little evidence for are rated as members of this team rather than of an average one. Players with a draft slot, awards or a stat line are unaffected.
 - 10 roster slot(s) had no historical player, so they were re-rated as end-of-roster depth using the overall a real save carries at those roster ranks (data/RosterDepth.json), each held below the weakest historical player at its position. Their names, jersey numbers and portraits are unchanged.
@@ -166,6 +167,7 @@ Warnings:
 ### Kyle Morlock
 
 Warnings:
+- Previous school 'Shorter' is not a team in your dynasty, so it is recorded as a school the game does not model (the value real FCS transfers carry).
 - Archetype TE_PhysicalRouteRunner -> TE_Possession: TE_Possession used as the TE default (no archetype rule matched the available data)
 - Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
 - Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
@@ -377,6 +379,7 @@ Warnings:
 ### Jared Verse
 
 Warnings:
+- Previous school 'Albany' is not a team in your dynasty, so it is recorded as a school the game does not model (the value real FCS transfers carry).
 - Archetype DE_PurePower -> DE_SmallerSpeedRusher: DE_SmallerSpeedRusher chosen because WeightPounds 260 is at most 260
 
 ### Patrick Payton
@@ -713,6 +716,7 @@ Default used:
 
 Warnings:
 - No K-compatible slot was free; converted a ROLB slot, so the slot's inherited ratings fit the old position.
+- Previous school 'East Tennessee State' is not a team in your dynasty, so it is recorded as a school the game does not model (the value real FCS transfers carry).
 - Archetype OLB_PassCoverage -> KP_Accurate: KP_Accurate used as the K default (no archetype rule matched the available data)
 - Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
 - Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.

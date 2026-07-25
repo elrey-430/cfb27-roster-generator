@@ -50,6 +50,14 @@ public static class PlayerSchema
     public const int NoPrevTeamIdSentinel = 0;
 
     /// <summary>
+    /// Value <c>PLYR_PREVTEAMID</c> carries when the player transferred from a
+    /// school the dynasty does not model — the FCS and everything else outside
+    /// its team list. The most common non-zero value in a base save (363
+    /// players), and the only one below the Team table's id range.
+    /// </summary>
+    public const int PrevTeamIdNotInDynasty = 1009;
+
+    /// <summary>
     /// Columns that must be present for a file to be treated as a Player
     /// table export. These are the bookkeeping keys plus every column the
     /// typed layer and the validation rules read.

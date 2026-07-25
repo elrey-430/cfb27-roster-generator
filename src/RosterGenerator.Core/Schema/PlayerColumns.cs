@@ -100,9 +100,21 @@ public static class PlayerColumns
     public const string PrevTeamIndex = "PrevTeamIndex";
 
     /// <summary>
-    /// Secondary/legacy previous-team field kept in sync with
-    /// <see cref="PrevTeamIndex"/> on transfers. Uses 0 (not 255) when the
-    /// player has no previous team.
+    /// The school a transfer came from, held as that school's
+    /// <c>TEAM_ORIGID</c> from the Team table — a presentation-level school id
+    /// covering more schools than the dynasty's own team list, and NOT a
+    /// <see cref="TeamIndex"/>. <c>0</c> means the player never transferred.
+    ///
+    /// Confirmed against a base save: 133 of the 135 distinct non-zero values
+    /// are a <c>TEAM_ORIGID</c> in the same save, and resolving Florida
+    /// State's 20 non-zero players yields real, plausible schools (Auburn,
+    /// Notre Dame, Texas A&amp;M, Duke...). Values below the Team table's
+    /// range — <c>1009</c> above all, which appears 363 times — stand for a
+    /// school the dynasty does not carry.
+    ///
+    /// This does NOT move with <see cref="PrevTeamIndex"/>, which is
+    /// <c>255</c> for every player in an untouched save including those 20
+    /// transfers. The two fields track different things.
     /// </summary>
     public const string PrevTeamId = "PLYR_PREVTEAMID";
 

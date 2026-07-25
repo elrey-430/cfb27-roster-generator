@@ -161,6 +161,30 @@ public sealed class RosterEditSession
     }
 
     /// <summary>
+    /// Sets the school a transfer came from, as that school's
+    /// <c>TEAM_ORIGID</c> (see <see cref="PlayerColumns.PrevTeamId"/>).
+    /// Pass <see cref="PlayerSchema.NoPrevTeamIdSentinel"/> for a player who
+    /// never transferred, or <see cref="PlayerSchema.PrevTeamIdNotInDynasty"/>
+    /// for one who came from a school the dynasty does not model.
+    ///
+    /// <c>PrevTeamIndex</c> is deliberately left alone: it reads 255 for every
+    /// player in an untouched save, transfers included, so the two fields do
+    /// not move together.
+    /// </summary>
+    public void SetPreviousSchool(Player player, int previousSchoolId)
+    {
+        if (previousSchoolId < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(previousSchoolId), previousSchoolId,
+                "PLYR_PREVTEAMID cannot be negative.");
+        }
+
+        player.SetRaw(PlayerColumns.PrevTeamId, previousSchoolId.ToString());
+        Record(player, EditIntent.AttributeChange,
+            $"Set previous school of {player} to school id {previousSchoolId}");
+    }
+
+    /// <summary>
     /// Sets the player archetype. The caller MUST recompute the overall
     /// rating afterwards: the archetype selects which of EA's overall
     /// formulas applies, so leaving the old overall in place makes the record

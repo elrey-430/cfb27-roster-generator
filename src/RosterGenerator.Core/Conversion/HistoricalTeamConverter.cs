@@ -31,6 +31,7 @@ public sealed class HistoricalTeamConverter
     private readonly ArchetypeSelector? _archetypeSelector;
     private readonly RosterFiller? _rosterFiller;
     private readonly RosterDepthModel? _depth;
+    private readonly TeamMappingSet? _previousSchools;
 
     /// <summary>
     /// Creates a converter.
@@ -54,13 +55,19 @@ public sealed class HistoricalTeamConverter
     /// Measured roster shape. Supplied, players the user gave little evidence
     /// for are rated as members of this program rather than of an average one.
     /// </param>
+    /// <param name="previousSchoolMappings">
+    /// School name → <c>TEAM_ORIGID</c> lookup
+    /// (<see cref="Dynasty.DynastyExport.BuildPreviousSchoolMappings"/>). When
+    /// null, transfers' previous schools are not written.
+    /// </param>
     public HistoricalTeamConverter(
         TeamMappingSet teamMappings,
         PositionMappingSet positionMappings,
         RatingEngine? ratingEngine = null,
         ArchetypeSelector? archetypeSelector = null,
         RosterFiller? rosterFiller = null,
-        RosterDepthModel? rosterDepth = null)
+        RosterDepthModel? rosterDepth = null,
+        TeamMappingSet? previousSchoolMappings = null)
     {
         _teamMappings = teamMappings;
         _positionMappings = positionMappings;
@@ -68,6 +75,7 @@ public sealed class HistoricalTeamConverter
         _archetypeSelector = archetypeSelector;
         _rosterFiller = rosterFiller;
         _depth = rosterDepth;
+        _previousSchools = previousSchoolMappings;
     }
 
     /// <summary>
@@ -100,6 +108,11 @@ public sealed class HistoricalTeamConverter
             ? "Player archetype (PlayerType) is inherited from the roster slot each player replaces."
             : "Player archetype (PlayerType) is chosen from each player's historical profile and the " +
               "overall rating is recomputed with that archetype's EA formula, so the two always agree.");
+        report.GlobalAssumptions.Add(_previousSchools is null
+            ? "Transfers' previous schools are not written; each player keeps the donor slot's value."
+            : "PreviousSchool is written to PLYR_PREVTEAMID as that school's TEAM_ORIGID, and cleared to 0 " +
+              "for players who did not transfer. A school your dynasty does not carry is recorded as " +
+              $"{PlayerSchema.PrevTeamIdNotInDynasty}, the value real FCS transfers carry.");
         report.GlobalAssumptions.Add(
             "Slot assignment prefers a donor slot at the same position (or an interchangeable one, e.g. " +
             "LE/RE); players placed in an unrelated slot get an explicit position change.");
@@ -354,6 +367,28 @@ public sealed class HistoricalTeamConverter
         {
             entry.MissingFields.Add("Height");
             entry.DefaultsUsed.Add($"Height: {slot.HeightInches}\" (inherited from donor slot)");
+        }
+
+        // Previous school. This is written even when the player has none:
+        // otherwise a player who never transferred inherits the donor's
+        // transfer history, and 20 of the 85 players on a real roster have one.
+        if (_previousSchools is not null)
+        {
+            if (historicalPlayer.PreviousSchool is not { Length: > 0 } previousSchool)
+            {
+                session.SetPreviousSchool(slot, PlayerSchema.NoPrevTeamIdSentinel);
+            }
+            else if (_previousSchools.TryResolve(previousSchool, out var schoolId))
+            {
+                session.SetPreviousSchool(slot, schoolId);
+            }
+            else
+            {
+                session.SetPreviousSchool(slot, PlayerSchema.PrevTeamIdNotInDynasty);
+                entry.Warnings.Add(
+                    $"Previous school '{previousSchool}' is not a team in your dynasty, so it is recorded " +
+                    "as a school the game does not model (the value real FCS transfers carry).");
+            }
         }
 
         if (Hometown.Parse(historicalPlayer.Hometown) is HometownValue hometown)
