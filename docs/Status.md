@@ -1,8 +1,37 @@
 # Project Status
 
-_Last updated: 2026-07-25 — end of Milestone 5; Milestone 6 planned._
+_Last updated: 2026-07-25 — end of Milestone 6._
 
 ## Current status
+
+**Milestone 6 (Roster completion and fidelity benchmark) is complete.** The
+generator now produces a whole believable roster rather than a believable
+set of individuals, and there is a measured number saying so.
+
+- **The 85th player problem is solved.** A CFB27 team always carries 85
+  players; a researchable historical roster is the two-deep plus whoever
+  else is documented. The leftover slots kept EA's fictional players, three
+  of whom out-rated the historical Florida State roster. `RosterDepth.json`
+  measures what end-of-roster depth actually looks like — the median overall
+  at each of the 85 roster ranks and the class mix at each depth, across 138
+  untouched FBS rosters — and the filler gives an unfilled slot what the game
+  itself puts at that rank, held below the weakest historical player at the
+  position. Names, jersey numbers and portraits are untouched.
+- **`PLYR_PREVTEAMID` decoded.** It is a school's `TEAM_ORIGID`, not a team
+  index — which is why its values (1009–1235) never matched the team range.
+  133 of 135 distinct non-zero values resolve to a team in the same save.
+  `PreviousSchool` is now written.
+- **Two rating defects found by benchmarking and fixed.** The game's best
+  punter is an 86 and its best receiver a 99, but both drew on one award
+  scale, so a nation-leading All-American punter generated at 91 — better
+  than any punter in the game. And role, awards and statistics record what a
+  player did, never *where*, so an anonymous backup was rated identically at
+  a playoff program and at the worst team in the country.
+- **Fidelity score: 2.01.** Mean absolute deviation from the roster shape
+  the game itself ships for Florida State, rank by rank — down from 4.48,
+  and inside the 3.02 scored by the hand-built human recreation. Pinned by
+  `RosterFidelityTests`. See `Ratings/Benchmark_2023_FSU.md`.
+- Tests: 136/136.
 
 **Milestone 5 (Archetypes, hometowns, roster size) is complete.** Two more
 fields were investigated and cleared for writing, closing the largest
@@ -130,6 +159,33 @@ brief).
   clean Windows 10/11 machine with no runtime installed
 
 ## Completed features
+
+### Milestone 6 — roster completion and benchmarking
+
+- **`RosterDepthModel`** (`data/RosterDepth.json`) — median overall by roster
+  rank and class mix by depth band, measured across 138 base-save rosters.
+  Also carries the league median (69) used to size the program adjustment.
+- **`RosterFiller`** — turns unfilled slots into end-of-roster depth off the
+  measured curve, ceilinged by the weakest historical player at the position
+  and floored at 45. Fully deterministic (largest-remainder class quotas, no
+  sampling) so byte-stable output is preserved.
+- **Program adjustment** — the donor roster's median against the league
+  median, shifted onto thinly evidenced players and fading to nothing as
+  evidence strengthens (full at Low confidence, half at Medium, none at
+  High). Needs no new input: the dynasty already encodes the tier.
+- **`positionOverallCaps`** — each position group capped at the highest
+  overall the game itself carries there. The observed maximum, not a
+  haircut: a first-team All-American kicker still generates at 89 of 90.
+- **`SetPreviousSchool`** + `DynastyExport.BuildPreviousSchoolMappings` —
+  writes `PLYR_PREVTEAMID` as the school's `TEAM_ORIGID`, translating the
+  shared alias overlay into that id space so "Mississippi State" finds the
+  save's "Mississippi St".
+- **`RosterFidelityTests`** — asserts the generated roster's shape stays
+  within 3.00 mean absolute deviation of the game's own.
+- **2023 Florida State dataset enriched** — all ten 2024 draft selections
+  with overall pick numbers, the undrafted signing, All-ACC and All-America
+  honours, season statistics, and a depth-chart role for all 75 players.
+- **CLI** `--fill fill|leave`.
 
 ### Milestone 5 — archetypes and hometowns
 
@@ -273,11 +329,15 @@ guessed at (details in `docs/Schema.md`):
 3. **`PLYR_COMMENT` semantics.** Internal flavor-text/comment-pool index;
    changed spontaneously on one observed rename with no clear trigger.
    Policy: leave alone, never set.
-4. **`PLYR_PREVTEAMID` native domain.** On transfers the real tool writes
-   the old `TeamIndex` into it, but untouched saves carry values
-   (1009–1164) far outside the team-index range (0–137) — its native ID
-   space is unidentified. Also note the sentinel mismatch: `PrevTeamIndex`
-   uses `255` for "none", `PLYR_PREVTEAMID` uses `0`.
+4. ~~**`PLYR_PREVTEAMID` native domain.**~~ **RESOLVED (Milestone 6):** it
+   holds the school a transfer came from, as that school's `TEAM_ORIGID` —
+   not a `TeamIndex`, which is why the values (1009–1235) never matched the
+   team range. 133 of the 135 distinct non-zero values in a base save are a
+   `TEAM_ORIGID` in that save, and Florida State's 20 non-zero players
+   resolve to real schools. `1009` means a school the dynasty does not
+   model. `PrevTeamIndex` reads `255` for every player in an untouched save
+   including those transfers, so the two fields do **not** track the same
+   thing; only `PLYR_PREVTEAMID` is written. See Schema.md Group 4.
 5. **~250 unconfirmed columns.** Statistically profiled (type/range/enum
    values) in the Schema.md appendix but never verified by a controlled
    edit. None are written by the tool.
@@ -289,90 +349,76 @@ guessed at (details in `docs/Schema.md`):
 
 ## Next recommended milestone
 
-**Milestone 6 — Roster completion and fidelity benchmark.**
+**Milestone 7 — Ship it: a release someone can actually run.**
 
-Everything through Milestone 5 makes each *individual* player right. What
-remains is making the roster **as a whole** right, and proving it with a
-measured number rather than an impression.
+Six milestones have gone into making the output correct, and Milestone 6
+put a number on it: the generated roster tracks the game's own roster shape
+to within 2.01 points per rank, closer than a person managed by hand. The
+engine is not the bottleneck any more. **Getting it into someone's hands
+is.**
 
-### 1. Roster-size policy — highest impact, and the only item felt in-game
+Today, using this tool means having the .NET SDK, a checkout of the
+repository, and a command line like:
 
-When the historical roster has fewer players than the team's slots, the
-leftover fictional players stay (10 in the FSU run). The player table has
-no depth-chart column — `DepthChart` / `DepthChartConfig` are team-level,
-and the game builds its two-deep from ratings. So a leftover 82-OVR
-fictional quarterback simply takes the job from the historical starter,
-and every rating decision made upstream (EA's own overall formula,
-calibrated attributes, selected archetypes) is overridden at the position
-that matters most.
+```
+dotnet run --project src/RosterGenerator.Cli -- generate --dynasty <path> \
+    --roster <path> --output <path> --report <path>
+```
 
-**What already works, and is not this milestone:** a user who supplies
-enough rows has no leftovers. The generator replaces one donor slot per
-CSV row, and the warning already tells them to add more (the FSU input has
-75 rows against 85 slots — hence the 10). That path needs no code and no
-data beyond the user's own roster CSV. The vestigial
-`HistoricalData/2023/FloridaState.json` from Milestone 2 is read by no
-code path; a user never needs it or any other file shipped with this
-repo.
+The Milestone 1 brief called for a single self-contained Windows executable
+with no runtime to install. That publish path is verified and produces a
+~67 MB exe — but no build has ever been produced as an artifact, so in
+practice nobody outside this repository can run any of it.
 
-The milestone is about the case where the user *cannot* supply enough
-rows — which is the normal case, because the tail of a real roster is
-walk-ons and scout-teamers who are genuinely hard to research and whose
-individual identities almost nobody cares about. The goal is to stop
-requiring that data, not to ask for more of it.
+### 1. A versioned Windows release
 
-Implement a policy instead of only reporting the count. In preference
-order:
+`dotnet publish -r win-x64 --self-contained -p:PublishSingleFile=true`,
+packaged with `data/` and `templates/` alongside, as a downloadable zip with
+a version number and a one-page quick start. Nothing about this is
+technically hard; it has simply never been done.
 
-1. **Synthesize filler walk-ons** for the unfilled slots — position-
-   appropriate, plausible class distribution, ratings deliberately below
-   the historical two-deep. Requires **no additional data from the user**,
-   which is the entire point: absorbing the research burden for the
-   roster's tail is work the tool should do, not the user. Names are the
-   open design question (a name pool versus keeping the donor's name and
-   only re-rating them).
-2. **Rate leftovers to a floor** so they cannot crack the two-deep. Safe,
-   no schema risk, no new confirmed fields needed, and a strict subset of
-   option 1's rating work — a reasonable first increment.
-3. **Deactivate the slot** — highest fidelity, but depends on confirming
-   the `_isEmpty` pool-slot mechanics first (243 such rows exist in the
-   base save). That is genuine research, not a configuration change, and
-   should not be attempted casually.
+### 2. Remove the flag ceremony from the common path
 
-### 2. Benchmark scoring against the manual 2023 FSU export
+Running the executable with no arguments should walk the user through it:
+locate the dynasty export, pick the roster CSV, choose the team and season
+from a numbered list (that prompt already exists for team/season), and write
+to the default output paths. The flags stay for anyone who wants them.
 
-`Comparison/RosterComparer.cs` was built for this and has never been used
-for it. Run generated-vs-manual field by field and resolve every
-difference into exactly one of three outcomes: a data fix, a newly
-confirmed schema fact, or a documented gap.
+Add a **`validate`** command that checks a roster CSV on its own — unknown
+columns, unmappable positions, out-of-range numbers, rows missing a required
+field — so mistakes surface before a 27 MB file is written rather than as
+warnings buried in a report afterwards.
 
-This is the method that has already paid: independently recomputing
-overalls caught a CLI wiring failure that had silently disabled the
-rating engine, and an overall/archetype coherence test caught the
-community editor's missing recompute. It also produces a single fidelity
-percentage to track across future changes. Resolve the ~25 "verify"
-jersey/status flags in `HistoricalData/2023/FloridaState.json` in the same
-pass.
+### 3. Draft slot measures the wrong season for injured players
 
-### 3. `PreviousSchool` target column — timeboxed
+The one rating defect Milestone 6 found and did **not** fix. Draft position
+is the strongest single signal in the model, and it records where a player
+was taken, not how they played. Jordan Travis generates at 83 against the
+manual export's 90: he was a fifth-round pick because of a November leg
+injury, in a season where he was an ACC Player of the Year candidate.
 
-The field is collected, stored and reported, but never written, because no
-target column is confirmed. The transfer-related columns
-(`PLYR_PREVTEAMID`, `PrevTeamIndex`) are partly mapped already, so a
-bounded investigation is reasonable. If it does not resolve quickly,
-document the finding and move on — do not guess a column.
+This distorts exactly the marquee players a historical roster exists for.
+The `Notes` column already records the injury and nothing reads it. Options
+worth weighing: an explicit `Injured` or `DraftStockNote` column, weighting
+the draft signal down when strong production disagrees with it, or capping
+how far the draft slot may pull a player below their statistical evidence.
 
-### Deliberately *not* next: the asset-field study
+### Deliberately *not* next
 
-`PLYR_ASSETNAME` / `GenericHeadAssetName` / `PLYR_PORTRAIT` remain
-unmapped (Known unknown 6), so replaced players still wear the donor
-players' faces. That is worth fixing eventually but is the wrong trade
-now: it is purely cosmetic, most inherited heads are generic to begin
-with, and the payoff requires reverse-engineering a generation algorithm —
-high effort, uncertain outcome, and adjacent to the reverse-engineering
-scoped out in the Milestone 1 brief. Leftover starters are a functional
-defect; borrowed faces are not.
+- **The asset-field study.** `PLYR_ASSETNAME` / `GenericHeadAssetName` /
+  `PLYR_PORTRAIT` are still unmapped (Known unknown 6 in the list above), so
+  replaced players wear the donor players' faces. Still the wrong trade:
+  purely cosmetic, most inherited heads are generic anyway, and the payoff
+  needs a reverse-engineered generation algorithm — high effort, uncertain
+  outcome, adjacent to what the Milestone 1 brief scoped out.
+- **Multi-team and multi-season generation.** Recreating a whole historical
+  season means 138 teams' rosters, which is a data-gathering problem far
+  larger than the tool. Worth revisiting only once single-team generation is
+  something people are actually using.
+- **Jersey numbers.** The dataset still carries "verify jersey" notes on
+  about 25 players, and the generated and manual rosters disagree on roughly
+  40% of numbers. Neither side is authoritative and no amount of code
+  resolves it — it needs sources, not engineering.
 
-Explicitly still deferred: GUI polish, automatic historical data
-gathering, equipment/face generation, multi-season bulk generation,
-dynasty editing, and the derived-array recompute.
+Explicitly still deferred: GUI polish, automatic historical data gathering,
+equipment/face generation, dynasty editing, and the derived-array recompute.

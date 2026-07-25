@@ -82,7 +82,7 @@ have — percentages and per-carry averages are derived automatically.
 | Column | Example | Notes |
 |---|---|---|
 | `Hometown` | `"Tampa, FL"` | **Written to the save.** Accepts `FL`, `Florida` or `West Virginia`; anything that is not a US state (e.g. `Melbourne, Australia`) is stored as `NonUS` and reported |
-| `PreviousSchool` | `Oregon` | Stored in the dataset; not yet written (no confirmed target column) |
+| `PreviousSchool` | `Oregon` | **Written to the save.** A school your dynasty does not carry (an FCS school such as `Albany`) is recorded the way real FCS transfers are, and reported. Leave blank for a player who never transferred |
 | `Notes` | `Team captain` | Free text for your own bookkeeping; appears in reports |
 
 ## Example
@@ -108,8 +108,34 @@ Ryan,Fitzgerald,K,88,6-1,190,RS Junior,Florida State,2023,"Colquitt, GA",,
 | Role / stats / awards / draft / combine | Generated ratings — all 56 attributes plus the overall, computed with EA's own overall formula |
 | Hometown | `PLYR_HOME_TOWN` (town) + `PLYR_HOME_STATE` (state enum) |
 | Position, weight, height and stats | The player's **archetype** (`PlayerType`), e.g. a 225 lb back becomes `HB_PowerBack`. The overall is then recomputed with that archetype's formula |
+| PreviousSchool | `PLYR_PREVTEAMID` (the school's id in your dynasty) |
 
 Portraits and equipment are inherited from the players being replaced; every inherited default is listed in
 `Generation_Report.txt`. Rating generation can be turned off with
 `--ratings inherit`. See `Ratings/Rating_Model.md` for how ratings are
 derived and `Ratings/Default_Assumptions.md` for the guardrails.
+
+## Roster size — the slots you do not fill
+
+A CFB27 team always carries **85 players**. Every slot your file does not
+supply keeps its original fictional player, and because the game builds its
+depth chart from ratings alone, a leftover 82-overall quarterback will start
+ahead of yours.
+
+By default the generator re-rates those slots as end-of-roster depth, using
+the overall a real save carries at each roster rank and holding every one of
+them below your weakest player at that position. Their names, jersey numbers
+and portraits are unchanged, and each one is listed in the report. Pass
+`--fill leave` to keep them exactly as they are.
+
+So there is no need to research a team's walk-ons: supply the players you
+know about and the rest of the roster is filled in for you.
+
+## Team strength
+
+Ratings also account for the program. A backup at a playoff team and a
+backup at the worst team in the country are not the same player, so the
+generator measures the team you selected against a typical one and adjusts
+players you gave little evidence for. Players with a draft slot, awards or a
+stat line are rated on their own record and are unaffected. Nothing extra is
+required from you — the adjustment comes from the dynasty you loaded.

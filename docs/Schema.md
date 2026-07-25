@@ -195,16 +195,38 @@ companions leaves stale team history and stale NIL money in the save.
 |---|---|---|
 | `TeamIndex` | Set to the new team | `255` = no team |
 | `PrevTeamIndex` | Set to the OLD team index | `255` = no previous team — do not leave a stale `255` after a change |
-| `PLYR_PREVTEAMID` | Set to the OLD team index, mirroring `PrevTeamIndex` | `0` observed as its "none" value — **note the two fields use different sentinels** |
+| `PLYR_PREVTEAMID` | Set to the OLD team index, mirroring `PrevTeamIndex` | `0` = never transferred — **note the two fields use different sentinels** |
 | `BaseNILValue` | Reset to `0` (observed in both transfer cases) | |
 | `CurrentNILCompensation` | Reset to `0` (observed in both transfer cases) | |
 
-*Unconfirmed observation:* in the untouched base save, some players carry
-`PLYR_PREVTEAMID` values (e.g. 1009–1164) that are far outside the
-`TeamIndex` range (0–137), suggesting the field's native domain is a
-different ID space (possibly recruiting/high-school or a prior-save team
-id). The confirmed fact is only what the real tool *writes on a transfer*:
-the old `TeamIndex` value, kept in sync with `PrevTeamIndex`.
+### `PLYR_PREVTEAMID` native domain — RESOLVED (Milestone 6)
+
+The field holds the **school** a transfer came from, as that school's
+`TEAM_ORIGID` from the Team table — a presentation-level id spanning more
+schools than the dynasty's own team list, and **not** a `TeamIndex`. This
+explains the out-of-range values (1009–1235) noted as an open question
+through Milestone 5.
+
+Evidence, all from the untouched base save:
+
+- 133 of the 135 distinct non-zero values are a `TEAM_ORIGID` in the same
+  save. `TEAM_ORIGID` runs 1100–1504 over 143 teams and is unique per team.
+- Resolving Florida State's 20 non-zero players gives real, plausible
+  schools: Auburn, Notre Dame, Texas A&M, Duke, Troy, Texas, Purdue…
+- The two values below the Team table's range are dominated by **`1009`**
+  (363 players league-wide) — a school the dynasty does not model, which is
+  what an FCS transfer carries.
+
+**The two previous-team fields do not move together.** `PrevTeamIndex` reads
+`255` for *every* player in an untouched save, including those 20 Florida
+State transfers. Only `PLYR_PREVTEAMID` records where a player came from at
+save creation; `PrevTeamIndex` appears to track in-dynasty movement.
+
+`RosterEditSession.SetPreviousSchool` writes it and deliberately leaves
+`PrevTeamIndex` alone. The converter writes it for every player, including
+`0` for those who never transferred — otherwise a player inherits the donor
+slot's transfer history. Schools the dynasty does not carry are written as
+`1009` and reported.
 
 `RosterEditSession.TransferPlayer` applies all five updates atomically, and
 the **`TeamChangeConsistency`** validation rule (a distinct, named rule)
