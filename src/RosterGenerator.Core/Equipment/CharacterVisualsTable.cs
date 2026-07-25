@@ -53,6 +53,19 @@ public sealed class CharacterVisualsTable
     private static readonly Regex FaceMaskPattern =
         new("\"itemAssetName\":\"(GearFaceMask_[^\"]*)\"", RegexOptions.Compiled);
 
+    // Shoulder pads (Small_Pads/Medium_Pads/Large_Pads) and jersey cut
+    // (Gear_JerseyStyle_*). Both occur exactly once in every one of the
+    // 12,156 rows that carry equipment, so the same in-place substitution
+    // works. Matching on the value rather than on the neighbouring slotType
+    // matters: the exporter writes the two keys in either order — 12,570 rows
+    // put slotType first and 16 put itemAssetName first — so any pattern
+    // spanning both would silently miss almost every row.
+    private static readonly Regex ShoulderPadsPattern =
+        new("\"itemAssetName\":\"([A-Za-z]+_Pads)\"", RegexOptions.Compiled);
+
+    private static readonly Regex JerseyStylePattern =
+        new("\"itemAssetName\":\"(Gear_JerseyStyle_[^\"]*)\"", RegexOptions.Compiled);
+
     private readonly CsvDocument _document;
     private readonly Dictionary<int, int> _rowIndexByRowId;
 
@@ -144,6 +157,49 @@ public sealed class CharacterVisualsTable
         updated = FaceMaskPattern.Replace(updated, $"\"itemAssetName\":\"{gear.FaceMask}\"", 1);
 
         _document.SetCell(index, RawDataColumn, updated);
+        return true;
+    }
+
+    /// <summary>Reads the shoulder pad size worn in a row, or null.</summary>
+    public string? GetShoulderPads(int rowId) => Read(rowId, ShoulderPadsPattern);
+
+    /// <summary>Reads the jersey cut worn in a row, or null.</summary>
+    public string? GetJerseyStyle(int rowId) => Read(rowId, JerseyStylePattern);
+
+    /// <summary>Replaces the shoulder pad size. False when the row has none.</summary>
+    public bool SetShoulderPads(int rowId, string assetName) =>
+        Write(rowId, ShoulderPadsPattern, assetName);
+
+    /// <summary>Replaces the jersey cut. False when the row has none.</summary>
+    public bool SetJerseyStyle(int rowId, string assetName) =>
+        Write(rowId, JerseyStylePattern, assetName);
+
+    private string? Read(int rowId, Regex pattern)
+    {
+        if (!_rowIndexByRowId.TryGetValue(rowId, out var index))
+        {
+            return null;
+        }
+
+        var match = pattern.Match(_document.GetCell(index, RawDataColumn));
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
+    private bool Write(int rowId, Regex pattern, string assetName)
+    {
+        if (!_rowIndexByRowId.TryGetValue(rowId, out var index))
+        {
+            return false;
+        }
+
+        var raw = _document.GetCell(index, RawDataColumn);
+        if (!pattern.IsMatch(raw))
+        {
+            return false;
+        }
+
+        _document.SetCell(index, RawDataColumn,
+            pattern.Replace(raw, $"\"itemAssetName\":\"{assetName}\"", 1));
         return true;
     }
 

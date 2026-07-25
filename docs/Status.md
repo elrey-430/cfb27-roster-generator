@@ -38,11 +38,28 @@ _Last updated: 2026-07-25 — end of Milestone 9._
   eight demonstrated edits follow this exactly; the two that do not
   (Howard, Schutt → Riddell; Lester, Light → the 2000s Revolution) are
   recorded in `docs/Schema.md` as open questions rather than fitted to.
-- **Two eras defined**, 2010–2016 and 2000–2009. The largest gaps are a
-  Schutt shell for the 2000s and position-specific masks — a kicker and a
-  nose tackle currently get the same 2-bar, though the base save shows the
-  game distinguishes them.
-- Tests: 245/245.
+- **Masks follow position.** Mined from the base save: the game puts a kicker
+  cage on 92–98% of kickers and punters, a cage or heavy bar on linemen, an
+  open two-bar on quarterbacks. The engine now selects by role, with a
+  deterministic pool for spreading masks across a line. Retro shells have only
+  had their two-bar demonstrated, so they still give everyone that one — the
+  highest-value gap left.
+- **Sleeves and shoulder pads** are era-wide slots alongside the helmet.
+  Confirmed: `Gear_JerseyStyle_SleeveTight`/`_SleeveStandard`/`_RolledLow`
+  and `Small_Pads`/`Medium_Pads`/`Large_Pads`.
+- **A second key-order trap, caught before it shipped.** The exporter writes
+  `itemAssetName` and `slotType` in *either* order — 12,570 rows one way, 16
+  the other — so any pattern spanning both keys would have missed almost
+  every row. All slots are matched on the value's own prefix instead.
+- **Two eras live**, 2010–2016 and 2000–2009, the latter split by model
+  lineage on the research: the Revolution arrived in 2002 and was on 83% of
+  NFL players by 2008, while the VSR-4 it replaced stayed in college use
+  through 2010.
+- **Three eras specified but blocked** (1990s, 1980s, pre-1980) on asset names
+  that appear nowhere in a base save — the VSR-4, the TK, the vintage masks,
+  X-Large pads and the long/loose jersey cuts. `docs/Equipment_Demo_Spec.md`
+  lists exactly which players to change to unblock them.
+- Tests: 251/251.
 
 **Milestone 8 (Draft slot measures the wrong season) is complete.**
 

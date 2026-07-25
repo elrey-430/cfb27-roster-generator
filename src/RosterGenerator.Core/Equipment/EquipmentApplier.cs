@@ -24,6 +24,12 @@ public sealed class EquipmentReport
     /// <summary>Players already wearing the era's helmet, so nothing was written.</summary>
     public int AlreadyCorrect { get; init; }
 
+    /// <summary>Players whose jersey cut was changed to the era's.</summary>
+    public int SleevesChanged { get; init; }
+
+    /// <summary>Players whose shoulder pads were changed to the era's.</summary>
+    public int ShoulderPadsChanged { get; init; }
+
     /// <summary>
     /// Players whose visuals row could not be found or carried no helmet.
     /// Left alone rather than guessed at.
@@ -58,7 +64,21 @@ public sealed class EquipmentReport
             text += $", {Unresolved.Count} with no helmet to change";
         }
 
-        return text + ".";
+        text += ".";
+
+        if (SleevesChanged > 0)
+        {
+            text += $" Jersey cut: {Era.Sleeves?.Replace("Gear_JerseyStyle_", "")}" +
+                    $" on {SleevesChanged} player(s).";
+        }
+
+        if (ShoulderPadsChanged > 0)
+        {
+            text += $" Shoulder pads: {Era.ShoulderPads?.Replace("_Pads", "")}" +
+                    $" on {ShoulderPadsChanged} player(s).";
+        }
+
+        return text;
     }
 }
 
@@ -105,6 +125,8 @@ public sealed class EquipmentApplier
         var changed = new List<EquipmentChange>();
         var unresolved = new List<string>();
         var alreadyCorrect = 0;
+        var sleeves = 0;
+        var pads = 0;
 
         foreach (var player in roster.Players.Where(p => p.TeamIndex == teamIndex))
         {
@@ -122,24 +144,39 @@ public sealed class EquipmentApplier
                 continue;
             }
 
-            // The helmet they are wearing decides which manufacturer's model
-            // they move to; an unlisted helmet has no known brand and takes
-            // the fallback rather than being left in the wrong decade.
-            var target = era.ForBrand(_eras.BrandOf(before.Value.Helmet)).ToHeadGear();
+            // The helmet they are wearing decides which model they move to --
+            // by exact model where the era distinguishes them, else by brand,
+            // else the fallback. The mask then follows their position.
+            var option = era.For(before.Value.Helmet, _eras.BrandOf(before.Value.Helmet));
+            var target = option.ForRole(_eras.RoleOf(player.Position), rowId.Value);
 
             if (before.Value == target)
             {
                 alreadyCorrect++;
-                continue;
             }
-
-            if (visuals.SetHeadGear(rowId.Value, target))
+            else if (visuals.SetHeadGear(rowId.Value, target))
             {
                 changed.Add(new EquipmentChange(Name(player), before.Value, target));
             }
             else
             {
                 unresolved.Add(Name(player));
+            }
+
+            // Jersey cut and pad size are era-wide rather than per player:
+            // sleeves got tighter and pads smaller over time for everyone.
+            if (era.Sleeves is { Length: > 0 } sleeveStyle
+                && visuals.GetJerseyStyle(rowId.Value) != sleeveStyle
+                && visuals.SetJerseyStyle(rowId.Value, sleeveStyle))
+            {
+                sleeves++;
+            }
+
+            if (era.ShoulderPads is { Length: > 0 } padSize
+                && visuals.GetShoulderPads(rowId.Value) != padSize
+                && visuals.SetShoulderPads(rowId.Value, padSize))
+            {
+                pads++;
             }
         }
 
@@ -150,6 +187,8 @@ public sealed class EquipmentApplier
             Changed = changed,
             AlreadyCorrect = alreadyCorrect,
             Unresolved = unresolved,
+            SleevesChanged = sleeves,
+            ShoulderPadsChanged = pads,
         };
     }
 

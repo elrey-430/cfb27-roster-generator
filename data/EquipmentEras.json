@@ -1,25 +1,30 @@
 {
   "//": [
-    "Season -> period-correct head gear.",
+    "Season -> period-correct equipment.",
     "",
     "Equipment lives in the save's CharacterVisuals table, not the Player",
-    "table. Each entry names a helmet and the face mask moulded to fit it;",
-    "the two are always written together, because a mask belongs to a shell.",
+    "table. See docs/Schema.md Group 6 for the decode.",
     "",
-    "BRAND CARRIES OVER, THE MODEL CHANGES. A player's current helmet names a",
-    "manufacturer, and they move to that manufacturer's model for the era --",
-    "Riddell to Riddell, Schutt to Schutt. That keeps a squad looking mixed,",
-    "the way real ones were. Brands that did not exist yet (Vicis shipped",
-    "nothing until 2016, Light little earlier) have no same-brand model to",
-    "move to, so those players take the era's fallback.",
+    "THREE RULES:",
     "",
-    "Every asset name here has been confirmed to exist in the game by making",
-    "the change in the community roster editor and diffing the export. A",
-    "season not covered by an era leaves equipment untouched -- an invented",
-    "asset name would be a guess with a broken helmet at the end of it.",
+    "1. LINEAGE, NOT UNIFORMITY. A player's current helmet decides what they",
+    "   move to -- by exact model where an era distinguishes them (byModel),",
+    "   otherwise by manufacturer (byBrand). Riddell's line splits in the",
+    "   2000s: an Axiom wearer belongs in a VSR-4, a SpeedFlex wearer in a",
+    "   Revolution. Brands that did not exist yet take the fallback.",
     "",
-    "To add one: make the change in the editor for one player, export, and",
-    "read the helmet and face mask names out of the diff. No code change."
+    "2. MASKS FOLLOW POSITION. The game's own rosters put kicker cages on",
+    "   kickers (92-98% of the time) and cages or heavy bars on linemen. A",
+    "   shell whose per-role masks are unknown uses its default faceMask for",
+    "   everyone, which is what happened before masks were position-aware.",
+    "",
+    "3. NOTHING UNCONFIRMED IS EVER WRITTEN. Every asset name below has been",
+    "   seen in a real export. A season no era covers changes nothing.",
+    "",
+    "To add an era or a helmet: make the change in the community roster",
+    "editor for one player, export, diff, and read the asset names out. No",
+    "code change is needed -- see docs/Equipment_Demo_Spec.md for exactly",
+    "which players to change and why."
   ],
 
   "brands": {
@@ -40,8 +45,30 @@
     "GearHelmet_LightLS2": "Light"
   },
 
+  "//positionRoles": [
+    "Derived from the base save: over 12,156 players the game puts a kicker",
+    "cage on 92-98% of kickers and punters, an open two-bar on quarterbacks,",
+    "and cages or multi-bars on the line."
+  ],
+  "positionRoles": {
+    "QB": "Quarterback",
+    "HB": "Skill", "FB": "Skill", "WR": "Skill", "TE": "Skill",
+    "CB": "Skill", "FS": "Skill", "SS": "Skill",
+    "LOLB": "Linebacker", "MLB": "Linebacker", "ROLB": "Linebacker",
+    "LT": "Lineman", "LG": "Lineman", "C": "Lineman",
+    "RG": "Lineman", "RT": "Lineman",
+    "LE": "Lineman", "RE": "Lineman", "DT": "Lineman",
+    "K": "Kicker", "P": "Kicker"
+  },
+
   "eras": [
     {
+      "//": [
+        "Riddell Revolution Speed and Schutt Air XP, both confirmed. Per-role",
+        "masks for these shells are NOT yet confirmed -- only the two-bar has",
+        "been demonstrated -- so every position currently gets it. Filling in",
+        "masksByRole here is the single highest-value demonstration left."
+      ],
       "name": "2010-2016",
       "fromSeason": 2010,
       "toSeason": 2016,
@@ -61,19 +88,36 @@
         "helmet": "GearHelmet_RevolutionSpeed",
         "faceMask": "GearFaceMask_revospeed2bar",
         "displayName": "Riddell Revolution Speed"
-      }
+      },
+      "sleeves": "Gear_JerseyStyle_SleeveTight",
+      "shoulderPads": "Small_Pads"
     },
 
     {
       "//": [
-        "The Riddell Revolution is confirmed; Schutt's 2000s shells (Air",
-        "Advantage, DNA) have not been demonstrated yet, so a Schutt wearer",
-        "in this era falls back to the Revolution. Add a 'Schutt' entry here",
-        "once one has been confirmed in the editor."
+        "The Riddell Revolution arrived in 2002 and was worn by 83% of NFL",
+        "players by 2008, so it dominates the back half of the decade; the",
+        "VSR-4 it replaced was still common early on. Both were still in",
+        "college use through 2010 (the 2005-2010 concussion study compared",
+        "them head to head), which is why the split is by model rather than",
+        "by year: a SpeedFlex wearer -> Revolution, an Axiom wearer -> VSR-4.",
+        "",
+        "PENDING: GearHelmet_VSR4's real asset name is unconfirmed, so the",
+        "Axiom -> VSR-4 mapping cannot be written yet and those players fall",
+        "through to the Revolution. Schutt's 2000s shells (Air Advantage,",
+        "DNA) are likewise unconfirmed; the Air XP is a late-2000s helmet so",
+        "it is defensible from about 2008, but not for 2000-2007."
       ],
       "name": "2000-2009",
       "fromSeason": 2000,
       "toSeason": 2009,
+      "byModel": {
+        "GearHelmet_Speed_Flex": {
+          "helmet": "GearHelmet_Revolution",
+          "faceMask": "GearFaceMask_RevoNormal",
+          "displayName": "Riddell Revolution"
+        }
+      },
       "byBrand": {
         "Riddell": {
           "helmet": "GearHelmet_Revolution",
@@ -85,7 +129,29 @@
         "helmet": "GearHelmet_Revolution",
         "faceMask": "GearFaceMask_RevoNormal",
         "displayName": "Riddell Revolution"
-      }
+      },
+      "sleeves": "Gear_JerseyStyle_SleeveStandard",
+      "shoulderPads": "Medium_Pads"
     }
+  ],
+
+  "//pendingEras": [
+    "1990-1999, 1980-1989 and pre-1980 are specified but cannot be written",
+    "yet -- they need asset names that do not appear anywhere in a base save:",
+    "",
+    "  1990-1999   all shells -> Riddell VSR-4",
+    "              sleeves 'long', shoulder pads 'Large' (Large_Pads exists)",
+    "  1980-1989   all shells -> Riddell TK",
+    "              'Vintage Standard' mask for non-linemen, random for linemen",
+    "              sleeves 'long', shoulder pads 'X-Large'",
+    "  pre-1980    all shells -> Riddell TK",
+    "              'Vintage Two Bar' mask for every position",
+    "              sleeves 'long', shoulder pads 'X-Large'",
+    "",
+    "Unconfirmed asset names needed: the VSR-4 helmet, the TK helmet, the",
+    "Vintage Standard and Vintage Two Bar masks, the X-Large pad size, and",
+    "the 'loose' and 'long' jersey cuts. Confirmed pad sizes are Small_Pads,",
+    "Medium_Pads and Large_Pads; confirmed jersey cuts are",
+    "Gear_JerseyStyle_SleeveTight, _SleeveStandard and _RolledLow."
   ]
 }

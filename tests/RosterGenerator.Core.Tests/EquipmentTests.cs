@@ -218,6 +218,99 @@ public sealed class EquipmentTests
     }
 
     [Fact]
+    public void MasksFollowThePlayersPosition()
+    {
+        // The game's own rosters put a kicker cage on 92-98% of kickers and a
+        // cage or heavy bar on linemen. An era whose per-role masks are known
+        // should do the same rather than giving everyone one mask.
+        var eras = EquipmentEraSet.Load(
+            Path.Combine(AppContext.BaseDirectory, "Fixtures", "EquipmentEras_Roles.json"));
+
+        Assert.Equal(MaskRoles.Kicker, eras.RoleOf("P"));
+        Assert.Equal(MaskRoles.Lineman, eras.RoleOf("C"));
+        Assert.Equal(MaskRoles.Quarterback, eras.RoleOf("QB"));
+        Assert.Equal(MaskRoles.Skill, eras.RoleOf("WR"));
+
+        var era = eras.ForSeason(2014)!;
+        var option = era.Fallback;
+        Assert.Equal("GearFaceMask_SpeedFlexKicker", option.ForRole(MaskRoles.Kicker, 0).FaceMask);
+        Assert.Equal("GearFaceMask_Speedflex2Bar", option.ForRole(MaskRoles.Quarterback, 0).FaceMask);
+    }
+
+    [Fact]
+    public void AnUnknownPositionIsTreatedAsASkillPlayer()
+    {
+        Assert.Equal(MaskRoles.Skill, Eras().RoleOf("LS"));
+        Assert.Equal(MaskRoles.Skill, Eras().RoleOf(""));
+    }
+
+    [Fact]
+    public void AShellWithNoPerRoleMasksGivesEveryoneItsDefault()
+    {
+        // The retro shells have only had their two-bar demonstrated, so they
+        // must keep behaving exactly as they did before masks were
+        // position-aware rather than inventing a kicker cage.
+        var option = Eras().ForSeason(2014)!.Fallback;
+        Assert.Equal(option.ForRole(MaskRoles.Skill, 0), option.ForRole(MaskRoles.Kicker, 7));
+    }
+
+    [Fact]
+    public void TheLinemanMaskPoolIsVariedButDeterministic()
+    {
+        var option = new HelmetOption
+        {
+            Helmet = "GearHelmet_Speed_Flex",
+            FaceMask = "GearFaceMask_Speedflex2Bar",
+            LinemanMaskPool = new List<string>
+            {
+                "GearFaceMask_SpeedflexFullcage",
+                "GearFaceMask_SpeedflexRobotRB",
+                "GearFaceMask_Speedflex3BarRB",
+            },
+        };
+
+        // Same player, same mask, every run -- a roster that shuffled itself
+        // between runs would make the output impossible to check.
+        Assert.Equal(option.ForRole(MaskRoles.Lineman, 41), option.ForRole(MaskRoles.Lineman, 41));
+
+        // And the line is not all in one mask.
+        var spread = Enumerable.Range(0, 12)
+            .Select(i => option.ForRole(MaskRoles.Lineman, i).FaceMask)
+            .Distinct()
+            .Count();
+        Assert.Equal(3, spread);
+
+        // Only linemen draw from the pool.
+        Assert.Equal("GearFaceMask_Speedflex2Bar", option.ForRole(MaskRoles.Skill, 1).FaceMask);
+    }
+
+    [Fact]
+    public void AnEraCanSetSleevesAndShoulderPads()
+    {
+        var visuals = Before();
+        var report = new EquipmentApplier(Eras()).Apply(Players(), visuals, teamIndex: 27, season: 2005);
+
+        // The 2000s wore looser jerseys and bigger pads than 2027 does.
+        Assert.Equal("Gear_JerseyStyle_SleeveStandard", visuals.GetJerseyStyle(2066));
+        Assert.Equal("Medium_Pads", visuals.GetShoulderPads(2066));
+        Assert.True(report.SleevesChanged > 0);
+        Assert.True(report.ShoulderPadsChanged > 0);
+        Assert.Contains("Shoulder pads", report.Describe());
+    }
+
+    [Fact]
+    public void RiddellsLineSplitsByModelInTheTwoThousands()
+    {
+        // A SpeedFlex wearer belongs in a Revolution. The Axiom -> VSR-4 half
+        // of this rule is pending the VSR-4's asset name, so an Axiom wearer
+        // currently falls through to the Revolution too.
+        var era = Eras().ForSeason(2005)!;
+        Assert.Equal(
+            "GearHelmet_Revolution",
+            era.For("GearHelmet_Speed_Flex", "Riddell").Helmet);
+    }
+
+    [Fact]
     public void TheTwoThousandsEraUsesTheOlderRiddellShell()
     {
         var visuals = Before();

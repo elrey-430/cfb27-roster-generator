@@ -1,0 +1,32 @@
+{
+  "brands": {
+    "GearHelmet_Speed_Flex": "Riddell"
+  },
+  "positionRoles": {
+    "QB": "Quarterback",
+    "WR": "Skill",
+    "MLB": "Linebacker",
+    "C": "Lineman",
+    "P": "Kicker",
+    "K": "Kicker"
+  },
+  "eras": [
+    {
+      "name": "modern",
+      "fromSeason": 2014,
+      "toSeason": 2030,
+      "fallback": {
+        "helmet": "GearHelmet_Speed_Flex",
+        "faceMask": "GearFaceMask_Speedflex2Bar",
+        "displayName": "Riddell SpeedFlex",
+        "masksByRole": {
+          "Quarterback": "GearFaceMask_Speedflex2Bar",
+          "Skill": "GearFaceMask_SpeedflexRobot",
+          "Linebacker": "GearFaceMask_SpeedflexRobotRB",
+          "Lineman": "GearFaceMask_SpeedflexRobotRB",
+          "Kicker": "GearFaceMask_SpeedFlexKicker"
+        }
+      }
+    }
+  ]
+}
