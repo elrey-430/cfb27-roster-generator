@@ -31,14 +31,27 @@ public sealed record DynastyTeam(int TeamIndex, string DisplayName, string Short
 /// </summary>
 public sealed class DynastyExport
 {
-    private DynastyExport(string playerTablePath, IReadOnlyList<DynastyTeam> teams)
+    private DynastyExport(
+        string playerTablePath, IReadOnlyList<DynastyTeam> teams, string? characterVisualsPath)
     {
         PlayerTablePath = playerTablePath;
         Teams = teams;
+        CharacterVisualsPath = characterVisualsPath;
     }
 
     /// <summary>Path of the discovered Player table CSV.</summary>
     public string PlayerTablePath { get; }
+
+    /// <summary>
+    /// Path of the discovered CharacterVisuals table, where equipment lives,
+    /// or null when the export does not carry one. Optional: an export without
+    /// it generates a roster exactly as before, just without equipment.
+    /// </summary>
+    public string? CharacterVisualsPath { get; }
+
+    /// <summary>Loads the CharacterVisuals table, or null when absent.</summary>
+    public Equipment.CharacterVisualsTable? LoadCharacterVisuals() =>
+        CharacterVisualsPath is null ? null : Equipment.CharacterVisualsTable.Load(CharacterVisualsPath);
 
     /// <summary>
     /// Teams discovered in the export's Team table, sorted by display name.
@@ -137,6 +150,7 @@ public sealed class DynastyExport
             throw new FileNotFoundException($"'{path}' does not exist.");
         }
 
+        string? visualsPath = null;
         var teamCandidates = new List<(string Path, List<DynastyTeam> Teams)>();
         foreach (var file in Directory.EnumerateFiles(directory, "*.csv", SearchOption.AllDirectories))
         {
@@ -144,6 +158,10 @@ public sealed class DynastyExport
             if (playerPath is null && tableName == "Player" && LooksLikePlayerTable(file))
             {
                 playerPath = file;
+            }
+            else if (tableName == Equipment.CharacterVisualsTable.TableName)
+            {
+                visualsPath ??= file;
             }
             else if (tableName == "Team")
             {
@@ -171,9 +189,10 @@ public sealed class DynastyExport
             .Select(c => c.Teams)
             .FirstOrDefault() ?? new List<DynastyTeam>();
 
-        return new DynastyExport(playerPath, mainTeams
-            .OrderBy(t => t.DisplayName, StringComparer.OrdinalIgnoreCase)
-            .ToList());
+        return new DynastyExport(
+            playerPath,
+            mainTeams.OrderBy(t => t.DisplayName, StringComparer.OrdinalIgnoreCase).ToList(),
+            visualsPath);
     }
 
     /// <summary>Reads a file's <c>_tableName</c> from its first data row.</summary>

@@ -37,6 +37,7 @@
     <None Include="..\..\data\OverallFormulas.json" Link="Fixtures\OverallFormulas.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\ArchetypeRules.json" Link="Fixtures\ArchetypeRules.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\RosterDepth.json" Link="Fixtures\RosterDepth.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\data\EquipmentEras.json" Link="Fixtures\EquipmentEras.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- The 2023 FSU regression fixtures (input, donor dynasty, expected output). -->
     <None Include="..\..\Tests\**" Link="Tests\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- The shipped templates, so the one users start from stays usable.

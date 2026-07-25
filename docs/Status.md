@@ -1,8 +1,41 @@
 # Project Status
 
-_Last updated: 2026-07-25 — end of Milestone 8._
+_Last updated: 2026-07-25 — end of Milestone 9._
 
 ## Current status
+
+**Milestone 9 (Period-correct equipment) is complete.**
+
+- **Where equipment lives.** Not in the Player table. A controlled experiment
+  — one dynasty exported twice, differing only in eight Florida State
+  cornerbacks' helmets — changed exactly **one file out of 2,273**:
+  `0130_CharacterVisuals.csv`. Full decode in `docs/Schema.md`, Group 6.
+- **The link.** The Player table's `CharacterVisuals` column is a packed
+  32-bit reference: low 16 bits are the visuals row, high 16 a constant
+  `8452` table tag. Decoding it for all 16,500 players recovered exactly the
+  eight edited cornerbacks and nothing else.
+- **The edit.** Helmet (`slotType: HeadWear`) and face mask
+  (`slotType: FaceMask`) are replaced by targeted string substitution inside
+  the JSON blob — both patterns occur exactly once per row across all 12,156
+  rows carrying a helmet — so every other byte survives. The two are always
+  written together, because a mask is moulded to a shell.
+- **The user surface.** The season already being recreated picks the era. No
+  new column, no new question. A second file, `Generated_Equipment.csv`, is
+  written and must be imported alongside the roster.
+- **The acceptance test.** Our output is **byte-identical** to what the
+  community editor produced for the three rows it edited without also
+  filling in unrelated Head-loadout defaults. That is a stronger bar than any
+  previous milestone had.
+- **Known limit — the catalogue.** Retro helmets appear on *zero* of 12,586
+  players in a base save, so the period vocabulary cannot be mined and must
+  be demonstrated in the editor one helmet at a time. Confirmed so far:
+  Revolution Speed, Revolution, Air XP. Only 2010–2016 is defined, and a
+  season no era covers changes nothing.
+- **Known limit — one helmet per era.** Real teams were never uniform, and
+  the sample deliberately included two players in different shells. Assigning
+  a distribution needs evidence of how common each was; the alternates are
+  recorded in `data/EquipmentEras.json` awaiting it.
+- Tests: 240/240.
 
 **Milestone 8 (Draft slot measures the wrong season) is complete.**
 

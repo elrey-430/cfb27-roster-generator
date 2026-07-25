@@ -145,6 +145,13 @@ public sealed class Player
     public string GetRaw(string columnName) => _document.GetCell(_rowIndex, columnName);
 
     /// <summary>
+    /// True when the export carries this column. Optional layers — equipment,
+    /// for one — read columns that a trimmed or older export may not have, and
+    /// must degrade rather than throw.
+    /// </summary>
+    public bool HasColumn(string columnName) => _document.HasColumn(columnName);
+
+    /// <summary>
     /// Writes any column's raw cell value. Prefer the typed setters and
     /// <c>RosterEditSession</c> operations; this escape hatch exists so
     /// callers are never blocked by the typed layer, but edits made through

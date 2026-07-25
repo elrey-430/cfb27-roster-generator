@@ -1,9 +1,11 @@
 using RosterGenerator.Core.Conversion;
 using RosterGenerator.Core.Dynasty;
 using RosterGenerator.Core.Editing;
+using RosterGenerator.Core.Equipment;
 using RosterGenerator.Core.Export;
 using RosterGenerator.Core.Historical;
 using RosterGenerator.Core.Mapping;
+using RosterGenerator.Core.Model;
 using RosterGenerator.Core.Rating;
 using RosterGenerator.Core.Validation;
 
@@ -51,6 +53,17 @@ public sealed record RosterGenerationRequest
 
     /// <summary>Fill unsupplied slots as depth. Requires <see cref="RatingsMode.Generate"/>.</summary>
     public bool FillRoster { get; init; } = true;
+
+    /// <summary>
+    /// Put period-correct helmets on the team, chosen from the season already
+    /// being recreated. Silently does nothing when the export carries no
+    /// CharacterVisuals table or no era covers the season.
+    /// </summary>
+    public bool ApplyEquipment { get; init; } = true;
+
+    /// <summary>Where the modified equipment table is written, when one is produced.</summary>
+    public string EquipmentOutputPath { get; init; } =
+        Path.Combine("Output", "Generated_Equipment.csv");
 }
 
 /// <summary>What a generation run produced.</summary>
@@ -60,13 +73,17 @@ public sealed record RosterGenerationRequest
 /// <param name="ReportPath">Where the report was written.</param>
 /// <param name="CsvWarnings">Roster CSV values that could not be used as written.</param>
 /// <param name="CsvCorrections">Roster CSV values that were cleaned up and used.</param>
+/// <param name="Equipment">What the era did to the team's head gear, if anything.</param>
+/// <param name="EquipmentOutputPath">Where the equipment table went, when one was written.</param>
 public sealed record RosterGenerationResult(
     ConversionReport Conversion,
     ExportResult Export,
     string OutputPath,
     string ReportPath,
     IReadOnlyList<string> CsvWarnings,
-    IReadOnlyList<string> CsvCorrections)
+    IReadOnlyList<string> CsvCorrections,
+    EquipmentReport? Equipment = null,
+    string? EquipmentOutputPath = null)
 {
     /// <summary>Players written to the save.</summary>
     public int Converted => Conversion.Converted.Count();
@@ -215,14 +232,94 @@ public sealed class RosterGenerationService
         var result = new RosterExporter().Export(
             new RosterValidationContext(donor, session, overallFormulas: formulas), request.OutputPath);
 
+        // Equipment is a second table, so it is applied after the player table
+        // has validated and been written: a run that refuses to produce a
+        // roster must not leave a stray equipment file beside it.
+        var (equipment, equipmentPath) = ApplyEquipment(request, export, donor, conversion, data);
+
         File.WriteAllText(request.ReportPath,
             Path.GetExtension(request.ReportPath).Equals(".md", StringComparison.OrdinalIgnoreCase)
                 ? conversion.ToMarkdown()
-                : conversion.ToText());
+                : conversion.ToText() + EquipmentSection(equipment, equipmentPath));
 
         return new RosterGenerationResult(
             conversion, result, request.OutputPath, request.ReportPath,
-            roster.Warnings, roster.Corrections);
+            roster.Warnings, roster.Corrections, equipment, equipmentPath);
+    }
+
+    /// <summary>
+    /// Puts period-correct helmets on the converted team and writes the
+    /// equipment table beside the roster. Returns nulls — and writes nothing —
+    /// when equipment was not requested, the export carries no
+    /// CharacterVisuals table, the season is unknown, or no era covers it.
+    /// </summary>
+    private static (EquipmentReport? Report, string? Path) ApplyEquipment(
+        RosterGenerationRequest request,
+        DynastyExport export,
+        PlayerRoster donor,
+        ConversionReport conversion,
+        string? data)
+    {
+        if (!request.ApplyEquipment || export.CharacterVisualsPath is null || conversion.Source.Season <= 0)
+        {
+            return (null, null);
+        }
+
+        var erasPath = TryFindDataFile(data, "EquipmentEras.json");
+        if (erasPath is null)
+        {
+            return (null, null);
+        }
+
+        var visuals = export.LoadCharacterVisuals();
+        if (visuals is null)
+        {
+            return (null, null);
+        }
+
+        var report = new EquipmentApplier(EquipmentEraSet.Load(erasPath))
+            .Apply(donor, visuals, conversion.TeamId, conversion.Source.Season);
+
+        // Nothing changed means nothing to import; writing a 30 MB copy of the
+        // user's own table would just be another file to explain.
+        if (report.Changed.Count == 0)
+        {
+            return (report, null);
+        }
+
+        CreateParentDirectory(request.EquipmentOutputPath);
+        visuals.Save(request.EquipmentOutputPath);
+        return (report, request.EquipmentOutputPath);
+    }
+
+    private static string EquipmentSection(EquipmentReport? equipment, string? path)
+    {
+        if (equipment is null)
+        {
+            return "";
+        }
+
+        var text = new System.Text.StringBuilder();
+        text.AppendLine();
+        text.AppendLine("EQUIPMENT");
+        text.AppendLine(equipment.Describe());
+
+        if (path is not null)
+        {
+            text.AppendLine($"Written to: {path} — import this as well as the roster.");
+        }
+
+        foreach (var change in equipment.Changed)
+        {
+            text.AppendLine($"  - {change.PlayerName}: {change.Before} -> {change.After}");
+        }
+
+        foreach (var name in equipment.Unresolved)
+        {
+            text.AppendLine($"  - {name}: no helmet found to change; left as it was.");
+        }
+
+        return text.ToString();
     }
 
     private static string? TryFindDataFile(string? dataDirectory, string fileName)

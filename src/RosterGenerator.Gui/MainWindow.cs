@@ -5,6 +5,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 
 using RosterGenerator.Core.Dynasty;
+using RosterGenerator.Core.Equipment;
 using RosterGenerator.Core.Historical;
 using RosterGenerator.Core.Mapping;
 using RosterGenerator.Core.Pipeline;
@@ -35,6 +36,11 @@ public sealed class MainWindow : Window
     private readonly CheckBox _ratingsBox = new() { Content = "Generate ratings from the roster CSV", IsChecked = true };
     private readonly CheckBox _archetypesBox = new() { Content = "Choose each player's archetype", IsChecked = true };
     private readonly CheckBox _fillBox = new() { Content = "Fill the rest of the roster as depth", IsChecked = true };
+    private readonly CheckBox _equipmentBox = new()
+    {
+        Content = "Use period-correct helmets for the season",
+        IsChecked = true,
+    };
     private readonly Button _checkButton = new() { Content = "Check roster file", IsEnabled = false };
     private readonly Button _generateButton = new() { Content = "Generate", IsEnabled = false };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
@@ -113,7 +119,11 @@ public sealed class MainWindow : Window
         };
         panel.Children.Add(Labelled("3.  Team and season", teamRow));
 
-        var options = new StackPanel { Spacing = 4, Children = { _ratingsBox, _archetypesBox, _fillBox } };
+        var options = new StackPanel
+        {
+            Spacing = 4,
+            Children = { _ratingsBox, _archetypesBox, _fillBox, _equipmentBox },
+        };
         panel.Children.Add(Labelled("4.  Options", options));
 
         panel.Children.Add(new StackPanel
@@ -314,6 +324,7 @@ public sealed class MainWindow : Window
             Ratings = _ratingsBox.IsChecked == true ? RatingsMode.Generate : RatingsMode.Inherit,
             SelectArchetypes = _ratingsBox.IsChecked == true && _archetypesBox.IsChecked == true,
             FillRoster = _ratingsBox.IsChecked == true && _fillBox.IsChecked == true,
+            ApplyEquipment = _equipmentBox.IsChecked == true,
         };
 
         _generateButton.IsEnabled = false;
@@ -352,6 +363,17 @@ public sealed class MainWindow : Window
         text.AppendLine($"Report written to: {Path.GetFullPath(result.ReportPath)}");
         text.AppendLine();
         text.AppendLine("The report lists every value that was filled in or corrected for you.");
+
+        if (result.Equipment is { } equipment)
+        {
+            text.AppendLine();
+            text.AppendLine(equipment.Describe());
+            if (result.EquipmentOutputPath is { } equipmentPath)
+            {
+                text.AppendLine($"Equipment written to: {Path.GetFullPath(equipmentPath)}");
+                text.AppendLine("Import that alongside the roster.");
+            }
+        }
 
         if (result.CsvCorrections.Count > 0)
         {

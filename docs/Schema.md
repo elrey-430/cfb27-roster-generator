@@ -257,6 +257,111 @@ Milestone 1 scope.
 
 ---
 
+## Group 6 — Equipment lives in another table (CharacterVisuals, confirmed)
+
+Uniform and equipment are **not** in the Player table. The evidence is a
+controlled experiment: one dynasty exported twice, identical except that
+eight Florida State cornerbacks had their helmets changed in the community
+roster editor. Of **2,273 files, exactly one differed** —
+`0130_CharacterVisuals.csv`. The Player table was untouched.
+
+### The table
+
+| Column | Meaning |
+|---|---|
+| `_tableIndex`, `_tableName`, `_row`, `_isEmpty` | The usual bookkeeping. `_row` equals the row's position in every export seen |
+| `Overflow` | 32 zero bits on every populated row; unused in practice |
+| `RawData` | A JSON document, 479–3,367 characters, holding everything the character wears |
+
+Of 16,000 rows, 12,586 are populated; 3,414 are `_isEmpty=true` with an
+empty `RawData`.
+
+### Linking a player to their visuals
+
+The Player table's `CharacterVisuals` column is a 32-character string of
+ASCII `0`/`1` — the exporter's spelling of a 32-bit value:
+
+```
+00100001000001000000100000010010
+└─── tag 8452 ───┘└─── row 2066 ───┘
+```
+
+- **Low 16 bits** — the `_row` id in the CharacterVisuals table.
+- **High 16 bits** — a constant `8452` tag naming the table pointed at.
+
+Confirmed by decoding the column for all 16,500 players and intersecting
+with the eight changed visuals rows: they resolved to exactly the eight
+edited cornerbacks, with no other matches.
+
+### Inside `RawData`
+
+Three loadouts: `Head`/`Head`, `Base`/`None`, and `None`/`PlayerOnField`.
+The uniform is in **`PlayerOnField`**, which carries 32 elements — one per
+slot, covering helmet, face mask, visor, gloves, shoes, sleeves, spats,
+backplate, shoulder pads, towel, mouthpiece, neck pad, plus pants and jersey
+style. Only two are decoded so far:
+
+| Slot | `slotType` | Example |
+|---|---|---|
+| Helmet | `HeadWear` | `GearHelmet_RevolutionSpeed` |
+| Face mask | `FaceMask` | `GearFaceMask_revospeed2bar` |
+
+The face mask is element 0 in 12,126 of 12,156 rows, and 16 rows omit its
+`slotType` key entirely — so match on the `GearFaceMask_` prefix, not on
+position.
+
+### Tool policy: patch, never re-serialize
+
+`GearHelmet_` and `GearFaceMask_` each occur **exactly once** in every
+populated row — verified across all 12,156 rows carrying a helmet. Both
+values are therefore replaced by targeted string substitution, leaving every
+other byte of the blob alone. Most of the JSON's meaning is unknown, and
+re-serializing it would risk changing far more than was asked.
+
+**Helmet and face mask are written together.** Masks are moulded to a
+particular shell, and the mask changed alongside the helmet in all eight
+demonstrated edits.
+
+### Two things observed but deliberately not imitated
+
+- **The editor fills in Head-loadout defaults.** Five of the eight rows
+  gained `Head_SkinDetails_None` and `NeckTattoo_None` because their `Head`
+  loadout had no `loadoutElements` key at all. That is the community
+  editor's round-trip, not part of a helmet change; this tool leaves it.
+- **430 populated rows carry no helmet.** They are skipped rather than
+  guessed at.
+
+### What the base save does and does not contain
+
+A base save carries **10 helmet models, all modern**:
+
+| Helmet | Players |
+|---|---|
+| `GearHelmet_Speed_Flex` | 8,761 |
+| `GearHelmet_SchuttF7` | 1,531 |
+| `GearHelmet_Axiom` | 920 |
+| `GearHelmet_VicisZero2` | 406 |
+| `GearHelmet_SchuttF7Pro` | 312 |
+| `GearHelmet_VicisZero2Trench` | 113 |
+| `GearHelmet_AirXP` | 82 |
+| `GearHelmet_LightGladiator` | 27 |
+| `GearHelmet_LightLS2` | 3 |
+| `GearHelmet_VicisZero1` | 1 |
+
+…and 88 face mask models, family-scoped by name.
+
+**Retro helmets are not among them.** `GearHelmet_RevolutionSpeed` and
+`GearHelmet_Revolution` appear on **zero** of 12,586 players, as do the masks
+`revospeed2bar`, `RevoNormal` and `2Bar`. The assets exist and the editor can
+select them, but nothing wears them by default — so the period catalogue
+**cannot be mined from a save**. Each era's helmets must be demonstrated in
+the editor and read out of the diff. That is why `data/EquipmentEras.json`
+lists only confirmed names, and why a season no era covers changes nothing:
+writing an asset name the game may not carry is a guess with a broken helmet
+at the end of it.
+
+---
+
 ## Appendix — remaining columns (unconfirmed observations)
 
 Statistical profile of every other column across the 16,257 live rows of

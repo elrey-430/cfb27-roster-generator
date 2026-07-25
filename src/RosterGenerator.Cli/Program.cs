@@ -54,7 +54,8 @@ static int Usage()
           generate   --dynasty <folder of exported CSVs> --roster <historical roster .csv>
                      [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
                      [--ratings generate|inherit] [--archetypes select|inherit]
-                     [--fill fill|leave]
+                     [--fill fill|leave] [--equipment era|leave]
+                     [--equipment-output <csv>]
                      [--team-mappings <json>] [--position-mappings <json>]
           validate   --roster <historical roster .csv>
                      [--dynasty <folder of exported CSVs>] [--team <name>] [--season <year>]
@@ -87,6 +88,13 @@ static int Usage()
         generated) re-rates those slots as end-of-roster depth, holding each one
         below your weakest player at that position. Their names and jersey
         numbers do not change. --fill leave keeps them exactly as they are.
+
+        Equipment is period-correct by default. Helmets live in the save's
+        CharacterVisuals table, so when --season falls inside a known era the
+        team's head gear is rewritten to match and the changed table is written
+        to Output/Generated_Equipment.csv — import that alongside the roster.
+        A season no era covers changes nothing, as does --equipment leave. The
+        eras are editable in data/EquipmentEras.json.
 
         Your roster CSV needs only FirstName, LastName and Position per player;
         Number, Class, Team and Season are worth adding when you have them.
@@ -268,6 +276,13 @@ static int Generate(Dictionary<string, string> options)
         throw new ArgumentException("--fill must be 'fill' or 'leave'.");
     }
 
+    var equipmentMode = options.GetValueOrDefault("equipment", "era");
+    if (!equipmentMode.Equals("era", StringComparison.OrdinalIgnoreCase) &&
+        !equipmentMode.Equals("leave", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new ArgumentException("--equipment must be 'era' or 'leave'.");
+    }
+
     var request = new RosterGenerationRequest
     {
         DynastyPath = DynastyPathOption(options),
@@ -284,6 +299,10 @@ static int Generate(Dictionary<string, string> options)
         Ratings = generateRatings ? RatingsMode.Generate : RatingsMode.Inherit,
         SelectArchetypes = archetypeMode.Equals("select", StringComparison.OrdinalIgnoreCase),
         FillRoster = fillMode.Equals("fill", StringComparison.OrdinalIgnoreCase),
+        ApplyEquipment = equipmentMode.Equals("era", StringComparison.OrdinalIgnoreCase),
+        EquipmentOutputPath = options.TryGetValue("equipment-output", out var equipmentOutput)
+            ? equipmentOutput
+            : Path.Combine("Output", "Generated_Equipment.csv"),
     };
 
     if (generateRatings)
@@ -333,6 +352,16 @@ static int Generate(Dictionary<string, string> options)
     Console.WriteLine($"Generated roster: {result.OutputPath} " +
                       $"({result.Export.ChangedColumnsByRowKey.Count} rows modified)");
     Console.WriteLine($"Report:           {result.ReportPath}");
+
+    if (result.Equipment is { } equipment)
+    {
+        Console.WriteLine(equipment.Describe());
+        if (result.EquipmentOutputPath is { } equipmentPath)
+        {
+            Console.WriteLine($"Equipment table:  {equipmentPath} — import this as well as the roster.");
+        }
+    }
+
     return 0;
 }
 

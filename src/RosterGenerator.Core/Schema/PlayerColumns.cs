@@ -86,6 +86,14 @@ public static class PlayerColumns
     public const string Portrait = "PLYR_PORTRAIT";
 
     /// <summary>
+    /// Packed reference to this player's row in the <c>CharacterVisuals</c>
+    /// table, where everything they wear is stored. Never written here — the
+    /// equipment layer follows it and edits that other table instead.
+    /// See <c>RosterGenerator.Core.Equipment.CharacterVisualsReference</c>.
+    /// </summary>
+    public const string CharacterVisuals = "CharacterVisuals";
+
+    /// <summary>
     /// Internal flavor-text/comment-pool index. Changed spontaneously on one
     /// observed rename with no clear trigger — leave alone, never set.
     /// </summary>

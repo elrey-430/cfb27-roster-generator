@@ -1,0 +1,42 @@
+{
+  "//": [
+    "Season -> period-correct head gear.",
+    "",
+    "Equipment lives in the save's CharacterVisuals table, not the Player",
+    "table. Each entry names a helmet and the face mask moulded to fit it;",
+    "the two are always written together, because a mask belongs to a shell.",
+    "",
+    "Every asset name here has been confirmed to exist in the game by making",
+    "the change in the community roster editor and diffing the export. A",
+    "season not covered by an era leaves equipment untouched -- an invented",
+    "asset name would be a guess with a broken helmet at the end of it.",
+    "",
+    "To add an era: make the change in the editor for one player, export, and",
+    "read the helmet and face mask names out of the diff. No code change."
+  ],
+
+  "eras": [
+    {
+      "name": "2010-2016",
+      "fromSeason": 2010,
+      "toSeason": 2016,
+      "helmet": {
+        "helmet": "GearHelmet_RevolutionSpeed",
+        "faceMask": "GearFaceMask_revospeed2bar",
+        "displayName": "Riddell Revolution Speed"
+      },
+      "alternates": [
+        {
+          "helmet": "GearHelmet_Revolution",
+          "faceMask": "GearFaceMask_RevoNormal",
+          "displayName": "Riddell Revolution"
+        },
+        {
+          "helmet": "GearHelmet_AirXP",
+          "faceMask": "GearFaceMask_2Bar",
+          "displayName": "Schutt Air XP PRO VTD"
+        }
+      ]
+    }
+  ]
+}

@@ -201,6 +201,38 @@ and portraits are unchanged, and each one is listed in the report. Pass
 So there is no need to research a team's walk-ons: supply the players you
 know about and the rest of the roster is filled in for you.
 
+## Equipment — the season picks the helmets
+
+A 2013 roster in 2027 helmets looks wrong in a way no rating fixes, so the
+**Season** you are already recreating also chooses the team's head gear.
+There is nothing extra to fill in.
+
+When the season falls inside a known era, every player on the team — the ones
+you supplied and the depth slots filled in for you — is given that era's
+helmet and the face mask moulded to fit it. That produces a second file:
+
+```
+Output\Generated_Equipment.csv
+```
+
+**Import that as well as the roster.** Equipment lives in a different table
+of the save from the players, so the roster editor needs both files. The
+report lists every player whose helmet changed and what it changed from.
+
+A season no era covers changes nothing at all, and neither does
+`--equipment leave` (or clearing the checkbox in the app). Only helmets
+confirmed to exist in the game are listed, so the generator never writes an
+asset name that could leave a player in a broken helmet.
+
+Eras live in `data/EquipmentEras.json` and are editable like everything else
+in `data/`. Adding one takes no code: change a single player's helmet in the
+roster editor, export, and read the helmet and face mask names out of the
+diff.
+
+| Seasons | Helmet |
+|---|---|
+| 2010–2016 | Riddell Revolution Speed |
+
 ## Team strength
 
 Ratings also account for the program. A backup at a playoff team and a
