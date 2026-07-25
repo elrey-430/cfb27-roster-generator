@@ -306,14 +306,34 @@ and every rating decision made upstream (EA's own overall formula,
 calibrated attributes, selected archetypes) is overridden at the position
 that matters most.
 
+**What already works, and is not this milestone:** a user who supplies
+enough rows has no leftovers. The generator replaces one donor slot per
+CSV row, and the warning already tells them to add more (the FSU input has
+75 rows against 85 slots — hence the 10). That path needs no code and no
+data beyond the user's own roster CSV. The vestigial
+`HistoricalData/2023/FloridaState.json` from Milestone 2 is read by no
+code path; a user never needs it or any other file shipped with this
+repo.
+
+The milestone is about the case where the user *cannot* supply enough
+rows — which is the normal case, because the tail of a real roster is
+walk-ons and scout-teamers who are genuinely hard to research and whose
+individual identities almost nobody cares about. The goal is to stop
+requiring that data, not to ask for more of it.
+
 Implement a policy instead of only reporting the count. In preference
 order:
 
-1. **Fill from the dataset** — take remaining slots from the historical
-   roster's walk-ons and scout-team players. Best fidelity; requires the
-   input CSV to carry them.
+1. **Synthesize filler walk-ons** for the unfilled slots — position-
+   appropriate, plausible class distribution, ratings deliberately below
+   the historical two-deep. Requires **no additional data from the user**,
+   which is the entire point: absorbing the research burden for the
+   roster's tail is work the tool should do, not the user. Names are the
+   open design question (a name pool versus keeping the donor's name and
+   only re-rating them).
 2. **Rate leftovers to a floor** so they cannot crack the two-deep. Safe,
-   no schema risk, no new confirmed fields needed.
+   no schema risk, no new confirmed fields needed, and a strict subset of
+   option 1's rating work — a reasonable first increment.
 3. **Deactivate the slot** — highest fidelity, but depends on confirming
    the `_isEmpty` pool-slot mechanics first (243 such rows exist in the
    base save). That is genuine research, not a configuration change, and
