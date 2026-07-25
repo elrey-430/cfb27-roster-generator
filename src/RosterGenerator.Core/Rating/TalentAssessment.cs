@@ -31,13 +31,14 @@ public sealed class TalentAssessment
 {
     /// <summary>Creates an assessment.</summary>
     public TalentAssessment(double score, RatingConfidence confidence, double coverage,
-        IReadOnlyList<TalentSignal> signals, IReadOnlyList<string> missingSignals)
+        IReadOnlyList<TalentSignal> signals, IReadOnlyList<string> missingSignals, string? floorNote = null)
     {
         Score = score;
         Confidence = confidence;
         Coverage = coverage;
         Signals = signals;
         MissingSignals = missingSignals;
+        FloorNote = floorNote;
     }
 
     /// <summary>Blended talent score, 0–100 (75 = average FBS starter).</summary>
@@ -55,7 +56,24 @@ public sealed class TalentAssessment
     /// <summary>Names of signals with no supporting data.</summary>
     public IReadOnlyList<string> MissingSignals { get; }
 
+    /// <summary>
+    /// Set when a signal floor raised the score above the weighted blend
+    /// (e.g. a first-round pick whose other signals were ordinary).
+    /// </summary>
+    public string? FloorNote { get; }
+
     /// <summary>Human-readable reasons, suitable for a report.</summary>
-    public IReadOnlyList<string> Reasons =>
-        Signals.OrderByDescending(s => s.Weight).Select(s => s.Explanation).ToList();
+    public IReadOnlyList<string> Reasons
+    {
+        get
+        {
+            var reasons = Signals.OrderByDescending(s => s.Weight).Select(s => s.Explanation).ToList();
+            if (FloorNote is not null)
+            {
+                reasons.Add(FloorNote);
+            }
+
+            return reasons;
+        }
+    }
 }

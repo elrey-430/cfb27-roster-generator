@@ -128,6 +128,13 @@ public sealed class RatingModelSet
     /// <summary>Relative weight of each talent signal (draft, awards, ...).</summary>
     public Dictionary<string, double> SignalWeights { get; init; } = new();
 
+    /// <summary>
+    /// Per-signal floor tolerances. A signal listed here sets a minimum on
+    /// the target overall at (its implied overall − tolerance), so a strong
+    /// retrospective signal cannot be averaged away by weaker ones.
+    /// </summary>
+    public Dictionary<string, double> SignalFloors { get; init; } = new();
+
     /// <summary>Signal-coverage thresholds for High/Medium confidence.</summary>
     public Dictionary<string, double> ConfidenceThresholds { get; init; } = new();
 

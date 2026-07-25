@@ -54,7 +54,7 @@ historical evidence
    │  3. attribute shape    position baseline → talent sensitivity
    │                        → physique → verified measurements → experience
    │  4. calibration        solve EA's formula backwards for the target
-   │  5. sanity caps        position / class / global, then recompute overall
+   │  5. sanity caps        position / class / global, then settle integers
    ▼
 56 attributes + overall + confidence + explanation
 ```
@@ -67,7 +67,7 @@ whichever signals had data.
 
 | Signal | Weight | Source |
 |---|---|---|
-| Draft slot | 0.34 | `draftScores` (#1 → 99, #32 → 89, #100 → 80, #256 → 71) |
+| Draft slot | 0.34 | `draftScores` (#1 → 99, #32 → 93, #100 → 84, #256 → 75) |
 | Awards | 0.26 | `awardScores` (Heisman 98, consensus All-American 93, first-team all-conference 86) |
 | Production | 0.22 | `production` curves per position group |
 | Recruiting stars | 0.10 | `recruitingStarScores` (5★ 86 … 1★ 62) |
@@ -78,6 +78,31 @@ long honours list cannot inflate a player past its ceiling. Partial stat
 lines scale their signal's weight down proportionally. With no evidence at
 all the target falls back to `referenceTalent` (75 — an average FBS
 starter).
+
+#### Signal floors — strong evidence is not averaged away
+
+A plain weighted mean understates elite players: Jalen Ramsey, the #5
+overall pick, blended to **89** because his draft slot (96) was averaged
+against an ordinary "first-team all-conference" and his recruiting rating.
+Real rosters put first-round picks at **91 or above**, high picks higher
+still.
+
+So the strongest retrospective signals also set a **floor** on the target
+(`signalFloors`): the target may not fall more than 2 points below what the
+draft slot implies, or 6 below a major award. The draft curve and that
+tolerance are tuned together so the entire first round floors at 91+:
+
+| Pick | Implied | Floor | Pick | Implied | Floor |
+|---|---|---|---|---|---|
+| 1 | 99 | 97 | 32 | 93 | **91** |
+| 5 | 97 | 95 | 40 | 90 | 88 |
+| 10 | 96 | 94 | 64 | 87 | 85 |
+| 16 | 95 | 93 | 100 | 84 | 82 |
+| 24 | 94 | 92 | 200 | 78 | 76 |
+
+When a floor is applied it is stated in the player's reasons — e.g.
+*"Raised to 95 (floor from draft: Drafted #5 overall) — the weighted blend
+of 90 understated a player with this record."*
 
 ### 2. Confidence
 
@@ -108,7 +133,14 @@ is distributed **in proportion to each attribute's talent sensitivity** so
 quality-defining attributes absorb it first and near-constant physical
 traits stay put.
 
-### 5. Sanity caps
+### 5. Sanity caps and integer settling
+
+After calibration the attributes are frozen to whole numbers. Rounding 56
+attributes moves the formula's total by up to half a point each, which can
+drop the overall below the value the double-precision solve reached, so a
+final pass nudges integer attributes — largest coefficients first, caps
+respected — until the overall computed from **the values actually written**
+equals the target.
 
 Position caps, class-year caps and a global 10–99 floor/ceiling are
 re-applied after every calibration pass. If caps prevent reaching the
@@ -122,10 +154,10 @@ dynasty export (median and full range for each overall bucket):
 
 | Case | Generated | Real-game bucket (median, range) | Verdict |
 |---|---|---|---|
-| Reggie Bush, HB 94 | speed 98, carrying 92 | HB 90–99: speed 91 (88–95), carrying 89 (78–94) | at the top, as expected for a 4.33 Heisman winner |
-| Dalvin Cook, HB 88 | speed 92, carrying 93 | HB 80–89: speed 90 (85–96), carrying 83 (68–96) | in range |
-| Jalen Ramsey, CB 89 | speed 96, man cover 91 | CB 80–89: speed 91 (87–99), man 82 (73–91) | in range, high end |
-| Roderick Johnson, LT 80 | speed 61, strength 94 | LT 80–89: speed 66 (53–77), strength 89 (83–96) | in range |
+| Reggie Bush, HB 97 | speed 98, awareness 89 | HB 90–99: speed 91 (88–95), carrying 89 (78–94) | at the top, as expected for a 4.33 Heisman winner and #2 pick |
+| Jalen Ramsey, CB 95 | speed 96, man cover 91+ | CB 90–99: speed 92 (89–96), man 89 (82–98) | in range for a top-5 pick |
+| Dalvin Cook, HB 89 | speed 92, awareness 79 | HB 80–89: speed 90 (85–96), carrying 83 (68–96) | in range |
+| Roderick Johnson, LT 81 | speed 61, strength 94 | LT 80–89: speed 66 (53–77), strength 89 (83–96) | in range |
 | No-evidence walk-on, WR 64 | speed 93, awareness 65 | WR 60–69: speed 86 (77–98), awareness 60 (35–81) | in range, above median |
 
 Full results: `Player_Test_Results.csv`.

@@ -55,9 +55,17 @@ pressure, block shedding, coverage, play action) also shift by class
 redshirt.
 
 *Worked example:* 2013 Jameis Winston — a Heisman winner and future #1
-overall pick — generates at **94 overall** but his awareness is held to
+overall pick — generates at **97 overall** but his awareness is held to
 **78** because he was a redshirt freshman. 2005 Vince Young, a junior with
-comparable evidence, reaches awareness **95**.
+comparable evidence, generates at 96 with awareness **95**.
+
+### Draft slot sets a floor
+
+First-round picks are elite college players, so the draft signal sets a
+minimum the weighted blend cannot pull below: the whole first round floors
+at **91+**, and top-10 picks at 94–97. A major award floors 6 points below
+its own implied overall. Both are reported in the player's reasons whenever
+they bind. Later rounds step down normally (pick 40 → 88, pick 100 → 82).
 
 ### Depth-chart consistency
 

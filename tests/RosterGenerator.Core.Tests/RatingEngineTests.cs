@@ -232,6 +232,61 @@ public sealed class RatingEngineTests
         Assert.True(ratings.Overall <= 68, $"Unknown freshman generated at {ratings.Overall}.");
     }
 
+    // -- Draft slot ----------------------------------------------------------
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(5)]
+    [InlineData(10)]
+    [InlineData(16)]
+    [InlineData(24)]
+    [InlineData(32)]
+    public void FirstRoundPicksAreRatedAtLeast91(int overallPick)
+    {
+        // Real rosters put first-round picks at 91+, high picks higher still.
+        // Only modest supporting evidence is supplied here, so this also
+        // proves the draft floor survives dilution by weaker signals.
+        foreach (var (position, archetype) in new[]
+                 {
+                     ("QB", "QB_FieldGeneral"), ("HB", "HB_ElusiveBack"),
+                     ("CB", "CB_MantoMan"), ("LT", "OT_Power"), ("WR", "WR_DeepThreat"),
+                 })
+        {
+            var ratings = Engine.Generate(position, archetype, Player(position, 73, 210, "Junior"),
+                new RatingEvidence { DraftPickOverall = overallPick, Role = "Starter", StarRating = 3 });
+
+            Assert.True(ratings.Overall >= 91,
+                $"#{overallPick} overall pick at {position} generated {ratings.Overall}; " +
+                "first-round picks must reach 91.");
+        }
+    }
+
+    [Fact]
+    public void HigherPicksOutrankLowerOnesAndLaterRoundsStepDown()
+    {
+        int Overall(int pick) => Engine.Generate("CB", "CB_MantoMan",
+            Player("CB", 73, 195, "Junior"),
+            new RatingEvidence { DraftPickOverall = pick, Role = "Starter", StarRating = 3 }).Overall;
+
+        Assert.True(Overall(1) >= Overall(10));
+        Assert.True(Overall(10) >= Overall(32));
+        Assert.True(Overall(32) > Overall(64), "A late first-rounder must outrank a second-round pick.");
+        Assert.True(Overall(64) > Overall(200));
+    }
+
+    [Fact]
+    public void DraftFloorIsReportedWhenItRaisesTheBlend()
+    {
+        var ratings = Engine.Generate("CB", "CB_MantoMan", Player("CB", 73, 202, "Junior"),
+            new RatingEvidence
+            {
+                DraftPickOverall = 5, Role = "Starter", StarRating = 3,
+                Awards = new[] { "First-Team All-Conference" },
+            });
+
+        Assert.Contains(ratings.Talent.Reasons, r => r.Contains("floor from draft"));
+    }
+
     // -- Depth-chart consistency ---------------------------------------------
 
     [Fact]

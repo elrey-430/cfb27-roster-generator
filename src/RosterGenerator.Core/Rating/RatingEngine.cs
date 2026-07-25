@@ -116,12 +116,104 @@ public sealed class RatingEngine
                 "prevented the remaining adjustment.");
         }
 
-        // 5. Freeze to integers and recompute the overall from the values
-        //    actually written, so the two can never disagree.
+        // 5. Freeze to integers. Rounding moves the raw total by up to half a
+        //    point per attribute, which can drop the overall below the value
+        //    the double-precision solve achieved, so nudge integer attributes
+        //    until the overall computed from the values ACTUALLY WRITTEN hits
+        //    the target. This keeps the written overall and the written
+        //    attributes in agreement while still landing on the target.
         var final = attributes.ToDictionary(a => a.Key, a => (int)Math.Round(a.Value));
-        var finalOverall = formula.Compute(final.ToDictionary(a => a.Key, a => (double)a.Value));
+        var finalOverall = SettleIntegers(formula, final, target, positionModel, classModel, locked);
+        if (finalOverall != achieved && finalOverall != target)
+        {
+            adjustments.Add($"Overall settled at {finalOverall} rather than {target} after rounding to integers.");
+        }
 
         return new GeneratedRatings(final, finalOverall, target, group, formula.PlayerType, talent, adjustments);
+    }
+
+    /// <summary>
+    /// Nudges whole-number attributes until EA's formula returns
+    /// <paramref name="target"/>, respecting caps and locked measurements.
+    /// Attributes with the largest coefficients move first, so the fewest
+    /// possible points are changed.
+    /// </summary>
+    private int SettleIntegers(
+        OverallFormula formula,
+        Dictionary<string, int> values,
+        int target,
+        PositionRatingModel positionModel,
+        ClassYearExperienceModel? classModel,
+        IReadOnlySet<string> locked)
+    {
+        double Overall() => formula.Compute(values.ToDictionary(v => v.Key, v => (double)v.Value));
+
+        var candidates = formula.Coefficients
+            .Where(c => values.ContainsKey(c.Key) && !locked.Contains(c.Key))
+            .OrderByDescending(c => c.Value)
+            .Select(c => c.Key)
+            .ToList();
+
+        // Each pass may only move every attribute one point, so bound the
+        // work by the largest plausible gap rather than looping freely.
+        for (var pass = 0; pass < 40; pass++)
+        {
+            var current = Overall();
+            if (current == target)
+            {
+                return target;
+            }
+
+            var direction = current < target ? 1 : -1;
+            var moved = false;
+            foreach (var attribute in candidates)
+            {
+                var proposed = values[attribute] + direction;
+                var bounded = Bound(attribute, proposed, positionModel, classModel);
+                if (bounded == values[attribute])
+                {
+                    continue;
+                }
+
+                values[attribute] = bounded;
+                moved = true;
+                if (Overall() == target)
+                {
+                    return target;
+                }
+            }
+
+            if (!moved)
+            {
+                break;
+            }
+        }
+
+        return (int)Overall();
+    }
+
+    /// <summary>Applies position, class-year and global bounds to one integer value.</summary>
+    private int Bound(
+        string attribute, int value, PositionRatingModel positionModel, ClassYearExperienceModel? classModel)
+    {
+        if (positionModel.Caps.TryGetValue(attribute, out var bounds) && bounds.Length == 2)
+        {
+            value = (int)Math.Clamp(value, bounds[0], bounds[1]);
+        }
+
+        if (classModel is not null)
+        {
+            if (attribute == "AwarenessRating")
+            {
+                value = Math.Min(value, classModel.AwarenessCap);
+            }
+            else if (attribute == "PlayRecognitionRating")
+            {
+                value = Math.Min(value, classModel.PlayRecognitionCap);
+            }
+        }
+
+        return Math.Clamp(value, _model.GlobalCaps.Min, _model.GlobalCaps.Max);
     }
 
     private Dictionary<string, double> BuildShape(

@@ -46,13 +46,34 @@ public sealed class TalentScorer
             ? signals.Sum(s => s.Score * s.Weight) / coveredWeight
             : _model.ReferenceTalent;
 
+        // A strong retrospective signal sets a floor: a top-10 draft pick was
+        // an elite college player regardless of how modest his award list or
+        // recruiting rating looked, and averaging would understate him.
+        string? floorNote = null;
+        foreach (var signal in signals)
+        {
+            if (!_model.SignalFloors.TryGetValue(signal.Name, out var tolerance))
+            {
+                continue;
+            }
+
+            var floor = signal.Score - tolerance;
+            if (floor > score)
+            {
+                floorNote =
+                    $"Raised to {floor:0} (floor from {signal.Name}: {signal.Explanation}) — the weighted " +
+                    $"blend of {score:0} understated a player with this record.";
+                score = floor;
+            }
+        }
+
         var high = _model.ConfidenceThresholds.GetValueOrDefault("high", 0.60);
         var medium = _model.ConfidenceThresholds.GetValueOrDefault("medium", 0.30);
         var confidence = coverage >= high ? RatingConfidence.High
             : coverage >= medium ? RatingConfidence.Medium
             : RatingConfidence.Low;
 
-        return new TalentAssessment(score, confidence, coverage, signals, missing);
+        return new TalentAssessment(score, confidence, coverage, signals, missing, floorNote);
     }
 
     private void AddDraftSignal(RatingEvidence evidence, List<TalentSignal> signals, List<string> missing)
