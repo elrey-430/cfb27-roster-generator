@@ -1,5 +1,16 @@
 # Historical Roster CSV Format
 
+> **This file is an *input*, not something you import into the roster
+> editor.** You fill it in, the generator reads it, and the generator writes
+> the importable file to `Output/Generated_Roster.csv`. Handing this format
+> straight to the roster editor produces
+> *"CSV file is missing required column `_tableIndex`"* — that means the
+> generator step was skipped.
+>
+> ```
+> your roster CSV  →  [generator]  →  Output/Generated_Roster.csv  →  roster editor
+> ```
+
 This is the **user-facing** input format for the roster generator. You fill
 in real-world roster information — the application handles every CFB27
 internal detail (team ids, position enums, redshirt flags, the weight

@@ -44,8 +44,11 @@ required.
    what the game will show. Pass `--ratings inherit` to keep the ratings of
    the players being replaced instead.
 4. **Collect the output** from `Output/`:
-   - `Generated_Roster.csv` — the full player table with your team
-     replaced; import it with the existing roster editing tool.
+   - `Generated_Roster.csv` — **this is the file you import.** It is the
+     full 286-column player table with your team replaced. (Your own roster
+     CSV from step 2 is an input and is *not* importable; if the editor
+     says *"missing required column `_tableIndex`"*, that input file was
+     handed to it by mistake.)
    - `Generation_Report.txt` — players processed/mapped, missing fields,
      defaults used, and warnings.
 
