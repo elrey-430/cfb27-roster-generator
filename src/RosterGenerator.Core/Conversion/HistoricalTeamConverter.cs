@@ -30,6 +30,8 @@ public sealed class HistoricalTeamConverter
     private readonly RatingEngine? _ratingEngine;
     private readonly ArchetypeSelector? _archetypeSelector;
     private readonly RosterFiller? _rosterFiller;
+    private readonly bool _replaceRealPersonFaces;
+    private Appearance.HeadAssetPool? _faces;
     private readonly RosterDepthModel? _depth;
     private readonly TeamMappingSet? _previousSchools;
 
@@ -67,8 +69,10 @@ public sealed class HistoricalTeamConverter
         ArchetypeSelector? archetypeSelector = null,
         RosterFiller? rosterFiller = null,
         RosterDepthModel? rosterDepth = null,
-        TeamMappingSet? previousSchoolMappings = null)
+        TeamMappingSet? previousSchoolMappings = null,
+        bool replaceRealPersonFaces = true)
     {
+        _replaceRealPersonFaces = replaceRealPersonFaces;
         _teamMappings = teamMappings;
         _positionMappings = positionMappings;
         _ratingEngine = ratingEngine;
@@ -338,6 +342,52 @@ public sealed class HistoricalTeamConverter
     /// export and produces no file at all. One mistyped jersey number is not a
     /// reason to hand back nothing for an 85-player roster.
     /// </summary>
+    /// <summary>
+    /// Decides which face the replaced player wears.
+    ///
+    /// <para>The donor slot's head is kept unless it is a real person's scan.
+    /// 71 of the 85 slots on a typical team carry one, so leaving them puts
+    /// most of a recreated roster in the recognisable faces of present-day
+    /// players under other people's names. Those slots are given a generated
+    /// face drawn from the same save — never an invented asset name — and the
+    /// substitution is reported like every other.</para>
+    ///
+    /// <para>The scan's <c>PLYR_ASSETNAME</c> goes with it: the column is set
+    /// on all 9,011 scanned players and blank on 4,100 generated ones, so
+    /// clearing it is both attested and the thing that severs the last link to
+    /// the real person.</para>
+    /// </summary>
+    private (string AssetName, string HeadAssetName, string Portrait) ChooseFace(
+        RosterEditSession session, Player slot, PlayerConversionEntry entry)
+    {
+        var inherited = (
+            AssetName: slot.GetRaw(PlayerColumns.AssetName),
+            HeadAssetName: slot.GetRaw(PlayerColumns.GenericHeadAssetName),
+            Portrait: slot.GetRaw(PlayerColumns.Portrait));
+
+        if (!_replaceRealPersonFaces
+            || !Appearance.HeadAsset.Parse(inherited.HeadAssetName).IsRealPerson)
+        {
+            return inherited;
+        }
+
+        _faces ??= Appearance.HeadAssetPool.Build(session.Roster);
+        var replacement = _faces.Draw(slot.RowKey);
+        if (replacement is null)
+        {
+            entry.Warnings.Add(
+                "kept the replaced player's head: it is a real person's likeness, but this export " +
+                "carries no generated faces to use instead.");
+            return inherited;
+        }
+
+        entry.DefaultsUsed.Add(
+            $"face: the slot carried a real player's likeness ({inherited.HeadAssetName}), " +
+            $"replaced with a generated one ({replacement.Value.AssetName}).");
+
+        return ("", replacement.Value.AssetName, replacement.Value.Portrait.ToString());
+    }
+
     private static int? Usable(
         int? value, int min, int max, string label, string inherited, PlayerConversionEntry entry)
     {
@@ -367,15 +417,16 @@ public sealed class HistoricalTeamConverter
         PlayerConversionEntry entry)
     {
         // Identity: replace-with-real-player semantics. The donor slot's
-        // asset values are passed back unchanged (a deliberate, reported
-        // assumption — see GlobalAssumptions).
+        // asset values are passed back unchanged unless the slot carried a
+        // real person's head scan — see ChooseFace.
+        var face = ChooseFace(session, slot, entry);
         session.ReplacePlayerIdentity(
             slot,
             historicalPlayer.FirstName,
             historicalPlayer.LastName,
-            assetName: slot.GetRaw(PlayerColumns.AssetName),
-            genericHeadAssetName: slot.GetRaw(PlayerColumns.GenericHeadAssetName),
-            portrait: slot.GetRaw(PlayerColumns.Portrait));
+            assetName: face.AssetName,
+            genericHeadAssetName: face.HeadAssetName,
+            portrait: face.Portrait);
 
         // Position: keep the slot's position when interchangeable with the
         // mapped one (a generic DE keeps the slot's LE or RE), otherwise

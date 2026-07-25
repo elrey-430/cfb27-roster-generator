@@ -54,7 +54,7 @@ static int Usage()
           generate   --dynasty <folder of exported CSVs> --roster <historical roster .csv>
                      [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
                      [--ratings generate|inherit] [--archetypes select|inherit]
-                     [--fill fill|leave] [--equipment era|leave]
+                     [--fill fill|leave] [--equipment era|leave] [--faces replace|inherit]
                      [--equipment-output <csv>]
                      [--team-mappings <json>] [--position-mappings <json>]
           validate   --roster <historical roster .csv>
@@ -88,6 +88,13 @@ static int Usage()
         generated) re-rates those slots as end-of-roster depth, holding each one
         below your weakest player at that position. Their names and jersey
         numbers do not change. --fill leave keeps them exactly as they are.
+
+        Most roster slots carry a scan of a real person's head -- 9,011 of
+        16,257 players in a base save -- and a replaced player used to inherit
+        it, so a recreated roster ended up wearing the recognisable faces of
+        present-day players under other people's names. --faces replace (the
+        default) gives those players a generated face taken from elsewhere in
+        your own export; --faces inherit keeps the slot's head as it was.
 
         Equipment is period-correct by default. Helmets live in the save's
         CharacterVisuals table, so when --season falls inside a known era the
@@ -276,6 +283,13 @@ static int Generate(Dictionary<string, string> options)
         throw new ArgumentException("--fill must be 'fill' or 'leave'.");
     }
 
+    var facesMode = options.GetValueOrDefault("faces", "replace");
+    if (!facesMode.Equals("replace", StringComparison.OrdinalIgnoreCase) &&
+        !facesMode.Equals("inherit", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new ArgumentException("--faces must be 'replace' or 'inherit'.");
+    }
+
     var equipmentMode = options.GetValueOrDefault("equipment", "era");
     if (!equipmentMode.Equals("era", StringComparison.OrdinalIgnoreCase) &&
         !equipmentMode.Equals("leave", StringComparison.OrdinalIgnoreCase))
@@ -299,6 +313,7 @@ static int Generate(Dictionary<string, string> options)
         Ratings = generateRatings ? RatingsMode.Generate : RatingsMode.Inherit,
         SelectArchetypes = archetypeMode.Equals("select", StringComparison.OrdinalIgnoreCase),
         FillRoster = fillMode.Equals("fill", StringComparison.OrdinalIgnoreCase),
+        ReplaceRealPersonFaces = facesMode.Equals("replace", StringComparison.OrdinalIgnoreCase),
         ApplyEquipment = equipmentMode.Equals("era", StringComparison.OrdinalIgnoreCase),
         EquipmentOutputPath = options.TryGetValue("equipment-output", out var equipmentOutput)
             ? equipmentOutput

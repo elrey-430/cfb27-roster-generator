@@ -36,6 +36,11 @@ public sealed class MainWindow : Window
     private readonly CheckBox _ratingsBox = new() { Content = "Generate ratings from the roster CSV", IsChecked = true };
     private readonly CheckBox _archetypesBox = new() { Content = "Choose each player's archetype", IsChecked = true };
     private readonly CheckBox _fillBox = new() { Content = "Fill the rest of the roster as depth", IsChecked = true };
+    private readonly CheckBox _facesBox = new()
+    {
+        Content = "Replace real players' faces on slots you take over",
+        IsChecked = true,
+    };
     private readonly CheckBox _equipmentBox = new()
     {
         Content = "Use period-correct helmets for the season",
@@ -122,7 +127,7 @@ public sealed class MainWindow : Window
         var options = new StackPanel
         {
             Spacing = 4,
-            Children = { _ratingsBox, _archetypesBox, _fillBox, _equipmentBox },
+            Children = { _ratingsBox, _archetypesBox, _fillBox, _equipmentBox, _facesBox },
         };
         panel.Children.Add(Labelled("4.  Options", options));
 
@@ -325,6 +330,7 @@ public sealed class MainWindow : Window
             SelectArchetypes = _ratingsBox.IsChecked == true && _archetypesBox.IsChecked == true,
             FillRoster = _ratingsBox.IsChecked == true && _fillBox.IsChecked == true,
             ApplyEquipment = _equipmentBox.IsChecked == true,
+            ReplaceRealPersonFaces = _facesBox.IsChecked == true,
         };
 
         _generateButton.IsEnabled = false;

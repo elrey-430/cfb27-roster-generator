@@ -55,6 +55,14 @@ public sealed record RosterGenerationRequest
     public bool FillRoster { get; init; } = true;
 
     /// <summary>
+    /// Give a historical player a generated face when the roster slot they
+    /// take over carried a real person's head scan. Most slots do, so leaving
+    /// them puts most of a recreated roster in the recognisable faces of
+    /// present-day players under other people's names.
+    /// </summary>
+    public bool ReplaceRealPersonFaces { get; init; } = true;
+
+    /// <summary>
     /// Put period-correct helmets on the team, chosen from the season already
     /// being recreated. Silently does nothing when the export carries no
     /// CharacterVisuals table or no era covers the season.
@@ -223,7 +231,7 @@ public sealed class RosterGenerationService
         var session = new RosterEditSession(donor);
         var conversion = new HistoricalTeamConverter(
                 teamMappings, positionMappings, ratingEngine, archetypeSelector, filler, depth,
-                export.BuildPreviousSchoolMappings(teamAliases))
+                export.BuildPreviousSchoolMappings(teamAliases), request.ReplaceRealPersonFaces)
             .Convert(session, roster.Roster);
 
         CreateParentDirectory(request.OutputPath);

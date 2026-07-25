@@ -1,8 +1,32 @@
 # Project Status
 
-_Last updated: 2026-07-25 — end of Milestone 9._
+_Last updated: 2026-07-25 — end of Milestone 10._
 
 ## Current status
+
+**Milestone 10 (Faces) is in progress — the first tier is complete.**
+
+- **The defect.** A replaced player inherited the roster slot's head, and
+  **9,011 of 16,257** players in a base save wear a `Unique_` scan of a real
+  person — 71 of the 85 slots on a typical team. So most of a recreated 1985
+  roster wore the recognisable faces of present-day players, under other
+  people's names. On the Florida State fixture that was 71 slots; it is now 7,
+  and those 7 are leftover slots still carrying their own player's identity.
+- **The fix.** Those slots get a generated face **drawn from the user's own
+  export** — never an invented asset name, the same rule the equipment layer
+  follows — with `PLYR_PORTRAIT` written to match and `PLYR_ASSETNAME` cleared.
+  Selection is seeded from the player's row key, so a roster regenerates
+  identically. `--faces inherit` restores the old behaviour.
+- **Deliberately narrow.** Slots that already carried a generated face are not
+  churned, and slots no historical player took over keep their own likeness.
+  Every substitution is listed in the report.
+- **Not attempted: matching a historical player to a real scan.** The scans
+  are present-day players, so the overlap with any historical season is
+  almost nil — and inferring what a real person looked like from their name is
+  not something this tool should do. A user who knows the right head can name
+  it; that is their call, not an inference.
+- Tests: 289/289. The 2023 Florida State golden fixture was regenerated; the
+  only columns that moved are the three head columns.
 
 **Milestone 9 (Period-correct equipment) is complete.**
 

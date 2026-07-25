@@ -257,6 +257,50 @@ Milestone 1 scope.
 
 ---
 
+## Group 5b — Head assets (confirmed by census)
+
+`GenericHeadAssetName` holds all three of the game's head systems despite its
+name. Across the 16,257 live players of a base save:
+
+| Kind | Players | Shape |
+|---|---|---|
+| Real person's scan | **9,011** | `Unique_AbasiriJide_653` |
+| Generated face | **7,244** | `Generic_3759_P_T0178_D_2_4` |
+| Create-a-face | 1 | `Custom_Head_CAF` |
+| Other | 1 | `3_MorphHead` |
+
+Two companion columns move with it:
+
+- **`PLYR_PORTRAIT`** is the number embedded in a generated name — they agree
+  on 7,243 of 7,244 rows, so the pair must be written together.
+- **`PLYR_ASSETNAME`** is set on **all 9,011** scanned players and matches the
+  scan's own name (`Unique_<PLYR_ASSETNAME>`) on 8,681 of them. It is blank on
+  4,100 generated players and set on the other 3,144, so either state is
+  attested for a generated face.
+
+The generated name decomposes as
+`Generic_<portrait>_P_T<tone>_<family>_<a>_<b>`, where the `T` segment has 59
+distinct values, the family letter is one of `D`/`H`/`T`/`M`, and the trailing
+digits run 1–8 and 1–4. **What those segments control is not confirmed** and
+nothing depends on them.
+
+**Tool policy.** A replaced player used to inherit the slot's head, and 71 of
+the 85 slots on a typical team carry a scan — so most of a recreated roster
+wore the recognisable faces of present-day players under other people's names.
+Those slots are now given a generated face **taken from the same export**, so
+no asset name is ever invented, and `PLYR_ASSETNAME` is cleared with it. Slots
+already carrying a generated face are left alone, as are slots no historical
+player took over: a leftover player is still themselves.
+
+The create-a-face path carries semantic, human-readable slots inside
+`CharacterVisuals` — `Head_hair_ShortCurly`, `Head_FacialHair_Animal`,
+`Head_Face_Tone03_Set05`, plus eyes, nose, jaw, chin, cheek, ears and body
+type. Exactly one character in the observed save uses it, so whether players
+can use that path is **an open question**, and it is the obvious route to
+era-appropriate hair if they can.
+
+---
+
 ## Group 6 — Equipment lives in another table (CharacterVisuals, confirmed)
 
 Uniform and equipment are **not** in the Player table. The evidence is a
