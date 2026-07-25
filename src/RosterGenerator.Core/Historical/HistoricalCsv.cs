@@ -4,8 +4,26 @@ namespace RosterGenerator.Core.Historical;
 
 /// <summary>The outcome of reading a user-facing historical roster CSV.</summary>
 /// <param name="Roster">The parsed roster (rows with fatal problems excluded).</param>
-/// <param name="Warnings">Per-row problems, phrased for end users.</param>
-public sealed record HistoricalCsvResult(HistoricalRoster Roster, IReadOnlyList<string> Warnings);
+/// <param name="Warnings">
+/// Values that could NOT be used as written, phrased for end users — a
+/// dropped row, an unreadable number, a misaligned row.
+/// </param>
+/// <param name="Corrections">
+/// Values that WERE used after being cleaned up ("#13" read as 13). Kept
+/// apart from <paramref name="Warnings"/> because a fixed value is not a
+/// problem, and burying it among real ones trains people to ignore both.
+/// </param>
+public sealed record HistoricalCsvResult(
+    HistoricalRoster Roster,
+    IReadOnlyList<string> Warnings,
+    IReadOnlyList<string> Corrections)
+{
+    /// <summary>Creates a result with no corrections.</summary>
+    public HistoricalCsvResult(HistoricalRoster roster, IReadOnlyList<string> warnings)
+        : this(roster, warnings, Array.Empty<string>())
+    {
+    }
+}
 
 /// <summary>
 /// Reads the simple, user-facing historical roster CSV format
@@ -42,6 +60,7 @@ public static class HistoricalCsv
         // early are ordinary, and must not be treated as a corrupt file.
         var document = CsvDocument.Parse(File.ReadAllText(path), CsvDocument.RaggedRows.Pad);
         var warnings = new List<string>();
+        var corrections = new List<string>();
 
         // A row of the wrong width usually means a stray or missing comma, and
         // the silent fix would hide a header the user has misaligned.
@@ -127,14 +146,14 @@ public static class HistoricalCsv
                 FirstName = firstName,
                 LastName = lastName,
                 Position = position,
-                JerseyNumber = ParseInt(Cell(row, "number"), rowLabel, "Number", warnings),
+                JerseyNumber = ParseInt(Cell(row, "number"), rowLabel, "Number", warnings, corrections),
                 HeightInches = ParseHeight(Cell(row, "height"), rowLabel, warnings),
-                WeightPounds = ParseInt(Cell(row, "weight"), rowLabel, "Weight", warnings),
+                WeightPounds = ParseInt(Cell(row, "weight"), rowLabel, "Weight", warnings, corrections),
                 ClassYear = NullIfEmpty(Cell(row, "class")),
                 Hometown = NullIfEmpty(Cell(row, "hometown")),
                 PreviousSchool = NullIfEmpty(Cell(row, "previousschool")),
                 Notes = NullIfEmpty(Cell(row, "notes")),
-                Evidence = ReadEvidence(Cell, row, rowLabel, warnings),
+                Evidence = ReadEvidence(Cell, row, rowLabel, warnings, corrections),
             });
         }
 
@@ -160,7 +179,7 @@ public static class HistoricalCsv
             Source = $"Simple historical CSV: {Path.GetFileName(path)}",
             Players = players,
         };
-        return new HistoricalCsvResult(roster, warnings);
+        return new HistoricalCsvResult(roster, warnings, corrections);
     }
 
     /// <summary>
@@ -170,7 +189,8 @@ public static class HistoricalCsv
     /// so new statistics need no code change here.
     /// </summary>
     private static RatingEvidence ReadEvidence(
-        Func<int, string, string> cell, int row, string rowLabel, List<string> warnings)
+        Func<int, string, string> cell, int row, string rowLabel, List<string> warnings,
+        List<string> corrections)
     {
         var stats = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         foreach (var key in StatColumnNames)
@@ -202,14 +222,14 @@ public static class HistoricalCsv
         return new RatingEvidence
         {
             Role = NullIfEmpty(cell(row, "role")),
-            StarRating = ParseInt(cell(row, "starrating"), rowLabel, "StarRating", warnings),
-            FortyYardDash = ParseDouble(cell(row, "forty"), rowLabel, "Forty", warnings),
-            BenchPressReps = ParseInt(cell(row, "bench"), rowLabel, "Bench", warnings),
-            VerticalJumpInches = ParseDouble(cell(row, "vertical"), rowLabel, "Vertical", warnings),
-            ShuttleSeconds = ParseDouble(cell(row, "shuttle"), rowLabel, "Shuttle", warnings),
-            ThreeConeSeconds = ParseDouble(cell(row, "threecone"), rowLabel, "ThreeCone", warnings),
-            DraftPickOverall = undrafted ? null : ParseInt(draftPickText, rowLabel, "DraftPick", warnings),
-            DraftRound = ParseInt(cell(row, "draftround"), rowLabel, "DraftRound", warnings),
+            StarRating = ParseInt(cell(row, "starrating"), rowLabel, "StarRating", warnings, corrections),
+            FortyYardDash = ParseDouble(cell(row, "forty"), rowLabel, "Forty", warnings, corrections),
+            BenchPressReps = ParseInt(cell(row, "bench"), rowLabel, "Bench", warnings, corrections),
+            VerticalJumpInches = ParseDouble(cell(row, "vertical"), rowLabel, "Vertical", warnings, corrections),
+            ShuttleSeconds = ParseDouble(cell(row, "shuttle"), rowLabel, "Shuttle", warnings, corrections),
+            ThreeConeSeconds = ParseDouble(cell(row, "threecone"), rowLabel, "ThreeCone", warnings, corrections),
+            DraftPickOverall = undrafted ? null : ParseInt(draftPickText, rowLabel, "DraftPick", warnings, corrections),
+            DraftRound = ParseInt(cell(row, "draftround"), rowLabel, "DraftRound", warnings, corrections),
             UndraftedFreeAgent = undrafted,
             Awards = awards,
             Stats = stats,
@@ -247,7 +267,8 @@ public static class HistoricalCsv
         return cleaned.Count(char.IsDigit) == 0 || cleaned.Count(c => c == '.') > 1 ? null : cleaned;
     }
 
-    private static double? ParseDouble(string value, string rowLabel, string field, List<string> warnings)
+    private static double? ParseDouble(string value, string rowLabel, string field, List<string> warnings,
+        List<string> corrections)
     {
         if (value.Length == 0)
         {
@@ -261,7 +282,7 @@ public static class HistoricalCsv
 
         if (Digits(value) is string digits && double.TryParse(digits, out var recovered))
         {
-            warnings.Add($"{rowLabel}: {field} '{value}' read as {recovered:0.##}.");
+            corrections.Add($"{rowLabel}: {field} '{value}' read as {recovered:0.##}.");
             return recovered;
         }
 
@@ -310,7 +331,8 @@ public static class HistoricalCsv
         return null;
     }
 
-    private static int? ParseInt(string value, string rowLabel, string field, List<string> warnings)
+    private static int? ParseInt(string value, string rowLabel, string field, List<string> warnings,
+        List<string> corrections)
     {
         if (value.Length == 0)
         {
@@ -328,7 +350,7 @@ public static class HistoricalCsv
             Math.Abs(recovered - Math.Round(recovered)) < 1e-9)
         {
             var whole = (int)Math.Round(recovered);
-            warnings.Add($"{rowLabel}: {field} '{value}' read as {whole}.");
+            corrections.Add($"{rowLabel}: {field} '{value}' read as {whole}.");
             return whole;
         }
 

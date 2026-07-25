@@ -26,6 +26,7 @@ try
     return args.FirstOrDefault() switch
     {
         "generate" => Generate(ParseOptions(args[1..])),
+        "validate" => Validate(ParseOptions(args[1..])),
         "list-teams" => ListTeams(ParseOptions(args[1..])),
         "compare" => Compare(ParseOptions(args[1..])),
         _ => Usage(),
@@ -49,9 +50,16 @@ static int Usage()
                      [--ratings generate|inherit] [--archetypes select|inherit]
                      [--fill fill|leave]
                      [--team-mappings <json>] [--position-mappings <json>]
+          validate   --roster <historical roster .csv>
+                     [--dynasty <export folder or Player.csv>] [--team <name>] [--season <year>]
           list-teams --dynasty <export folder or Player.csv>
           compare    --left <Player.csv> --right <Player.csv> --team <name or id>
                      [--dynasty <export>] [--output <md>]
+
+        validate checks your roster CSV without generating anything, so a
+        mistake shows up in a few lines instead of inside a 27 MB file's report.
+        Add --dynasty to also check the team name and the roster size against
+        your save. It exits non-zero only when something would stop generation.
 
         --ratings generate (the default) builds each player's attributes from the
         historical evidence in the roster CSV; --ratings inherit keeps the ratings
@@ -153,6 +161,39 @@ static int ListTeams(Dictionary<string, string> options)
     }
 
     return 0;
+}
+
+static int Validate(Dictionary<string, string> options)
+{
+    var rosterPath = options.TryGetValue("roster", out var roster)
+        ? roster
+        : options.TryGetValue("historical", out var historical)
+            ? historical
+            : throw new ArgumentException("Missing required option --roster (the roster CSV to check).");
+
+    // The dynasty is optional: a user can check their file before they have
+    // exported a save. With one, the team name and the roster size are checked
+    // against the real thing too.
+    var export = options.ContainsKey("dynasty") || options.ContainsKey("base")
+        ? OpenDynasty(options)
+        : null;
+
+    var report = RosterCsvValidator.Check(
+        rosterPath,
+        PositionMappingSet.Load(FindDataFile(options, "position-mappings", "PositionMappings.json", required: true)!),
+        export,
+        options.GetValueOrDefault("team"),
+        options.TryGetValue("season", out var season) && int.TryParse(season, out var year) ? year : null,
+        RatingEngine.Load(
+            FindDataFile(options, "rating-models", "RatingModels.json", required: true)!,
+            FindDataFile(options, "overall-formulas", "OverallFormulas.json", required: true)!));
+
+    Console.WriteLine();
+    Console.Write(report.ToText());
+
+    // A non-zero exit only for problems that stop generation, so this can be
+    // used as a gate without failing on advisory notes.
+    return report.CanGenerate ? 0 : 1;
 }
 
 static int Generate(Dictionary<string, string> options)

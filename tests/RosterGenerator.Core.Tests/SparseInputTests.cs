@@ -306,7 +306,10 @@ public sealed class SparseInputTests
         Assert.Equal(212, Assert.Single(result.Roster.Players).WeightPounds);
 
         // Recovered, but not in silence — the user should see what was read.
-        Assert.Contains(result.Warnings, w => w.Contains("212 lbs") && w.Contains("read as 212"));
+        // It belongs in Corrections, not Warnings: a value that was used is
+        // not a problem, and mixing the two teaches people to ignore both.
+        Assert.Contains(result.Corrections, c => c.Contains("212 lbs") && c.Contains("read as 212"));
+        Assert.DoesNotContain(result.Warnings, w => w.Contains("212 lbs"));
     }
 
     [Fact]
