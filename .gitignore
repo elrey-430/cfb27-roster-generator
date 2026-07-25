@@ -2,3 +2,7 @@ bin/
 obj/
 *.user
 dist/
+
+# The generated player table is a build output: 26 MB, regenerable in
+# seconds, and it contains the whole base-save player table.
+Output/*.csv

@@ -10,8 +10,19 @@ By default `generate` writes its two deliverables here:
 
 Override either path with `--output` / `--report`.
 
-The `2023_Florida_State_*` files committed here are the Milestone 2
-worked example: a complete 2023 Florida State roster generated from
-`HistoricalData/2023/FloridaState.json` against a base dynasty export, kept
-as a reference deliverable. The same generation is protected by an
-automated byte-stability test — see `Tests/` and `FsuRegressionTests`.
+`2023_Florida_State_Report.md` is the worked example's report, kept as a
+reference for what the tool tells you about its own decisions.
+
+The player table that went with it is **not** committed. It is a build
+output: 26 MB, regenerable in seconds, and a copy of the whole base-save
+player table — the game's data rather than this project's. Produce it with:
+
+```
+dotnet run --project src/RosterGenerator.Cli -- generate \
+    --dynasty <your export> --roster Tests/2023_FSU_Input.csv \
+    --output Output/2023_Florida_State_CFB27.csv \
+    --report Output/2023_Florida_State_Report.md
+```
+
+That generation is protected by an automated byte-stability test — see
+`Tests/` and `FsuRegressionTests`.

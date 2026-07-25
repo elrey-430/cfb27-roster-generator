@@ -1,0 +1,63 @@
+name: CI
+
+# Builds and tests on Windows, the platform the tool ships for.
+#
+# Releases are NOT built here. They are built by the release workflow in
+# elrey-430/cfb27-historical-rosters, which checks this repository out and
+# publishes with its own token — a workflow's built-in GITHUB_TOKEN cannot
+# create a release in a different repository, so putting the job there is
+# what removes the need for a personal access token entirely.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Test
+        run: dotnet test --configuration Release --nologo
+
+      # Publishing is part of the contract — a change that builds but cannot
+      # be packaged is still broken — so it runs on every push rather than
+      # only at release time.
+      - name: Publish
+        shell: pwsh
+        run: |
+          $common = @(
+            '--configuration', 'Release',
+            '--runtime', 'win-x64',
+            '--self-contained',
+            '-p:PublishSingleFile=true',
+            '-p:EnableCompressionInSingleFile=true',
+            '-p:DebugType=none',
+            '-p:GenerateDocumentationFile=false',
+            '--nologo'
+          )
+          dotnet publish src/RosterGenerator.Gui @common --output dist/app
+          dotnet publish src/RosterGenerator.Cli @common --output dist/app
+
+      # Proves the executable starts on Windows. `validate` exercises the
+      # whole read-and-check path against the committed fixtures without
+      # needing a dynasty export.
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          $exe = 'dist/app/RosterGenerator.Cli.exe'
+          & $exe validate --roster Tests/2023_FSU_Input.csv
+          if ($LASTEXITCODE -ne 0) { throw "validate exited $LASTEXITCODE" }
+          & $exe list-teams --dynasty Tests/DonorDynasty | Select-Object -First 5
+          if ($LASTEXITCODE -ne 0) { throw "list-teams exited $LASTEXITCODE" }

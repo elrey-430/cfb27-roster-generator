@@ -123,3 +123,11 @@ exactly.
 Equipment and face recreation, automatic historical data gathering,
 multi-season bulk generation, dynasty editing, and the derived `Player[]`
 array recompute — see `docs/Status.md`.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
+
+The licence covers this project's code, documentation and derived data. It
+does not cover the game data in the test fixtures, nor the community
+save-export and roster-import tools this depends on. See [NOTICE.md](NOTICE.md).
