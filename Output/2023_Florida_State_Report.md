@@ -4,27 +4,113 @@
 - **Players in historical dataset:** 75
 - **Players generated:** 75
 - **Players skipped:** 0
-- **Donor slots left unreplaced:** 10
-- **Dataset source:** Compiled independently from publicly available 2023 roster information (seminoles.com 2023 roster, Tomahawk Nation roster releases, ESPN player pages, Sports Illustrated/247Sports position previews). Spot-verified via web search July 2026. NOT derived from any CFB27 dynasty export.
+- **Donor slots left unreplaced:** 0
+- **Dataset source:** Simple historical CSV: 2023_FSU_Input.csv
 
 ## Global assumptions
 
-- Ratings are inherited from the donor slot each player replaces — automatic rating generation is out of scope for this milestone.
+- Ratings are generated from each player's historical evidence and calibrated so EA's own overall formula reproduces the intended overall; see Ratings/Rating_Model.md.
 - Weight is written using the confirmed encoding (stored value = pounds − 160, representable range 160–400 lb); weights outside that range or missing from the dataset inherit the donor slot's weight.
 - Identity asset fields (PLYR_ASSETNAME, GenericHeadAssetName, PLYR_PORTRAIT) keep the donor slot's values, so in-game portraits/head models belong to the replaced fictional players. Face mapping is a later milestone.
-- Hometown/previous-school data is carried in the dataset but not exported — the candidate columns (PLYR_HOME_TOWN, PLYR_HOME_STATE) are not yet empirically confirmed as safe to write.
+- Hometown is written: PLYR_HOME_TOWN takes the town as free text and PLYR_HOME_STATE the matching state from the save's 51-value enum (NonUS for anything not a US state).
+- Player archetype (PlayerType) is chosen from each player's historical profile and the overall rating is recomputed with that archetype's EA formula, so the two always agree.
 - Slot assignment prefers a donor slot at the same position (or an interchangeable one, e.g. LE/RE); players placed in an unrelated slot get an explicit position change.
-
-## Warnings
-
-- 10 donor slot(s) were not replaced; the original fictional players remain on the roster (listed below). Remove or edit them manually if unwanted.
+- The team's existing roster rates 5 point(s) above a typical program, so players you supplied little evidence for are rated as members of this team rather than of an average one. Players with a draft slot, awards or a stat line are unaffected.
+- 10 roster slot(s) had no historical player, so they were re-rated as end-of-roster depth using the overall a real save carries at those roster ranks (data/RosterDepth.json), each held below the weakest historical player at its position. Their names, jersey numbers and portraits are unchanged.
 
 ## Players with missing information, defaults, or warnings
+
+### Tate Rodemaker
+
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+
+### Brock Glenn
+
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 74 -> 68: Freshman with Low confidence evidence.
+
+### Trey Benson
+
+Warnings:
+- Archetype HB_ElusivePower -> HB_PowerBack: HB_PowerBack chosen because WeightPounds 216 is at least 215
+- Physique: 216 lb vs 197 lb typical for HB (stronger, slightly slower).
+
+### Lawrance Toafili
+
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+
+### Rodney Hill
+
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 74 -> 68: Freshman with Low confidence evidence.
+
+### Caziah Holmes
+
+Warnings:
+- Archetype HB_ElusiveBack -> HB_ElusivePower: HB_ElusivePower chosen because WeightPounds 205 is at least 205
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
 
 ### Samuel Singleton
 
 Warnings:
 - No HB-compatible slot was free; converted a RE slot, so the slot's inherited ratings fit the old position.
+- Archetype DE_SmallerSpeedRusher -> HB_ElusiveBack: HB_ElusiveBack used as the HB default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 74 -> 68: Freshman with Low confidence evidence.
+
+### Keon Coleman
+
+Warnings:
+- Archetype WR_ShiftyRouteRunner -> WR_Physical: WR_Physical chosen because WeightPounds 215 is at least 210
+- Physique: 215 lb vs 186 lb typical for WR (stronger, slightly slower).
+
+### Johnny Wilson
+
+Warnings:
+- Archetype WR_ShiftyRouteRunner -> WR_Physical: WR_Physical chosen because WeightPounds 235 is at least 210
+- Target overall moved 78 -> 80: the program rates 5 point(s) above a typical one, and this player's own record is Medium confidence.
+- Physique: 235 lb vs 186 lb typical for WR (stronger, slightly slower).
+
+### Ja'Khi Douglas
+
+Warnings:
+- Archetype WR_DeepThreat -> WR_ShiftyRouteRunner: WR_ShiftyRouteRunner used as the WR default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 78: Junior with Low confidence evidence.
+
+### Destyn Hill
+
+Warnings:
+- Archetype WR_Physical -> WR_ShiftyRouteRunner: WR_ShiftyRouteRunner used as the WR default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 74 -> 68: Freshman with Low confidence evidence.
+
+### Hykeem Williams
+
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 74 -> 68: Freshman with Low confidence evidence.
+- Physique: 210 lb vs 186 lb typical for WR (stronger, slightly slower).
+
+### Deuce Spann
+
+Warnings:
+- Archetype WR_Physical -> WR_PhysicalRouteRunner: WR_PhysicalRouteRunner chosen because HeightInches 76 is at least 76
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
 
 ### Kentron Poitier
 
@@ -33,6 +119,19 @@ Missing:
 
 Default used:
 - Jersey number: 7 (inherited from donor slot)
+
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Physique: 205 lb vs 186 lb typical for WR (stronger, slightly slower).
+
+### Vandrevius Jacobs
+
+Warnings:
+- Archetype WR_Physical -> WR_ShiftyRouteRunner: WR_ShiftyRouteRunner used as the WR default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
 
 ### Joshua Burrell
 
@@ -44,6 +143,11 @@ Default used:
 
 Warnings:
 - No WR-compatible slot was free; converted a SS slot, so the slot's inherited ratings fit the old position.
+- Archetype S_RunSupport -> WR_ShiftyRouteRunner: WR_ShiftyRouteRunner used as the WR default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+- Physique: 205 lb vs 186 lb typical for WR (stronger, slightly slower).
 
 ### Darion Williamson
 
@@ -55,6 +159,16 @@ Default used:
 
 Warnings:
 - No WR-compatible slot was free; converted a SS slot, so the slot's inherited ratings fit the old position.
+- Archetype S_Hybrid -> WR_ShiftyRouteRunner: WR_ShiftyRouteRunner used as the WR default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+
+### Kyle Morlock
+
+Warnings:
+- Archetype TE_PhysicalRouteRunner -> TE_Possession: TE_Possession used as the TE default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
 
 ### Markeston Douglas
 
@@ -64,6 +178,12 @@ Missing:
 Default used:
 - Jersey number: 48 (inherited from donor slot)
 
+Warnings:
+- Archetype TE_Blocking -> TE_PhysicalRouteRunner: TE_PhysicalRouteRunner chosen because WeightPounds 260 is at least 250
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Physique: 260 lb vs 236 lb typical for TE (stronger, slightly slower).
+
 ### Brian Courtney
 
 Missing:
@@ -72,6 +192,11 @@ Missing:
 Default used:
 - Jersey number: 89 (inherited from donor slot)
 
+Warnings:
+- Archetype TE_PhysicalRouteRunner -> TE_Possession: TE_Possession used as the TE default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+
 ### Preston Daniel
 
 Missing:
@@ -79,6 +204,11 @@ Missing:
 
 Default used:
 - Jersey number: 23 (inherited from donor slot)
+
+Warnings:
+- Archetype TE_PhysicalRouteRunner -> TE_Possession: TE_Possession used as the TE default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
 
 ### Jerrale Powers
 
@@ -90,6 +220,53 @@ Default used:
 
 Warnings:
 - No TE-compatible slot was free; converted a LG slot, so the slot's inherited ratings fit the old position.
+- Archetype G_Agile -> TE_Possession: TE_Possession used as the TE default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+
+### Robert Scott
+
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 78: Junior with Low confidence evidence.
+- Physique: 320 lb vs 305 lb typical for OL (stronger, slightly slower).
+
+### Jeremiah Byers
+
+Warnings:
+- Archetype OT_Agile -> OT_Power: OT_Power chosen because WeightPounds 315 is at least 315
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 80: Senior with Low confidence evidence.
+
+### Casey Roddick
+
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 80: Senior with Low confidence evidence.
+- Physique: 320 lb vs 305 lb typical for OL (stronger, slightly slower).
+
+### D'Mitri Emmanuel
+
+Warnings:
+- Archetype G_Power -> G_Agile: G_Agile chosen because WeightPounds 305 is at most 305
+- Target overall moved 84 -> 86: the program rates 5 point(s) above a typical one, and this player's own record is Medium confidence.
+
+### Maurice Smith
+
+Warnings:
+- Archetype C_Power -> C_Agile: C_Agile chosen because WeightPounds 300 is at most 300
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 80: Senior with Low confidence evidence.
+
+### Darius Washington
+
+Warnings:
+- Target overall moved 84 -> 86: the program rates 5 point(s) above a typical one, and this player's own record is Medium confidence.
 
 ### Keiondre Jones
 
@@ -99,6 +276,18 @@ Missing:
 Default used:
 - Jersey number: 64 (inherited from donor slot)
 
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Physique: 325 lb vs 305 lb typical for OL (stronger, slightly slower).
+
+### Bless Harris
+
+Warnings:
+- Archetype G_Power -> G_WellRounded: G_WellRounded used as the RG default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+
 ### Julian Armella
 
 Missing:
@@ -106,6 +295,12 @@ Missing:
 
 Default used:
 - Jersey number: 79 (inherited from donor slot)
+
+Warnings:
+- Archetype OT_Agile -> OT_Power: OT_Power chosen because WeightPounds 315 is at least 315
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
 
 ### Jaylen Early
 
@@ -115,6 +310,12 @@ Missing:
 Default used:
 - Jersey number: 65 (inherited from donor slot)
 
+Warnings:
+- Archetype G_Agile -> G_WellRounded: G_WellRounded used as the RG default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+
 ### Qae'shon Sapp
 
 Missing:
@@ -122,6 +323,13 @@ Missing:
 
 Default used:
 - Jersey number: 71 (inherited from donor slot)
+
+Warnings:
+- Archetype OT_Agile -> OT_Power: OT_Power chosen because WeightPounds 320 is at least 315
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+- Physique: 320 lb vs 305 lb typical for OL (stronger, slightly slower).
 
 ### Lloyd Willis
 
@@ -131,6 +339,11 @@ Missing:
 Default used:
 - Jersey number: 52 (inherited from donor slot)
 
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+
 ### Antavious Woody
 
 Missing:
@@ -139,16 +352,41 @@ Missing:
 Default used:
 - Jersey number: 78 (inherited from donor slot)
 
+Warnings:
+- Archetype G_Power -> G_Agile: G_Agile chosen because WeightPounds 305 is at most 305
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+
 ### Andre Otto
 
 Missing:
 - Jersey number
+- Hometown
 
 Default used:
 - Jersey number: 48 (inherited from donor slot)
+- Hometown: Jacksonville, Florida (inherited from donor slot)
 
 Warnings:
 - No LG-compatible slot was free; converted a P slot, so the slot's inherited ratings fit the old position.
+- Archetype KP_Power -> G_WellRounded: G_WellRounded used as the LG default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+
+### Jared Verse
+
+Warnings:
+- Archetype DE_PurePower -> DE_SmallerSpeedRusher: DE_SmallerSpeedRusher chosen because WeightPounds 260 is at most 260
+
+### Patrick Payton
+
+Warnings:
+- Archetype DE_PowerRusher -> DE_SmallerSpeedRusher: DE_SmallerSpeedRusher chosen because WeightPounds 250 is at most 260
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 74: Sophomore with Low confidence evidence.
+- Physique: 250 lb vs 265 lb typical for DL (faster, slightly weaker).
 
 ### Gilber Edmond
 
@@ -158,6 +396,12 @@ Missing:
 Default used:
 - Jersey number: 13 (inherited from donor slot)
 
+Warnings:
+- Archetype DE_RunStopper -> DE_SmallerSpeedRusher: DE_SmallerSpeedRusher chosen because WeightPounds 250 is at most 260
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Physique: 250 lb vs 265 lb typical for DL (faster, slightly weaker).
+
 ### Byron Turner
 
 Missing:
@@ -165,6 +409,42 @@ Missing:
 
 Default used:
 - Jersey number: 92 (inherited from donor slot)
+
+Warnings:
+- Archetype DE_PurePower -> DE_PowerRusher: DE_PowerRusher used as the LE default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+
+### Fabien Lovett
+
+Warnings:
+- Archetype DT_PurePower -> DT_NoseTackle: DT_NoseTackle chosen because WeightPounds 315 is at least 315
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 80: Senior with Low confidence evidence.
+- Physique: 315 lb vs 265 lb typical for DL (stronger, slightly slower).
+
+### Braden Fiske
+
+Warnings:
+- Archetype DT_PowerRusher -> DT_SpeedRusher: DT_SpeedRusher chosen because Sacks 6 is at least 6
+- Physique: 295 lb vs 265 lb typical for DL (stronger, slightly slower).
+
+### Joshua Farmer
+
+Warnings:
+- Archetype DT_PurePower -> DT_PowerRusher: DT_PowerRusher used as the DT default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Physique: 305 lb vs 265 lb typical for DL (stronger, slightly slower).
+
+### Malcolm Ray
+
+Warnings:
+- Archetype DT_PurePower -> DT_PowerRusher: DT_PowerRusher used as the DT default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Physique: 300 lb vs 265 lb typical for DL (stronger, slightly slower).
 
 ### Darrell Jackson
 
@@ -174,6 +454,12 @@ Missing:
 Default used:
 - Jersey number: 98 (inherited from donor slot)
 
+Warnings:
+- Archetype DT_PurePower -> DT_NoseTackle: DT_NoseTackle chosen because WeightPounds 330 is at least 315
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Physique: 330 lb vs 265 lb typical for DL (stronger, slightly slower).
+
 ### KJ Sampson
 
 Missing:
@@ -181,6 +467,13 @@ Missing:
 
 Default used:
 - Jersey number: 94 (inherited from donor slot)
+
+Warnings:
+- Archetype DT_SpeedRusher -> DT_PowerRusher: DT_PowerRusher used as the DT default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+- Physique: 290 lb vs 265 lb typical for DL (stronger, slightly slower).
 
 ### Ayobami Tifase
 
@@ -192,6 +485,11 @@ Default used:
 
 Warnings:
 - No DT-compatible slot was free; converted a CB slot, so the slot's inherited ratings fit the old position.
+- Archetype CB_MantoMan -> DT_PowerRusher: DT_PowerRusher used as the DT default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+- Physique: 305 lb vs 265 lb typical for DL (stronger, slightly slower).
 
 ### Daniel Lyons
 
@@ -203,6 +501,31 @@ Default used:
 
 Warnings:
 - No DT-compatible slot was free; converted a K slot, so the slot's inherited ratings fit the old position.
+- Archetype KP_Power -> DT_PowerRusher: DT_PowerRusher used as the DT default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+- Physique: 290 lb vs 265 lb typical for DL (stronger, slightly slower).
+
+### Tatum Bethune
+
+Warnings:
+- Target overall moved 75 -> 77: the program rates 5 point(s) above a typical one, and this player's own record is Medium confidence.
+
+### DJ Lundy
+
+Warnings:
+- Archetype MLB_PassCoverage -> MLB_RunStopper: MLB_RunStopper used as the MLB default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Physique: 245 lb vs 225 lb typical for LB (stronger, slightly slower).
+
+### Blake Nichelson
+
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 74 -> 68: Freshman with Low confidence evidence.
 
 ### Omar Graham
 
@@ -212,6 +535,12 @@ Missing:
 Default used:
 - Jersey number: 45 (inherited from donor slot)
 
+Warnings:
+- Archetype MLB_FieldGeneral -> MLB_RunStopper: MLB_RunStopper used as the MLB default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+
 ### Justin Cryer
 
 Missing:
@@ -219,6 +548,12 @@ Missing:
 
 Default used:
 - Jersey number: 42 (inherited from donor slot)
+
+Warnings:
+- Archetype MLB_PassCoverage -> MLB_RunStopper: MLB_RunStopper used as the MLB default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
 
 ### Jayion McCluster
 
@@ -228,6 +563,43 @@ Missing:
 Default used:
 - Jersey number: 28 (inherited from donor slot)
 
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+
+### Fentrell Cypress
+
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 80: Senior with Low confidence evidence.
+
+### Jarrian Jones
+
+Warnings:
+- Target overall moved 83 -> 85: the program rates 5 point(s) above a typical one, and this player's own record is Medium confidence.
+
+### Renardo Green
+
+Warnings:
+- Archetype CB_MantoMan -> CB_HybridCorner: CB_HybridCorner chosen because PassesDefended 13 is at least 8
+
+### Azareye'h Thomas
+
+Warnings:
+- Archetype CB_Slot -> CB_MantoMan: CB_MantoMan used as the CB default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+
+### Kevin Knowles
+
+Warnings:
+- Archetype CB_HybridCorner -> CB_Slot: CB_Slot chosen because HeightInches 70 is at most 70
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 78: Junior with Low confidence evidence.
+
 ### Greedy Vance
 
 Missing:
@@ -235,6 +607,11 @@ Missing:
 
 Default used:
 - Jersey number: 33 (inherited from donor slot)
+
+Warnings:
+- Archetype CB_HybridCorner -> CB_MantoMan: CB_MantoMan used as the CB default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
 
 ### Omarion Cooper
 
@@ -244,6 +621,10 @@ Missing:
 Default used:
 - Jersey number: 18 (inherited from donor slot)
 
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+
 ### Quindarrius Jones
 
 Missing:
@@ -252,15 +633,53 @@ Missing:
 Default used:
 - Jersey number: 26 (inherited from donor slot)
 
+Warnings:
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+
+### Conrad Hussey
+
+Warnings:
+- Archetype CB_HybridCorner -> CB_MantoMan: CB_MantoMan used as the CB default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 74 -> 68: Freshman with Low confidence evidence.
+
 ### Edwin Joseph
 
 Warnings:
 - No CB-compatible slot was free; converted a FS slot, so the slot's inherited ratings fit the old position.
+- Archetype S_Hybrid -> CB_MantoMan: CB_MantoMan used as the CB default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+
+### Akeem Dent
+
+Warnings:
+- Archetype S_RunSupport -> S_Hybrid: S_Hybrid used as the FS default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 80: Senior with Low confidence evidence.
+
+### Shyheim Brown
+
+Warnings:
+- Archetype S_RunSupport -> S_Hybrid: S_Hybrid used as the FS default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 74: Sophomore with Low confidence evidence.
 
 ### Ashlynd Barker
 
 Warnings:
 - No CB-compatible slot was free; converted a P slot, so the slot's inherited ratings fit the old position.
+- Archetype KP_Power -> CB_MantoMan: CB_MantoMan used as the CB default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+- Physique: 200 lb vs 185 lb typical for CB (stronger, slightly slower).
 
 ### Kenton Kirkland
 
@@ -272,6 +691,17 @@ Default used:
 
 Warnings:
 - No CB-compatible slot was free; converted a RE slot, so the slot's inherited ratings fit the old position.
+- Archetype DE_SmallerSpeedRusher -> CB_MantoMan: CB_MantoMan used as the CB default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 64 -> 69: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 69 -> 68: Freshman with Low confidence evidence.
+
+### Ryan Fitzgerald
+
+Warnings:
+- Archetype KP_Power -> KP_Accurate: KP_Accurate used as the K default (no archetype rule matched the available data)
+- Target overall moved 89 -> 91: the program rates 5 point(s) above a typical one, and this player's own record is Medium confidence.
+- Target overall reduced 91 -> 90: the highest K the game itself carries is 90.
 
 ### Tyler Keltner
 
@@ -283,6 +713,17 @@ Default used:
 
 Warnings:
 - No K-compatible slot was free; converted a ROLB slot, so the slot's inherited ratings fit the old position.
+- Archetype OLB_PassCoverage -> KP_Accurate: KP_Accurate used as the K default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 69 -> 74: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+
+### Alex Mastromanno
+
+Warnings:
+- 'Australia' is not a US state; PLYR_HOME_STATE set to NonUS.
+- Target overall moved 91 -> 93: the program rates 5 point(s) above a typical one, and this player's own record is Medium confidence.
+- Target overall reduced 93 -> 86: the highest P the game itself carries is 86.
+- Physique: 220 lb vs 200 lb typical for P (stronger, slightly slower).
 
 ### James Rosenberry
 
@@ -294,22 +735,10 @@ Default used:
 
 Warnings:
 - No TE-compatible slot was free; converted a SS slot, so the slot's inherited ratings fit the old position.
-
-## Donor slots left unreplaced
-
-These original (fictional) players remain on the team because the
-historical dataset had fewer players than the donor roster:
-
-- Blake Nichelson (_row=7910) — ROLB, OVR 76
-- Jake Stanton (_row=10153) — RE, OVR 72
-- Jelani Washington (_row=11309) — QB, OVR 70
-- Shane Willow (_row=11808) — QB, OVR 76
-- Jarvis Boatwright Jr. (_row=12430) — FS, OVR 68
-- Daylen Green (_row=13265) — ROLB, OVR 65
-- Caleb LaVallee (_row=13822) — ROLB, OVR 67
-- Jaemin Pinckney (_row=14435) — RE, OVR 72
-- Max Redmon (_row=14521) — SS, OVR 68
-- Izayia Williams (_row=15346) — LOLB, OVR 69
+- Archetype S_Hybrid -> TE_Possession: TE_Possession used as the TE default (no archetype rule matched the available data)
+- Ratings generated with Low confidence — supply stats, awards, a draft slot or a recruiting rating for a better estimate.
+- Target overall moved 76 -> 81: the program rates 5 point(s) above a typical one, and this player's own record is Low confidence.
+- Target overall reduced 81 -> 80: Senior with Low confidence evidence.
 
 ## Converted players
 

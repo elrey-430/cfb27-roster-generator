@@ -255,7 +255,24 @@ static int Generate(Dictionary<string, string> options)
     // Filling the rest of the roster means writing ratings, so like archetype
     // selection it requires the engine.
     var fillMode = options.GetValueOrDefault("fill", ratingEngine is null ? "leave" : "fill");
+    if (!fillMode.Equals("fill", StringComparison.OrdinalIgnoreCase) &&
+        !fillMode.Equals("leave", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new ArgumentException("--fill must be 'fill' or 'leave'.");
+    }
+
+    // The measured roster shape drives two things, so it is loaded whenever
+    // ratings are generated, not only when the fill is on: it tells the engine
+    // how strong the program is, and it tells the filler what end-of-roster
+    // depth looks like.
+    RosterDepthModel? rosterDepth = null;
     RosterFiller? rosterFiller = null;
+    if (ratingEngine is not null)
+    {
+        rosterDepth = RosterDepthModel.Load(
+            FindDataFile(options, "roster-depth", "RosterDepth.json", required: true)!);
+    }
+
     if (fillMode.Equals("fill", StringComparison.OrdinalIgnoreCase))
     {
         if (ratingEngine is null)
@@ -265,20 +282,14 @@ static int Generate(Dictionary<string, string> options)
                 "for it.");
         }
 
-        rosterFiller = new RosterFiller(
-            RosterDepthModel.Load(FindDataFile(options, "roster-depth", "RosterDepth.json", required: true)!),
-            ratingEngine);
+        rosterFiller = new RosterFiller(rosterDepth!, ratingEngine);
         Console.WriteLine("Roster fill: on (unsupplied slots re-rated as end-of-roster depth)");
-    }
-    else if (!fillMode.Equals("leave", StringComparison.OrdinalIgnoreCase))
-    {
-        throw new ArgumentException("--fill must be 'fill' or 'leave'.");
     }
 
     var donor = export.LoadPlayerRoster();
     var session = new RosterEditSession(donor);
     var report = new HistoricalTeamConverter(
-            teamMappings, positionMappings, ratingEngine, archetypeSelector, rosterFiller)
+            teamMappings, positionMappings, ratingEngine, archetypeSelector, rosterFiller, rosterDepth)
         .Convert(session, historical);
     var slotSummary = report.FilledSlots.Count > 0
         ? $"{report.FilledSlots.Count} slots filled as depth"

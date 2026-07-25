@@ -2155,5 +2155,19 @@
   "globalCaps": {
     "min": 10,
     "max": 99
+  },
+  "positionOverallCaps": {
+    "CB": 97,
+    "DL": 95,
+    "FB": 88,
+    "HB": 96,
+    "K": 90,
+    "LB": 92,
+    "OL": 97,
+    "P": 86,
+    "QB": 95,
+    "S": 94,
+    "TE": 92,
+    "WR": 99
   }
 }

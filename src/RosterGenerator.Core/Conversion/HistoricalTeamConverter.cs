@@ -30,6 +30,7 @@ public sealed class HistoricalTeamConverter
     private readonly RatingEngine? _ratingEngine;
     private readonly ArchetypeSelector? _archetypeSelector;
     private readonly RosterFiller? _rosterFiller;
+    private readonly RosterDepthModel? _depth;
 
     /// <summary>
     /// Creates a converter.
@@ -49,18 +50,24 @@ public sealed class HistoricalTeamConverter
     /// fictional players cannot out-rate it. When null they are left alone and
     /// only reported. Requires <paramref name="ratingEngine"/>.
     /// </param>
+    /// <param name="rosterDepth">
+    /// Measured roster shape. Supplied, players the user gave little evidence
+    /// for are rated as members of this program rather than of an average one.
+    /// </param>
     public HistoricalTeamConverter(
         TeamMappingSet teamMappings,
         PositionMappingSet positionMappings,
         RatingEngine? ratingEngine = null,
         ArchetypeSelector? archetypeSelector = null,
-        RosterFiller? rosterFiller = null)
+        RosterFiller? rosterFiller = null,
+        RosterDepthModel? rosterDepth = null)
     {
         _teamMappings = teamMappings;
         _positionMappings = positionMappings;
         _ratingEngine = ratingEngine;
         _archetypeSelector = archetypeSelector;
         _rosterFiller = rosterFiller;
+        _depth = rosterDepth;
     }
 
     /// <summary>
@@ -211,6 +218,20 @@ public sealed class HistoricalTeamConverter
         var rated = new List<RatedPlayer>();
         var byPlayer = new Dictionary<HistoricalPlayer, (Player Slot, PlayerConversionEntry Entry)>();
 
+        // The donor roster already encodes how strong the program is, so a
+        // player the user gave no evidence for can still be rated as a member
+        // of THIS team rather than of an average one.
+        var programAdjustment = _depth?.ProgramAdjustment(
+            session.Roster.Players.Where(p => p.TeamIndex == report.TeamId).Select(p => p.OverallRating)) ?? 0;
+        if (programAdjustment != 0)
+        {
+            report.GlobalAssumptions.Add(
+                $"The team's existing roster rates {Math.Abs(programAdjustment)} point(s) " +
+                $"{(programAdjustment > 0 ? "above" : "below")} a typical program, so players you supplied " +
+                "little evidence for are rated as members of this team rather than of an average one. " +
+                "Players with a draft slot, awards or a stat line are unaffected.");
+        }
+
         foreach (var (slot, historical, entry) in placements)
         {
             var playerType = slot.GetRaw(PlayerTypeColumn);
@@ -231,7 +252,9 @@ public sealed class HistoricalTeamConverter
                 entry.Archetype = choice;
             }
 
-            var ratings = engine.Generate(slot.Position, playerType, historical, historical.Evidence);
+            var ratings = engine.Generate(
+                slot.Position, playerType, historical, historical.Evidence,
+                programAdjustment: programAdjustment);
             rated.Add(new RatedPlayer(historical, slot.Position, ratings.PlayerType, ratings));
             byPlayer[historical] = (slot, entry);
         }
@@ -242,7 +265,8 @@ public sealed class HistoricalTeamConverter
         {
             var (slot, entry) = byPlayer[violator.Player];
             var regenerated = engine.Generate(
-                slot.Position, slot.GetRaw(PlayerTypeColumn), violator.Player, violator.Player.Evidence, ceiling);
+                slot.Position, slot.GetRaw(PlayerTypeColumn), violator.Player, violator.Player.Evidence, ceiling,
+                programAdjustment);
             var index = rated.FindIndex(r => ReferenceEquals(r.Player, violator.Player));
             rated[index] = violator with { Ratings = regenerated };
             entry.Warnings.Add(reason);

@@ -183,6 +183,19 @@ public sealed class RatingModelSet
     /// <summary>Absolute attribute floor/ceiling.</summary>
     public GlobalCapsModel GlobalCaps { get; init; } = new();
 
+    /// <summary>
+    /// Position group → the highest overall the game itself carries at that
+    /// position, measured across a full base save.
+    ///
+    /// Award and draft scores sit on one shared scale, but the positions do
+    /// not: the best punter in a 16,257-player save is an 86 and the best
+    /// receiver is a 99. Without this, a punter who led the nation and made
+    /// first-team All-American was generated at 91 — better than any punter
+    /// the game ships. The cap is the observed maximum, not a guess, so an
+    /// genuinely elite specialist still reaches the top of their own position.
+    /// </summary>
+    public Dictionary<string, int> PositionOverallCaps { get; init; } = new();
+
     /// <summary>Position group → typical size, derived from real save data.</summary>
     public Dictionary<string, PhysiqueModel> Physique { get; init; } = new();
 

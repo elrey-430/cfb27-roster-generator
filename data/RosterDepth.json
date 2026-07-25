@@ -2,6 +2,8 @@
   "_source": "Measured from DYNASTY-JUL24-BASE: 138 FBS teams x 85 players, untouched base save.",
   "_method": "Each team sorted by OverallRating descending; medianOverallByRank[i] is the median overall across teams at roster rank i+1. classYearByRankBand holds the observed class mix over the same ranks.",
   "rosterSize": 85,
+  "leagueMedianOverall": 69,
+  "maxProgramAdjustment": 8,
   "minimumOverall": 45,
   "marginBelowHistorical": 1,
   "medianOverallByRank": [

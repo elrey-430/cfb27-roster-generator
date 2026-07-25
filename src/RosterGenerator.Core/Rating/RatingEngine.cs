@@ -61,12 +61,19 @@ public sealed class RatingEngine
     /// Optional maximum overall, used by the roster-level depth pass to hold
     /// a backup below the established starter.
     /// </param>
+    /// <param name="programAdjustment">
+    /// Points to move the target by because of the program's standing (see
+    /// <see cref="RosterDepthModel.ProgramAdjustment"/>). Applied in full only
+    /// when the evidence is thin — a player with a draft slot and a stat line
+    /// is rated on their own record, not their school's.
+    /// </param>
     public GeneratedRatings Generate(
         string cfb27Position,
         string? playerType,
         HistoricalPlayer player,
         RatingEvidence evidence,
-        int? overallCeiling = null)
+        int? overallCeiling = null,
+        int programAdjustment = 0)
     {
         var group = _model.ResolveGroup(cfb27Position);
         var positionModel = _model.GetModel(group);
@@ -77,6 +84,31 @@ public sealed class RatingEngine
         var normalized = evidence with { Stats = TalentScorer.WithDerivedStats(evidence.Stats) };
         var talent = _scorer.Assess(group, normalized);
         var target = (int)Math.Round(talent.Score);
+
+        // 1b. Program standing. Role, awards and stats say what a player did,
+        //     never where — so an anonymous backup came out identical at a
+        //     playoff program and at the worst team in the country. The
+        //     adjustment fades as the evidence strengthens: a first-round pick
+        //     is rated on their own record.
+        if (programAdjustment != 0)
+        {
+            var share = talent.Confidence switch
+            {
+                RatingConfidence.Low => 1.0,
+                RatingConfidence.Medium => 0.5,
+                _ => 0.0,
+            };
+
+            var shift = (int)Math.Round(programAdjustment * share);
+            if (shift != 0)
+            {
+                adjustments.Add(
+                    $"Target overall moved {target} -> {target + shift}: the program rates " +
+                    $"{Math.Abs(programAdjustment)} point(s) {(programAdjustment > 0 ? "above" : "below")} " +
+                    $"a typical one, and this player's own record is {talent.Confidence} confidence.");
+                target += shift;
+            }
+        }
 
         // 2. Class-year ceiling when the evidence is thin. A true freshman
         //    with no record must not be handed veteran ratings; a freshman
@@ -92,6 +124,19 @@ public sealed class RatingEngine
                 $"Target overall reduced {target} -> {classModel.LowConfidenceOverallCap}: " +
                 $"{classYear} with Low confidence evidence.");
             target = classModel.LowConfidenceOverallCap;
+        }
+
+        // 2b. Position ceiling. Award and draft scores share one scale across
+        //     every position, but the game's positions do not share a range —
+        //     its best punter is an 86 where its best receiver is a 99. Left
+        //     alone, a nation-leading All-American punter generated at 91,
+        //     better than any punter in the game.
+        if (_model.PositionOverallCaps.TryGetValue(group, out var positionCap) && target > positionCap)
+        {
+            adjustments.Add(
+                $"Target overall reduced {target} -> {positionCap}: the highest {group} the game itself " +
+                $"carries is {positionCap}.");
+            target = positionCap;
         }
 
         if (overallCeiling is int ceiling && target > ceiling)
