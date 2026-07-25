@@ -81,6 +81,25 @@ public static class PlayerSchema
         "Freshman", "Sophomore", "Junior", "Senior",
     };
 
+    /// <summary>
+    /// Valid <c>PLYR_HOME_STATE</c> values: the 50 US states in PascalCase
+    /// (no spaces) plus <c>NonUS</c> for international players. Confirmed by
+    /// enumerating a full dynasty export and a manually edited save.
+    /// </summary>
+    public static readonly IReadOnlySet<string> HomeStates = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
+        "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
+        "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri",
+        "Montana", "Nebraska", "Nevada", "NewHampshire", "NewJersey", "NewMexico", "NewYork", "NonUS",
+        "NorthCarolina", "NorthDakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "RhodeIsland",
+        "SouthCarolina", "SouthDakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington",
+        "WestVirginia", "Wisconsin", "Wyoming",
+    };
+
+    /// <summary>Value written to <c>PLYR_HOME_STATE</c> for players from outside the US.</summary>
+    public const string NonUsHomeState = "NonUS";
+
     /// <summary>Valid <c>RedshirtStatus</c> values.</summary>
     public static readonly IReadOnlySet<string> RedshirtStatuses = new HashSet<string>(StringComparer.Ordinal)
     {

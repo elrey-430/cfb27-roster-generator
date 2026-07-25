@@ -26,6 +26,7 @@ public sealed class HistoricalTeamConverter
     private readonly TeamMappingSet _teamMappings;
     private readonly PositionMappingSet _positionMappings;
     private readonly RatingEngine? _ratingEngine;
+    private readonly ArchetypeSelector? _archetypeSelector;
 
     /// <summary>
     /// Creates a converter.
@@ -36,14 +37,20 @@ public sealed class HistoricalTeamConverter
     /// Rating engine to generate attributes with. When null, each player
     /// inherits the ratings of the roster slot they replace.
     /// </param>
+    /// <param name="archetypeSelector">
+    /// Chooses each player's archetype from their historical profile. When
+    /// null the roster slot's existing archetype is kept.
+    /// </param>
     public HistoricalTeamConverter(
         TeamMappingSet teamMappings,
         PositionMappingSet positionMappings,
-        RatingEngine? ratingEngine = null)
+        RatingEngine? ratingEngine = null,
+        ArchetypeSelector? archetypeSelector = null)
     {
         _teamMappings = teamMappings;
         _positionMappings = positionMappings;
         _ratingEngine = ratingEngine;
+        _archetypeSelector = archetypeSelector;
     }
 
     /// <summary>
@@ -70,8 +77,12 @@ public sealed class HistoricalTeamConverter
             "slot's values, so in-game portraits/head models belong to the replaced fictional players. " +
             "Face mapping is a later milestone.");
         report.GlobalAssumptions.Add(
-            "Hometown/previous-school data is carried in the dataset but not exported — the candidate " +
-            "columns (PLYR_HOME_TOWN, PLYR_HOME_STATE) are not yet empirically confirmed as safe to write.");
+            "Hometown is written: PLYR_HOME_TOWN takes the town as free text and PLYR_HOME_STATE the " +
+            "matching state from the save's 51-value enum (NonUS for anything not a US state).");
+        report.GlobalAssumptions.Add(_archetypeSelector is null
+            ? "Player archetype (PlayerType) is inherited from the roster slot each player replaces."
+            : "Player archetype (PlayerType) is chosen from each player's historical profile and the " +
+              "overall rating is recomputed with that archetype's EA formula, so the two always agree.");
         report.GlobalAssumptions.Add(
             "Slot assignment prefers a donor slot at the same position (or an interchangeable one, e.g. " +
             "LE/RE); players placed in an unrelated slot get an explicit position change.");
@@ -124,9 +135,12 @@ public sealed class HistoricalTeamConverter
 
         if (freeSlots.Count > 0)
         {
+            var starters = freeSlots.Count(p => p.OverallRating >= StarterOverallThreshold);
             report.GlobalWarnings.Add(
-                $"{freeSlots.Count} donor slot(s) were not replaced; the original fictional players " +
-                "remain on the roster (listed below). Remove or edit them manually if unwanted.");
+                $"{freeSlots.Count} roster slot(s) were not replaced, so that many original players remain " +
+                $"on the team (listed below){(starters > 0 ? $"; {starters} of them rate {StarterOverallThreshold}+ " +
+                "and may appear ahead of your historical players on the depth chart" : "")}. " +
+                "Supply more players in the roster CSV to replace them.");
         }
 
         return report;
@@ -148,6 +162,23 @@ public sealed class HistoricalTeamConverter
         foreach (var (slot, historical, entry) in placements)
         {
             var playerType = slot.GetRaw(PlayerTypeColumn);
+            if (_archetypeSelector is not null)
+            {
+                var choice = _archetypeSelector.Select(slot.Position, historical, historical.Evidence);
+                if (choice.Archetype != playerType)
+                {
+                    // Writing PlayerType changes which EA formula computes the
+                    // overall, so the rating generated below MUST use the new
+                    // archetype — that recompute is what keeps the record
+                    // coherent.
+                    session.SetPlayerType(slot, choice.Archetype);
+                    entry.Warnings.Add($"Archetype {playerType} -> {choice.Archetype}: {choice.Reason}");
+                    playerType = choice.Archetype;
+                }
+
+                entry.Archetype = choice;
+            }
+
             var ratings = engine.Generate(slot.Position, playerType, historical, historical.Evidence);
             rated.Add(new RatedPlayer(historical, slot.Position, ratings.PlayerType, ratings));
             byPlayer[historical] = (slot, entry);
@@ -186,6 +217,13 @@ public sealed class HistoricalTeamConverter
 
     /// <summary>Column holding the archetype whose EA overall formula applies.</summary>
     private const string PlayerTypeColumn = "PlayerType";
+
+    /// <summary>
+    /// Overall at which a leftover original player is likely to out-rate a
+    /// generated one and show up on the depth chart, making the roster look
+    /// wrong. Used only to sharpen the report's warning.
+    /// </summary>
+    private const int StarterOverallThreshold = 75;
 
     private void ApplyPlayer(
         RosterEditSession session,
@@ -240,6 +278,22 @@ public sealed class HistoricalTeamConverter
         {
             entry.MissingFields.Add("Height");
             entry.DefaultsUsed.Add($"Height: {slot.HeightInches}\" (inherited from donor slot)");
+        }
+
+        if (Hometown.Parse(historicalPlayer.Hometown) is HometownValue hometown)
+        {
+            session.SetHometown(slot, hometown.Town, hometown.State);
+            if (hometown.Note is not null)
+            {
+                entry.Warnings.Add(hometown.Note);
+            }
+        }
+        else if (historicalPlayer.Hometown is null)
+        {
+            entry.MissingFields.Add("Hometown");
+            entry.DefaultsUsed.Add(
+                $"Hometown: {slot.GetRaw(PlayerColumns.HomeTown)}, {slot.GetRaw(PlayerColumns.HomeState)} " +
+                "(inherited from donor slot)");
         }
 
         if (historicalPlayer.WeightPounds is int weight)

@@ -70,6 +70,7 @@ rename does **not** require touching any other field.
 | `SchoolYear` | enum | `Freshman` `Sophomore` `Junior` `Senior` | |
 | `RedshirtStatus` | enum | `Eligible` `Previous` `Ineligible` | |
 | `Position` | enum | `QB` `HB` `FB` `WR` `TE` `LT` `LG` `C` `RG` `RT` `LE` `RE` `DT` `LOLB` `MLB` `ROLB` `CB` `FS` `SS` `K` `P` | 21 values observed |
+| `OverallRating` | int | 0–99 | **Derived**: EA computes it as a linear function of the attributes, keyed by position and archetype (`data/OverallFormulas.json`; 99.33% exact over a full export). Never set it independently of the attributes |
 | Ratings block (57 columns) | int | 0–99 (both bounds observed in real data) | Full list below |
 
 ### The 57 numeric rating columns
@@ -117,6 +118,50 @@ rename does **not** require touching any other field.
 2. Decoding the full 16,257-player base save with +160 yields textbook
    position averages — QB 203 lb, WR 187 lb, OL 299–307 lb, DT 296 lb,
    CB 185 lb, K 189 lb — and a plausible league range of 160–400 lb.
+
+---
+
+## Group 2b — Archetype and hometown (confirmed writable, Milestone 5)
+
+| Column | Type | Status |
+|---|---|---|
+| `PlayerType` | enum (59 values) | **Writable, with a required companion recompute.** Selects which of EA's overall formulas applies, so `OverallRating` must be recomputed whenever it changes |
+| `PLYR_HOME_TOWN` | text | **Writable.** Free text; 3,031 distinct values in the base save |
+| `PLYR_HOME_STATE` | enum (51 values) | **Writable.** The 50 US states in PascalCase (`NewYork`, `WestVirginia`) plus `NonUS` |
+
+**Evidence.** A manually edited save (2023 FSU) was compared against an
+untouched base export:
+
+- All 85 edited players carry valid archetype strings, and hometowns were
+  set to real values (Travis → West Palm Beach/Florida, Benson →
+  Greenville/Mississippi, Coleman → Opelousas/Louisiana), so both fields
+  clearly accept writes.
+- Every `PLYR_HOME_STATE` value used stays inside the base save's 51-value
+  domain; two new towns appear that the base save never had, confirming the
+  town field is free text.
+
+**The archetype companion dependency.** Checking each player's stored
+overall against their archetype's formula:
+
+| Save | Overall agrees with its own archetype |
+|---|---|
+| Untouched base (16,255 players) | **99.3%** |
+| Manually edited 2023 FSU (85) | **56%** — and 35 of 85 match a *different* archetype at the same position |
+
+That is the signature of a **stale overall**: the editor wrote the new
+`PlayerType` but never recomputed `OverallRating`, leaving the value that
+belonged to the pre-edit archetype. This tool always recomputes with the new
+archetype's formula, and the `ArchetypeConsistency` validation rule reports
+the defect in any file exhibiting it.
+
+**Archetype must also suit the position.** The same save contains an LOLB
+carrying `MLB_PassCoverage`, which is not an LOLB archetype — the editor
+does not enforce compatibility. The validation rule does.
+
+*Unconfirmed observation:* the ~94 `PT_*` boolean columns correlate with
+archetype but are **not** a strict mirror (only 2 of 42 varying columns map
+1:1; the game itself leaves ~20% of `HB_ElusiveBack` players without their
+flag). They are treated as player traits and left untouched.
 
 ---
 

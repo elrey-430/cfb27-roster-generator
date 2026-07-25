@@ -143,6 +143,36 @@ public sealed class RosterEditSession
         Record(player, EditIntent.AttributeChange, $"Set redshirt status of {player} to {redshirtStatus}");
     }
 
+    /// <summary>
+    /// Sets the home town (free text) and home state (51-value enum).
+    /// </summary>
+    public void SetHometown(Player player, string town, string state)
+    {
+        if (!PlayerSchema.HomeStates.Contains(state))
+        {
+            throw new ArgumentException(
+                $"'{state}' is not a valid PLYR_HOME_STATE value. Use a US state in the save's spelling " +
+                $"(e.g. WestVirginia) or {PlayerSchema.NonUsHomeState}.", nameof(state));
+        }
+
+        player.SetRaw(PlayerColumns.HomeTown, town);
+        player.SetRaw(PlayerColumns.HomeState, state);
+        Record(player, EditIntent.AttributeChange, $"Set hometown of {player} to {town}, {state}");
+    }
+
+    /// <summary>
+    /// Sets the player archetype. The caller MUST recompute the overall
+    /// rating afterwards: the archetype selects which of EA's overall
+    /// formulas applies, so leaving the old overall in place makes the record
+    /// inconsistent (the defect seen in manually edited saves).
+    /// </summary>
+    public void SetPlayerType(Player player, string playerType)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(playerType);
+        player.SetRaw(PlayerColumns.PlayerType, playerType);
+        Record(player, EditIntent.AttributeChange, $"Set archetype of {player} to {playerType}");
+    }
+
     /// <summary>Sets the position abbreviation.</summary>
     public void SetPosition(Player player, string position)
     {

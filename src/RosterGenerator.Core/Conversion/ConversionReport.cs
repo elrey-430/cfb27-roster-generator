@@ -32,6 +32,9 @@ public sealed class PlayerConversionEntry
 
     /// <summary>Generated ratings, or null when ratings were inherited.</summary>
     public Rating.GeneratedRatings? Ratings { get; set; }
+
+    /// <summary>Archetype choice, or null when the donor archetype was kept.</summary>
+    public Rating.ArchetypeChoice? Archetype { get; set; }
 }
 
 /// <summary>

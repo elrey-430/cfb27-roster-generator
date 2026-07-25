@@ -84,7 +84,7 @@ The publish folder contains `RosterGenerator.Cli.exe` plus the editable
 Requires the .NET 8 SDK (developers only — end users need nothing):
 
 ```
-dotnet test    # 86 tests: round-trip fidelity, validation, pipeline, ratings, 2023 FSU regression
+dotnet test    # 118 tests: round-trip fidelity, validation, pipeline, ratings, 2023 FSU regression
 ```
 
 The 2023 Florida State recreation (Milestone 2) is preserved as a
@@ -94,6 +94,6 @@ exactly.
 
 ## What is deliberately not implemented yet
 
-Equipment/face recreation, archetype selection, GUI polish,
+Equipment/face recreation, GUI polish,
 automatic historical data gathering, multi-season bulk generation, dynasty
 editing, and the derived `Player[]` array recompute — see `docs/Status.md`.

@@ -58,6 +58,22 @@ public static class PlayerColumns
     /// </summary>
     public const string Weight = "Weight";
 
+    /// <summary>
+    /// Player archetype (e.g. <c>HB_ElusiveBack</c>). Confirmed writable, but
+    /// it selects which of EA's overall formulas applies, so
+    /// <see cref="OverallRating"/> must be recomputed whenever it changes.
+    /// </summary>
+    public const string PlayerType = "PlayerType";
+
+    /// <summary>Home town — free text (3,031 distinct values observed).</summary>
+    public const string HomeTown = "PLYR_HOME_TOWN";
+
+    /// <summary>
+    /// Home state — a strict 51-value enum: the 50 US states in PascalCase
+    /// plus <c>NonUS</c>. See <see cref="PlayerSchema.HomeStates"/>.
+    /// </summary>
+    public const string HomeState = "PLYR_HOME_STATE";
+
     // -- Group 3: identity-derived assets (depends on rename-vs-replace) -----
 
     /// <summary>Asset name derived from identity at generation time.</summary>

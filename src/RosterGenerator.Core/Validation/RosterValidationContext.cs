@@ -23,14 +23,20 @@ public sealed class RosterValidationContext
     /// table. Null skips membership checking (the 0–255 range and sentinel
     /// rules still apply). The observed base save uses 0–137 plus 255.
     /// </param>
+    /// <param name="overallFormulas">
+    /// EA's overall formulas. Supplying them enables the archetype
+    /// consistency checks; without them that rule stays inert.
+    /// </param>
     public RosterValidationContext(
         PlayerRoster roster,
         RosterEditSession? editSession = null,
-        IReadOnlySet<int>? knownTeamIndices = null)
+        IReadOnlySet<int>? knownTeamIndices = null,
+        Rating.OverallFormulaSet? overallFormulas = null)
     {
         Roster = roster;
         EditSession = editSession;
         KnownTeamIndices = knownTeamIndices;
+        OverallFormulas = overallFormulas;
     }
 
     /// <summary>The roster being validated.</summary>
@@ -41,4 +47,7 @@ public sealed class RosterValidationContext
 
     /// <summary>Valid team indices, or null to skip membership checks.</summary>
     public IReadOnlySet<int>? KnownTeamIndices { get; }
+
+    /// <summary>EA's overall formulas, or null to skip archetype checks.</summary>
+    public Rating.OverallFormulaSet? OverallFormulas { get; }
 }

@@ -42,6 +42,7 @@ public sealed class RosterValidator
         new IdentityChangeConsistencyRule(),
         new OpaqueFieldGuardRule(),
         new WeightRangeRule(),
+        new ArchetypeConsistencyRule(),
     };
 
     /// <summary>Runs every rule and returns the combined report.</summary>

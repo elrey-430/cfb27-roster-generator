@@ -1,0 +1,766 @@
+{
+  "description": "Chooses a player's CFB27 archetype (PlayerType) from their historical profile. Rules are evaluated in order and the first whose conditions all hold wins; otherwise the position's default is used. Conditions read season stats by canonical name, or WeightPounds / HeightInches / FortyYardDash. A condition whose field is missing from the player's evidence never matches, so a player with no data falls through to the default. Thresholds were derived from the attribute medians of each real archetype in a base dynasty export. Changing PlayerType changes which of EA's overall formulas applies, so the generator always recomputes OverallRating after selecting an archetype.",
+  "positions": {
+    "QB": {
+      "default": "QB_FieldGeneral",
+      "rules": [
+        {
+          "archetype": "QB_PureScrambler",
+          "all": [
+            {
+              "field": "RushYards",
+              "min": 800
+            }
+          ]
+        },
+        {
+          "archetype": "QB_Scrambler",
+          "all": [
+            {
+              "field": "RushYards",
+              "min": 350
+            }
+          ]
+        },
+        {
+          "archetype": "QB_Improviser",
+          "all": [
+            {
+              "field": "CompletionPct",
+              "max": 60
+            }
+          ]
+        }
+      ],
+      "available": [
+        "QB_FieldGeneral",
+        "QB_Improviser",
+        "QB_PureScrambler",
+        "QB_Scrambler"
+      ]
+    },
+    "HB": {
+      "default": "HB_ElusiveBack",
+      "rules": [
+        {
+          "archetype": "HB_ReceivingBack",
+          "all": [
+            {
+              "field": "Receptions",
+              "min": 30
+            }
+          ]
+        },
+        {
+          "archetype": "HB_PowerReceiving",
+          "all": [
+            {
+              "field": "Receptions",
+              "min": 18
+            },
+            {
+              "field": "WeightPounds",
+              "min": 205
+            }
+          ]
+        },
+        {
+          "archetype": "HB_PowerBack",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 215
+            }
+          ]
+        },
+        {
+          "archetype": "HB_ElusivePower",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 205
+            }
+          ]
+        }
+      ],
+      "available": [
+        "HB_ElusiveBack",
+        "HB_ElusivePower",
+        "HB_PowerBack",
+        "HB_PowerBlocking",
+        "HB_PowerReceiving",
+        "HB_ReceivingBack"
+      ]
+    },
+    "FB": {
+      "default": "FB_Blocking",
+      "rules": [
+        {
+          "archetype": "FB_Utility",
+          "all": [
+            {
+              "field": "Receptions",
+              "min": 8
+            }
+          ]
+        },
+        {
+          "archetype": "FB_Utility",
+          "all": [
+            {
+              "field": "RushYards",
+              "min": 200
+            }
+          ]
+        }
+      ],
+      "available": [
+        "FB_Blocking",
+        "FB_Utility"
+      ]
+    },
+    "WR": {
+      "default": "WR_ShiftyRouteRunner",
+      "rules": [
+        {
+          "archetype": "WR_Physical",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 210
+            }
+          ]
+        },
+        {
+          "archetype": "WR_DeepThreat",
+          "all": [
+            {
+              "field": "FortyYardDash",
+              "max": 4.45
+            }
+          ]
+        },
+        {
+          "archetype": "WR_DeepThreat",
+          "all": [
+            {
+              "field": "YardsPerReception",
+              "min": 16
+            }
+          ]
+        },
+        {
+          "archetype": "WR_PhysicalRouteRunner",
+          "all": [
+            {
+              "field": "HeightInches",
+              "min": 76
+            }
+          ]
+        },
+        {
+          "archetype": "WR_Playmaker",
+          "all": [
+            {
+              "field": "RecTD",
+              "min": 9
+            }
+          ]
+        }
+      ],
+      "available": [
+        "WR_DeepThreat",
+        "WR_GadgetReceiver",
+        "WR_Physical",
+        "WR_PhysicalBlocker",
+        "WR_PhysicalRouteRunner",
+        "WR_Playmaker",
+        "WR_ShiftyRouteRunner"
+      ]
+    },
+    "TE": {
+      "default": "TE_Possession",
+      "rules": [
+        {
+          "archetype": "TE_VerticalThreat",
+          "all": [
+            {
+              "field": "RecYards",
+              "min": 600
+            }
+          ]
+        },
+        {
+          "archetype": "TE_VerticalThreat",
+          "all": [
+            {
+              "field": "YardsPerReception",
+              "min": 14
+            }
+          ]
+        },
+        {
+          "archetype": "TE_Blocking",
+          "all": [
+            {
+              "field": "Receptions",
+              "max": 8
+            }
+          ]
+        },
+        {
+          "archetype": "TE_PhysicalRouteRunner",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 250
+            }
+          ]
+        }
+      ],
+      "available": [
+        "TE_Blocking",
+        "TE_PhysicalRouteRunner",
+        "TE_Possession",
+        "TE_PossessionBlocking",
+        "TE_VerticalThreat"
+      ]
+    },
+    "LT": {
+      "default": "OT_Agile",
+      "rules": [
+        {
+          "archetype": "OT_Power",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 315
+            }
+          ]
+        },
+        {
+          "archetype": "OT_PassProtector",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "max": 295
+            }
+          ]
+        }
+      ],
+      "available": [
+        "OT_Agile",
+        "OT_PassProtector",
+        "OT_Power",
+        "OT_WellRounded"
+      ]
+    },
+    "RT": {
+      "default": "OT_Agile",
+      "rules": [
+        {
+          "archetype": "OT_Power",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 315
+            }
+          ]
+        },
+        {
+          "archetype": "OT_PassProtector",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "max": 295
+            }
+          ]
+        }
+      ],
+      "available": [
+        "OT_Agile",
+        "OT_PassProtector",
+        "OT_Power",
+        "OT_WellRounded"
+      ]
+    },
+    "LG": {
+      "default": "G_WellRounded",
+      "rules": [
+        {
+          "archetype": "G_Power",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 315
+            }
+          ]
+        },
+        {
+          "archetype": "G_PassProtector",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "max": 295
+            }
+          ]
+        },
+        {
+          "archetype": "G_Agile",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "max": 305
+            }
+          ]
+        }
+      ],
+      "available": [
+        "G_Agile",
+        "G_PassProtector",
+        "G_Power",
+        "G_WellRounded"
+      ]
+    },
+    "RG": {
+      "default": "G_WellRounded",
+      "rules": [
+        {
+          "archetype": "G_Power",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 315
+            }
+          ]
+        },
+        {
+          "archetype": "G_PassProtector",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "max": 295
+            }
+          ]
+        },
+        {
+          "archetype": "G_Agile",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "max": 305
+            }
+          ]
+        }
+      ],
+      "available": [
+        "G_Agile",
+        "G_PassProtector",
+        "G_Power",
+        "G_WellRounded"
+      ]
+    },
+    "C": {
+      "default": "C_WellRounded",
+      "rules": [
+        {
+          "archetype": "C_Power",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 310
+            }
+          ]
+        },
+        {
+          "archetype": "C_PassProtector",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "max": 290
+            }
+          ]
+        },
+        {
+          "archetype": "C_Agile",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "max": 300
+            }
+          ]
+        }
+      ],
+      "available": [
+        "C_Agile",
+        "C_PassProtector",
+        "C_Power",
+        "C_WellRounded"
+      ]
+    },
+    "LE": {
+      "default": "DE_PowerRusher",
+      "rules": [
+        {
+          "archetype": "DE_SmallerSpeedRusher",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "max": 260
+            }
+          ]
+        },
+        {
+          "archetype": "DE_PurePower",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 285
+            }
+          ]
+        },
+        {
+          "archetype": "DE_RunStopper",
+          "all": [
+            {
+              "field": "Sacks",
+              "max": 2
+            }
+          ]
+        }
+      ],
+      "available": [
+        "DE_PowerRusher",
+        "DE_PurePower",
+        "DE_RunStopper",
+        "DE_SmallerSpeedRusher"
+      ]
+    },
+    "RE": {
+      "default": "DE_PowerRusher",
+      "rules": [
+        {
+          "archetype": "DE_SmallerSpeedRusher",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "max": 260
+            }
+          ]
+        },
+        {
+          "archetype": "DE_PurePower",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 285
+            }
+          ]
+        },
+        {
+          "archetype": "DE_RunStopper",
+          "all": [
+            {
+              "field": "Sacks",
+              "max": 2
+            }
+          ]
+        }
+      ],
+      "available": [
+        "DE_PowerRusher",
+        "DE_PurePower",
+        "DE_RunStopper",
+        "DE_SmallerSpeedRusher"
+      ]
+    },
+    "DT": {
+      "default": "DT_PowerRusher",
+      "rules": [
+        {
+          "archetype": "DT_NoseTackle",
+          "all": [
+            {
+              "field": "WeightPounds",
+              "min": 315
+            }
+          ]
+        },
+        {
+          "archetype": "DT_SpeedRusher",
+          "all": [
+            {
+              "field": "Sacks",
+              "min": 6
+            }
+          ]
+        },
+        {
+          "archetype": "DT_PurePower",
+          "all": [
+            {
+              "field": "Sacks",
+              "max": 2
+            }
+          ]
+        }
+      ],
+      "available": [
+        "DT_NoseTackle",
+        "DT_PowerRusher",
+        "DT_PurePower",
+        "DT_SpeedRusher"
+      ]
+    },
+    "LOLB": {
+      "default": "OLB_RunStopper",
+      "rules": [
+        {
+          "archetype": "OLB_PassCoverage",
+          "all": [
+            {
+              "field": "Interceptions",
+              "min": 1
+            }
+          ]
+        },
+        {
+          "archetype": "OLB_PassCoverage",
+          "all": [
+            {
+              "field": "PassesDefended",
+              "min": 5
+            }
+          ]
+        },
+        {
+          "archetype": "OLB_PowerRusher",
+          "all": [
+            {
+              "field": "Sacks",
+              "min": 5
+            }
+          ]
+        }
+      ],
+      "available": [
+        "OLB_PassCoverage",
+        "OLB_PowerRusher",
+        "OLB_RunStopper"
+      ]
+    },
+    "ROLB": {
+      "default": "OLB_RunStopper",
+      "rules": [
+        {
+          "archetype": "OLB_PassCoverage",
+          "all": [
+            {
+              "field": "Interceptions",
+              "min": 1
+            }
+          ]
+        },
+        {
+          "archetype": "OLB_PassCoverage",
+          "all": [
+            {
+              "field": "PassesDefended",
+              "min": 5
+            }
+          ]
+        },
+        {
+          "archetype": "OLB_PowerRusher",
+          "all": [
+            {
+              "field": "Sacks",
+              "min": 5
+            }
+          ]
+        }
+      ],
+      "available": [
+        "OLB_PassCoverage",
+        "OLB_PowerRusher",
+        "OLB_RunStopper"
+      ]
+    },
+    "MLB": {
+      "default": "MLB_RunStopper",
+      "rules": [
+        {
+          "archetype": "MLB_PassCoverage",
+          "all": [
+            {
+              "field": "Interceptions",
+              "min": 2
+            }
+          ]
+        },
+        {
+          "archetype": "MLB_FieldGeneral",
+          "all": [
+            {
+              "field": "Tackles",
+              "min": 95
+            }
+          ]
+        }
+      ],
+      "available": [
+        "MLB_FieldGeneral",
+        "MLB_PassCoverage",
+        "MLB_RunStopper"
+      ]
+    },
+    "CB": {
+      "default": "CB_MantoMan",
+      "rules": [
+        {
+          "archetype": "CB_Zone",
+          "all": [
+            {
+              "field": "Interceptions",
+              "min": 4
+            }
+          ]
+        },
+        {
+          "archetype": "CB_Slot",
+          "all": [
+            {
+              "field": "HeightInches",
+              "max": 70
+            }
+          ]
+        },
+        {
+          "archetype": "CB_HybridCorner",
+          "all": [
+            {
+              "field": "PassesDefended",
+              "min": 8
+            }
+          ]
+        }
+      ],
+      "available": [
+        "CB_HybridCorner",
+        "CB_MantoMan",
+        "CB_Slot",
+        "CB_Zone"
+      ]
+    },
+    "FS": {
+      "default": "S_Hybrid",
+      "rules": [
+        {
+          "archetype": "S_RunSupport",
+          "all": [
+            {
+              "field": "Tackles",
+              "min": 80
+            }
+          ]
+        },
+        {
+          "archetype": "S_Zone",
+          "all": [
+            {
+              "field": "Interceptions",
+              "min": 3
+            }
+          ]
+        }
+      ],
+      "available": [
+        "S_Hybrid",
+        "S_RunSupport",
+        "S_Zone"
+      ]
+    },
+    "SS": {
+      "default": "S_Hybrid",
+      "rules": [
+        {
+          "archetype": "S_RunSupport",
+          "all": [
+            {
+              "field": "Tackles",
+              "min": 80
+            }
+          ]
+        },
+        {
+          "archetype": "S_Zone",
+          "all": [
+            {
+              "field": "Interceptions",
+              "min": 3
+            }
+          ]
+        }
+      ],
+      "available": [
+        "S_Hybrid",
+        "S_RunSupport",
+        "S_Zone"
+      ]
+    },
+    "K": {
+      "default": "KP_Accurate",
+      "rules": [
+        {
+          "archetype": "KP_Power",
+          "all": [
+            {
+              "field": "LongFieldGoal",
+              "min": 52
+            }
+          ]
+        },
+        {
+          "archetype": "KP_Power",
+          "all": [
+            {
+              "field": "PuntAverage",
+              "min": 45
+            }
+          ]
+        }
+      ],
+      "available": [
+        "KP_Accurate",
+        "KP_Power"
+      ]
+    },
+    "P": {
+      "default": "KP_Accurate",
+      "rules": [
+        {
+          "archetype": "KP_Power",
+          "all": [
+            {
+              "field": "LongFieldGoal",
+              "min": 52
+            }
+          ]
+        },
+        {
+          "archetype": "KP_Power",
+          "all": [
+            {
+              "field": "PuntAverage",
+              "min": 45
+            }
+          ]
+        }
+      ],
+      "available": [
+        "KP_Accurate",
+        "KP_Power"
+      ]
+    }
+  }
+}

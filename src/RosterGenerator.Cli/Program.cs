@@ -46,14 +46,17 @@ static int Usage()
         Usage:
           generate   --dynasty <export folder or Player.csv> --roster <historical roster .csv>
                      [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
-                     [--ratings generate|inherit] [--team-mappings <json>] [--position-mappings <json>]
+                     [--ratings generate|inherit] [--archetypes select|inherit]
+                     [--team-mappings <json>] [--position-mappings <json>]
           list-teams --dynasty <export folder or Player.csv>
           compare    --left <Player.csv> --right <Player.csv> --team <name or id>
                      [--dynasty <export>] [--output <md>]
 
         --ratings generate (the default) builds each player's attributes from the
         historical evidence in the roster CSV; --ratings inherit keeps the ratings
-        of the players being replaced.
+        of the players being replaced. --archetypes select (the default when
+        ratings are generated) also picks each player's PlayerType from their
+        profile and recomputes the overall with that archetype's formula.
 
         The roster CSV format is documented in docs/Historical_CSV_Format.md
         (template: templates/HistoricalRosterTemplate.csv). Defaults:
@@ -203,11 +206,13 @@ static int Generate(Dictionary<string, string> options)
 
     var ratingsMode = options.GetValueOrDefault("ratings", "generate");
     RatingEngine? ratingEngine = null;
+    OverallFormulaSet? formulas = null;
     if (ratingsMode.Equals("generate", StringComparison.OrdinalIgnoreCase))
     {
+        var formulaPath = FindDataFile(options, "overall-formulas", "OverallFormulas.json", required: true)!;
+        formulas = OverallFormulaSet.Load(formulaPath);
         ratingEngine = RatingEngine.Load(
-            FindDataFile(options, "rating-models", "RatingModels.json", required: true)!,
-            FindDataFile(options, "overall-formulas", "OverallFormulas.json", required: true)!);
+            FindDataFile(options, "rating-models", "RatingModels.json", required: true)!, formulaPath);
         Console.WriteLine("Rating generation: on (EA overall formulas driven by historical evidence)");
     }
     else if (!ratingsMode.Equals("inherit", StringComparison.OrdinalIgnoreCase))
@@ -215,9 +220,32 @@ static int Generate(Dictionary<string, string> options)
         throw new ArgumentException("--ratings must be 'generate' or 'inherit'.");
     }
 
+    // Archetype selection only makes sense alongside rating generation: the
+    // archetype decides which overall formula applies, so it must be paired
+    // with a recompute.
+    var archetypeMode = options.GetValueOrDefault("archetypes", ratingEngine is null ? "inherit" : "select");
+    ArchetypeSelector? archetypeSelector = null;
+    if (archetypeMode.Equals("select", StringComparison.OrdinalIgnoreCase))
+    {
+        if (ratingEngine is null)
+        {
+            throw new ArgumentException(
+                "--archetypes select requires --ratings generate: changing a player's archetype changes " +
+                "which overall formula applies, so the overall must be recomputed at the same time.");
+        }
+
+        archetypeSelector = ArchetypeSelector.Load(
+            FindDataFile(options, "archetype-rules", "ArchetypeRules.json", required: true)!);
+        Console.WriteLine("Archetype selection: on (PlayerType chosen from each player's profile)");
+    }
+    else if (!archetypeMode.Equals("inherit", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new ArgumentException("--archetypes must be 'select' or 'inherit'.");
+    }
+
     var donor = export.LoadPlayerRoster();
     var session = new RosterEditSession(donor);
-    var report = new HistoricalTeamConverter(teamMappings, positionMappings, ratingEngine)
+    var report = new HistoricalTeamConverter(teamMappings, positionMappings, ratingEngine, archetypeSelector)
         .Convert(session, historical);
     Console.WriteLine($"Converted {report.Converted.Count()} players onto team {report.TeamId} " +
                       $"({report.Skipped.Count()} skipped, {report.LeftoverDonorSlots.Count} donor slots left).");
@@ -234,7 +262,8 @@ static int Generate(Dictionary<string, string> options)
     ExportResult result2;
     try
     {
-        result2 = new RosterExporter().Export(new RosterValidationContext(donor, session), outputPath);
+        result2 = new RosterExporter().Export(
+            new RosterValidationContext(donor, session, overallFormulas: formulas), outputPath);
     }
     catch (RosterExportException ex)
     {

@@ -81,8 +81,8 @@ have — percentages and per-carry averages are derived automatically.
 
 | Column | Example | Notes |
 |---|---|---|
-| `Hometown` | `"Tampa, FL"` | Stored in the dataset; not yet written into the save (the target columns are not confirmed safe) |
-| `PreviousSchool` | `Oregon` | Same as above |
+| `Hometown` | `"Tampa, FL"` | **Written to the save.** Accepts `FL`, `Florida` or `West Virginia`; anything that is not a US state (e.g. `Melbourne, Australia`) is stored as `NonUS` and reported |
+| `PreviousSchool` | `Oregon` | Stored in the dataset; not yet written (no confirmed target column) |
 | `Notes` | `Team captain` | Free text for your own bookkeeping; appears in reports |
 
 ## Example
@@ -106,9 +106,10 @@ Ryan,Fitzgerald,K,88,6-1,190,RS Junior,Florida State,2023,"Colquitt, GA",,
 | Weight | `Weight` using the confirmed encoding (stored = pounds − 160) |
 | Class | `SchoolYear` + `RedshirtStatus` |
 | Role / stats / awards / draft / combine | Generated ratings — all 56 attributes plus the overall, computed with EA's own overall formula |
+| Hometown | `PLYR_HOME_TOWN` (town) + `PLYR_HOME_STATE` (state enum) |
+| Position, weight, height and stats | The player's **archetype** (`PlayerType`), e.g. a 225 lb back becomes `HB_PowerBack`. The overall is then recomputed with that archetype's formula |
 
-Portraits, equipment and player archetype are inherited from the players
-being replaced; every inherited default is listed in
+Portraits and equipment are inherited from the players being replaced; every inherited default is listed in
 `Generation_Report.txt`. Rating generation can be turned off with
 `--ratings inherit`. See `Ratings/Rating_Model.md` for how ratings are
 derived and `Ratings/Default_Assumptions.md` for the guardrails.

@@ -1,8 +1,34 @@
 # Project Status
 
-_Last updated: 2026-07-25 — end of Milestone 4._
+_Last updated: 2026-07-25 — end of Milestone 5._
 
 ## Current status
+
+**Milestone 5 (Archetypes, hometowns, roster size) is complete.** Two more
+fields were investigated and cleared for writing, closing the largest
+remaining realism gaps.
+
+- **`PlayerType` (archetype) — writable, with a companion dependency.** A
+  manually edited save proved the write takes, but also exposed the trap:
+  the archetype selects which of EA's overall formulas applies, and the
+  community editor does not recompute the overall afterwards. Only **56%**
+  of that save's 85 edited players have an overall matching their own
+  archetype (35 match a *different* one) against **99.3%** in an untouched
+  base save. This tool selects an archetype from each player's profile
+  (`data/ArchetypeRules.json`) and always recomputes with the new formula;
+  the `ArchetypeConsistency` rule reports the defect in any file with it.
+  The same save also carries an LOLB with `MLB_PassCoverage` — an archetype
+  invalid for the position — which the rule now catches too.
+- **`PLYR_HOME_TOWN` / `PLYR_HOME_STATE` — writable.** Town is free text;
+  state is a strict **51-value enum** (50 states in PascalCase plus
+  `NonUS`). The `Hometown` column now writes both, accepting `FL`,
+  `Florida` or `West Virginia`, and mapping anything non-US to `NonUS`
+  with a note.
+- **Roster size** is reported more usefully: the warning now says how many
+  leftover original players rate 75+ and could out-rank the historical
+  roster on the depth chart.
+- Tests: 118/118. The FSU regression fixture was deliberately regenerated
+  once (the diff was confined to the two hometown columns and nothing else).
 
 **Milestone 4 (Automated ratings & attribute generation) is complete.** A
 user can supply a name, position, height, weight and whatever historical
@@ -104,6 +130,21 @@ brief).
   clean Windows 10/11 machine with no runtime installed
 
 ## Completed features
+
+### Milestone 5 — archetypes and hometowns
+
+- **`ArchetypeSelector`** (`data/ArchetypeRules.json`) — per-position rules
+  keyed to the real archetype names (LT/RT use `OT_*`, LG/RG `G_*`, …),
+  with thresholds derived from each archetype's attribute medians in a real
+  export. First matching rule wins; a condition whose field is missing never
+  matches, so a player with no data falls through to the position default.
+- **`Hometown`** parser — "City, ST" → free-text town plus the state enum.
+- **`ArchetypeConsistencyRule`** — flags archetypes invalid for the position
+  and archetype changes made without recomputing the overall. Keyed to
+  `PlayerType` so an edit is an error while a defect already present in a
+  loaded file stays a warning.
+- **CLI** `--archetypes select|inherit`; selecting requires
+  `--ratings generate`, because the two must move together.
 
 ### Milestone 4 — rating generation
 
@@ -258,11 +299,7 @@ The pipeline is now general and reliable; the remaining gaps are about how
    than the team's slots, leftover fictional players remain (10 in the FSU
    run). Decide and implement a policy (leave, deactivate, or fill from
    the historical dataset's walk-ons) rather than only reporting it.
-3. **Archetype selection.** Players currently inherit the `PlayerType` of
-   the slot they replace, so a power back can be rated against an elusive
-   formula. Choosing the archetype from the historical profile would
-   sharpen every generated player — it needs `PlayerType` confirmed as
-   safe to write first.
+3. ~~**Archetype selection**~~ — done in Milestone 5.
 4. **Asset-field study** — learn how `PLYR_ASSETNAME` /
    `GenericHeadAssetName` / `PLYR_PORTRAIT` are generated so replaced
    players stop wearing the donor players' faces.
@@ -270,9 +307,8 @@ The pipeline is now general and reliable; the remaining gaps are about how
    FSU dynasty export and turn each difference into a data fix, a new
    schema fact, or a documented gap. (Also resolve the ~25 "verify"
    jersey/status flags in `FloridaState.json`.)
-5. **Hometown/previous-school export** — confirm whether
-   `PLYR_HOME_TOWN` / `PLYR_HOME_STATE` are safe to write, so the optional
-   CSV columns stop being decorative.
+5. ~~**Hometown export**~~ — done in Milestone 5. `PreviousSchool` still has
+   no confirmed target column.
 
 Explicitly still deferred: GUI polish, automatic historical data
 gathering, equipment/face generation, multi-season bulk generation,
