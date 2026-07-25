@@ -73,6 +73,26 @@ never required.
   player keeps the replaced player's value; the other 84 are unaffected.
 - Saving from Excel is fine — the byte-order mark it adds and the empty
   rows it leaves behind are both ignored.
+- **Untidy numbers are read, not thrown away.** `#13`, `13.0`, `212 lbs`,
+  `4.49s` and `1,250` are all understood, and the report says what each was
+  read as. Something with no number in it at all (`twelve`) is still
+  reported and skipped rather than guessed at.
+
+Every correction and every substitution is listed in
+`Generation_Report.txt` — the tool never changes your data silently.
+
+### Mistakes it catches for you
+
+| What you did | What happens |
+|---|---|
+| Left a row short, or added a stray comma | Padded or trimmed, and the row number is reported |
+| Repeated a column heading | The first is used, and it says so |
+| Misspelled a class (`Sinior`) | Reported; that player keeps the replaced player's class |
+| Misspelled a role (`Startr`) | Reported, with the list of roles that work |
+| Used a position it does not know | Only that player is skipped, and it names the file to add the alias to |
+| Wrote a hometown that is not a US state | Stored as `NonUS` and reported |
+| Listed more players than the team has slots | The first 85 are used and the rest are named |
+| Supplied a header with no player rows | Refused outright, rather than replacing the team with 85 strangers |
 - If a value contains a comma (e.g. `Tampa, FL`), wrap it in double quotes
   — any spreadsheet program does this automatically when saving as CSV.
 

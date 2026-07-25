@@ -272,6 +272,101 @@ public sealed class SparseInputTests
             $"backup {byName["Second"]} did not out-rate reserve {byName["Third"]}");
     }
 
+    /// <summary>Reads a roster CSV from text and returns the parse warnings.</summary>
+    private static HistoricalCsvResult ReadCsv(string content)
+    {
+        var path = TempCsv(content);
+        try
+        {
+            return HistoricalCsv.Read(path, school: "Florida State");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData("#13", 13)]      // copied off a roster page
+    [InlineData("13.0", 13)]     // a spreadsheet decided the column was decimal
+    [InlineData(" 13 ", 13)]     // stray spaces
+    public void DecoratedNumbersAreReadRatherThanThrownAway(string cell, int expected)
+    {
+        var result = ReadCsv("FirstName,LastName,Position,Number\nJordan,Travis,QB," + cell + "\n");
+
+        var player = Assert.Single(result.Roster.Players);
+        Assert.Equal(expected, player.JerseyNumber);
+    }
+
+    [Fact]
+    public void UnitsOnAWeightAreStrippedAndTheCorrectionIsStated()
+    {
+        var result = ReadCsv("FirstName,LastName,Position,Weight\nJordan,Travis,QB,212 lbs\n");
+
+        Assert.Equal(212, Assert.Single(result.Roster.Players).WeightPounds);
+
+        // Recovered, but not in silence — the user should see what was read.
+        Assert.Contains(result.Warnings, w => w.Contains("212 lbs") && w.Contains("read as 212"));
+    }
+
+    [Fact]
+    public void SomethingWithNoNumberInItIsStillRejected()
+    {
+        // The recovery must not turn a genuine mistake into a number.
+        var result = ReadCsv("FirstName,LastName,Position,Number\nJordan,Travis,QB,twelve\n");
+
+        Assert.Null(Assert.Single(result.Roster.Players).JerseyNumber);
+        Assert.Contains(result.Warnings, w => w.Contains("twelve") && w.Contains("is not a number"));
+    }
+
+    [Fact]
+    public void AShortRowIsPaddedButTheUserIsToldWhichRow()
+    {
+        // Padding is right — a row that stops early means "nothing for these".
+        // Doing it silently is not: the same shape results from a missing
+        // comma, which the user needs to know about.
+        var result = ReadCsv(
+            "FirstName,LastName,Position,Number,Class,Role\n" +
+            "Jordan,Travis,QB\n");
+
+        Assert.Single(result.Roster.Players);
+        Assert.Contains(result.Warnings, w => w.Contains("Row 2") && w.Contains("only 3 of 6"));
+    }
+
+    [Fact]
+    public void ExtraColumnsOnARowAreIgnoredAndReported()
+    {
+        var result = ReadCsv(
+            "FirstName,LastName,Position\n" +
+            "Jordan,Travis,QB,13,RS Senior,Starter\n");
+
+        Assert.Single(result.Roster.Players);
+        Assert.Contains(result.Warnings, w => w.Contains("Row 2") && w.Contains("stray comma"));
+    }
+
+    [Fact]
+    public void ARepeatedColumnIsReported()
+    {
+        var result = ReadCsv(
+            "FirstName,LastName,Position,Position\n" +
+            "Jordan,Travis,QB,WR\n");
+
+        Assert.Contains(result.Warnings, w => w.Contains("'Position' appears 2 times"));
+    }
+
+    [Fact]
+    public void ARosterWithNoUsablePlayersIsRefusedRatherThanQuietlyReplacingTheTeam()
+    {
+        // Without this the generator produces 85 replacement players and none
+        // of the user's — a file that looks right and contains nothing they
+        // typed.
+        var error = Assert.Throws<Csv.CsvSchemaException>(() =>
+            ReadCsv("FirstName,LastName,Position\n"));
+
+        Assert.Contains("no usable player rows", error.Message);
+        Assert.Contains("Historical_CSV_Format.md", error.Message);
+    }
+
     [Fact]
     public void TheBasicsTemplateGeneratesWithoutWarningsAboutItself()
     {

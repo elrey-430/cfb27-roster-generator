@@ -43,11 +43,31 @@ public static class HistoricalCsv
         var document = CsvDocument.Parse(File.ReadAllText(path), CsvDocument.RaggedRows.Pad);
         var warnings = new List<string>();
 
-        var columns = document.Header
-            .Select((name, index) => (Key: Normalize(name), Index: index))
+        // A row of the wrong width usually means a stray or missing comma, and
+        // the silent fix would hide a header the user has misaligned.
+        foreach (var (row, fields) in document.RaggedRowsAdjusted)
+        {
+            warnings.Add(fields < document.Header.Count
+                ? $"Row {row + 1} has only {fields} of {document.Header.Count} columns; the rest were " +
+                  "treated as blank. Check for a missing comma if that is not what you meant."
+                : $"Row {row + 1} has {fields} columns but the header has {document.Header.Count}; the " +
+                  "extra values were ignored. Check for a stray comma.");
+        }
+
+        var byKey = document.Header
+            .Select((name, index) => (Key: Normalize(name), Name: name, Index: index))
             .Where(c => c.Key.Length > 0)
             .GroupBy(c => c.Key)
-            .ToDictionary(g => g.Key, g => g.First().Index, StringComparer.Ordinal);
+            .ToList();
+
+        foreach (var duplicate in byKey.Where(g => g.Count() > 1))
+        {
+            warnings.Add(
+                $"The column '{duplicate.First().Name}' appears {duplicate.Count()} times; only the first " +
+                "is used.");
+        }
+
+        var columns = byKey.ToDictionary(g => g.Key, g => g.First().Index, StringComparer.Ordinal);
 
         foreach (var required in new[] { "firstname", "lastname", "position" })
         {
@@ -116,6 +136,16 @@ public static class HistoricalCsv
                 Notes = NullIfEmpty(Cell(row, "notes")),
                 Evidence = ReadEvidence(Cell, row, rowLabel, warnings),
             });
+        }
+
+        // Generating from an empty roster silently produces a team of 85
+        // replacements and none of the user's players — a file that looks
+        // right and contains nothing they typed.
+        if (players.Count == 0)
+        {
+            throw new CsvSchemaException(
+                $"'{Path.GetFileName(path)}' has a header but no usable player rows. Every row needs at " +
+                "least a FirstName, a LastName and a Position. See docs/Historical_CSV_Format.md.");
         }
 
         var resolvedSchool = school ?? fileSchool
@@ -198,6 +228,25 @@ public static class HistoricalCsv
         StatKeys.PuntAverage, StatKeys.GamesPlayed, StatKeys.GamesStarted,
     };
 
+    /// <summary>
+    /// Strips the decoration people and spreadsheets put around numbers —
+    /// <c>#13</c>, <c>212 lbs</c>, <c>4.49s</c>, <c>1,250</c>, <c>21 reps</c>
+    /// — leaving the digits. Copying a stat line off a web page produces these
+    /// constantly, and rejecting them throws away data the user did supply.
+    /// Returns null when nothing numeric is left, so a genuine mistake still
+    /// gets reported rather than silently becoming a number.
+    /// </summary>
+    private static string? Digits(string value)
+    {
+        var cleaned = new string(value
+            .Where(c => char.IsDigit(c) || c == '.' || c == '-' || c == '+')
+            .ToArray())
+            .Trim();
+
+        // A lone sign or dot is not a number, and neither is "6.2.1".
+        return cleaned.Count(char.IsDigit) == 0 || cleaned.Count(c => c == '.') > 1 ? null : cleaned;
+    }
+
     private static double? ParseDouble(string value, string rowLabel, string field, List<string> warnings)
     {
         if (value.Length == 0)
@@ -208,6 +257,12 @@ public static class HistoricalCsv
         if (double.TryParse(value, out var parsed))
         {
             return parsed;
+        }
+
+        if (Digits(value) is string digits && double.TryParse(digits, out var recovered))
+        {
+            warnings.Add($"{rowLabel}: {field} '{value}' read as {recovered:0.##}.");
+            return recovered;
         }
 
         warnings.Add($"{rowLabel}: {field} '{value}' is not a number — ignored.");
@@ -265,6 +320,16 @@ public static class HistoricalCsv
         if (int.TryParse(value, out var parsed))
         {
             return parsed;
+        }
+
+        // "#13" from a roster page, and "13.0" from a spreadsheet that decided
+        // the column was a decimal, both mean 13.
+        if (Digits(value) is string digits && double.TryParse(digits, out var recovered) &&
+            Math.Abs(recovered - Math.Round(recovered)) < 1e-9)
+        {
+            var whole = (int)Math.Round(recovered);
+            warnings.Add($"{rowLabel}: {field} '{value}' read as {whole}.");
+            return whole;
         }
 
         warnings.Add($"{rowLabel}: {field} '{value}' is not a number — ignored.");

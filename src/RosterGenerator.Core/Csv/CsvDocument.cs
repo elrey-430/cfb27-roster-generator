@@ -101,6 +101,7 @@ public sealed class CsvDocument
 
         var header = records[0].ToList();
         var rows = new List<string[]>(records.Count - 1);
+        var adjusted = new List<(int Row, int Fields)>();
         for (var i = 1; i < records.Count; i++)
         {
             var record = records[i];
@@ -113,6 +114,7 @@ public sealed class CsvDocument
                         "The file may be truncated or not a CFB27 table export.");
                 }
 
+                adjusted.Add((i, record.Length));
                 var padded = new string[header.Count];
                 for (var column = 0; column < header.Count; column++)
                 {
@@ -125,8 +127,18 @@ public sealed class CsvDocument
             rows.Add(record);
         }
 
-        return new CsvDocument(header, rows);
+        return new CsvDocument(header, rows) { RaggedRowsAdjusted = adjusted };
     }
+
+    /// <summary>
+    /// Rows whose field count did not match the header and were padded or
+    /// trimmed under <see cref="RaggedRows.Pad"/>, as (row index, original
+    /// field count). Empty under <see cref="RaggedRows.Reject"/>, which throws
+    /// instead. The caller reports these: silently reshaping a user's row
+    /// hides a misaligned header from them.
+    /// </summary>
+    public IReadOnlyList<(int Row, int Fields)> RaggedRowsAdjusted { get; private init; } =
+        Array.Empty<(int, int)>();
 
     /// <summary>Loads a CSV document from disk.</summary>
     public static CsvDocument Load(string path) => Parse(File.ReadAllText(path));
