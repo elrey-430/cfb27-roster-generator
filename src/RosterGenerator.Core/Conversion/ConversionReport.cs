@@ -64,6 +64,13 @@ public sealed class ConversionReport
     /// <summary>Donor slots not replaced (original fictional players remain).</summary>
     public List<string> LeftoverDonorSlots { get; } = new();
 
+    /// <summary>
+    /// Slots re-rated as end-of-roster depth because the historical roster did
+    /// not fill them. Empty when the fill is disabled, in which case the same
+    /// slots appear in <see cref="LeftoverDonorSlots"/> instead.
+    /// </summary>
+    public List<FilledSlot> FilledSlots { get; } = new();
+
     /// <summary>Conversion-wide assumptions (weights, ratings, assets...).</summary>
     public List<string> GlobalAssumptions { get; } = new();
 
@@ -193,6 +200,23 @@ public sealed class ConversionReport
             foreach (var slot in LeftoverDonorSlots)
             {
                 sb.AppendLine($"- {slot}");
+            }
+        }
+
+        if (FilledSlots.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine(
+                $"Roster depth filled ({FilledSlots.Count} slot(s) you did not supply players for). " +
+                "These keep their original names, jersey numbers and portraits; only their ratings " +
+                "and class years were rewritten, so none of them can out-rate your roster:");
+            sb.AppendLine();
+            sb.AppendLine($"  {"Player",-26} {"Pos",-4} {"OVR",3} {"was",4}  {"Class",-10} Why");
+            foreach (var slot in FilledSlots)
+            {
+                sb.AppendLine(
+                    $"  {slot.Name,-26} {slot.Position,-4} {slot.Overall,3} {slot.PreviousOverall,4}  " +
+                    $"{slot.ClassYear,-10} {slot.Reason}");
             }
         }
 

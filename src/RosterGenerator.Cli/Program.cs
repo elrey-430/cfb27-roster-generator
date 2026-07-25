@@ -47,6 +47,7 @@ static int Usage()
           generate   --dynasty <export folder or Player.csv> --roster <historical roster .csv>
                      [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
                      [--ratings generate|inherit] [--archetypes select|inherit]
+                     [--fill fill|leave]
                      [--team-mappings <json>] [--position-mappings <json>]
           list-teams --dynasty <export folder or Player.csv>
           compare    --left <Player.csv> --right <Player.csv> --team <name or id>
@@ -57,6 +58,14 @@ static int Usage()
         of the players being replaced. --archetypes select (the default when
         ratings are generated) also picks each player's PlayerType from their
         profile and recomputes the overall with that archetype's formula.
+
+        A CFB27 team always carries 85 players, so any slot your roster does not
+        supply keeps its original fictional player — and because the game builds
+        its depth chart from ratings, a leftover 82-overall player will start
+        ahead of your roster. --fill fill (the default when ratings are
+        generated) re-rates those slots as end-of-roster depth, holding each one
+        below your weakest player at that position. Their names and jersey
+        numbers do not change. --fill leave keeps them exactly as they are.
 
         The roster CSV format is documented in docs/Historical_CSV_Format.md
         (template: templates/HistoricalRosterTemplate.csv). Defaults:
@@ -243,12 +252,39 @@ static int Generate(Dictionary<string, string> options)
         throw new ArgumentException("--archetypes must be 'select' or 'inherit'.");
     }
 
+    // Filling the rest of the roster means writing ratings, so like archetype
+    // selection it requires the engine.
+    var fillMode = options.GetValueOrDefault("fill", ratingEngine is null ? "leave" : "fill");
+    RosterFiller? rosterFiller = null;
+    if (fillMode.Equals("fill", StringComparison.OrdinalIgnoreCase))
+    {
+        if (ratingEngine is null)
+        {
+            throw new ArgumentException(
+                "--fill fill requires --ratings generate: filling a roster slot means writing a rating " +
+                "for it.");
+        }
+
+        rosterFiller = new RosterFiller(
+            RosterDepthModel.Load(FindDataFile(options, "roster-depth", "RosterDepth.json", required: true)!),
+            ratingEngine);
+        Console.WriteLine("Roster fill: on (unsupplied slots re-rated as end-of-roster depth)");
+    }
+    else if (!fillMode.Equals("leave", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new ArgumentException("--fill must be 'fill' or 'leave'.");
+    }
+
     var donor = export.LoadPlayerRoster();
     var session = new RosterEditSession(donor);
-    var report = new HistoricalTeamConverter(teamMappings, positionMappings, ratingEngine, archetypeSelector)
+    var report = new HistoricalTeamConverter(
+            teamMappings, positionMappings, ratingEngine, archetypeSelector, rosterFiller)
         .Convert(session, historical);
+    var slotSummary = report.FilledSlots.Count > 0
+        ? $"{report.FilledSlots.Count} slots filled as depth"
+        : $"{report.LeftoverDonorSlots.Count} donor slots left";
     Console.WriteLine($"Converted {report.Converted.Count()} players onto team {report.TeamId} " +
-                      $"({report.Skipped.Count()} skipped, {report.LeftoverDonorSlots.Count} donor slots left).");
+                      $"({report.Skipped.Count()} skipped, {slotSummary}).");
 
     var outputPath = options.TryGetValue("output", out var output)
         ? output

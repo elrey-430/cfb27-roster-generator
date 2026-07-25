@@ -15,11 +15,13 @@ namespace RosterGenerator.Core.Conversion;
 /// has ~250 columns with unconfirmed semantics that only a real save can
 /// supply, so each historical player takes over an existing roster slot via
 /// the replace-identity operation and inherits the slot's unknown fields.
-/// Confirmed-safe fields (name, jersey, height, class, redshirt, position)
-/// are overwritten with historical values; ratings are inherited from the
-/// slot (rating generation is a later milestone); Weight is never written
-/// while its encoding is unresolved. Every default and assumption is
-/// recorded in the <see cref="ConversionReport"/>.
+/// Confirmed-safe fields (name, jersey, height, weight, class, redshirt,
+/// position, hometown) are overwritten with historical values; ratings and
+/// archetype are generated when an engine is supplied and otherwise inherited
+/// from the slot. Slots no historical player fills are handed to the
+/// <see cref="RosterFiller"/>, without which the original fictional players
+/// stay and some of them start. Every default and assumption is recorded in
+/// the <see cref="ConversionReport"/>.
 /// </summary>
 public sealed class HistoricalTeamConverter
 {
@@ -27,6 +29,7 @@ public sealed class HistoricalTeamConverter
     private readonly PositionMappingSet _positionMappings;
     private readonly RatingEngine? _ratingEngine;
     private readonly ArchetypeSelector? _archetypeSelector;
+    private readonly RosterFiller? _rosterFiller;
 
     /// <summary>
     /// Creates a converter.
@@ -41,16 +44,23 @@ public sealed class HistoricalTeamConverter
     /// Chooses each player's archetype from their historical profile. When
     /// null the roster slot's existing archetype is kept.
     /// </param>
+    /// <param name="rosterFiller">
+    /// Re-rates the slots the historical roster does not fill so the original
+    /// fictional players cannot out-rate it. When null they are left alone and
+    /// only reported. Requires <paramref name="ratingEngine"/>.
+    /// </param>
     public HistoricalTeamConverter(
         TeamMappingSet teamMappings,
         PositionMappingSet positionMappings,
         RatingEngine? ratingEngine = null,
-        ArchetypeSelector? archetypeSelector = null)
+        ArchetypeSelector? archetypeSelector = null,
+        RosterFiller? rosterFiller = null)
     {
         _teamMappings = teamMappings;
         _positionMappings = positionMappings;
         _ratingEngine = ratingEngine;
         _archetypeSelector = archetypeSelector;
+        _rosterFiller = rosterFiller;
     }
 
     /// <summary>
@@ -128,22 +138,64 @@ public sealed class HistoricalTeamConverter
             GenerateRatings(session, report, placements);
         }
 
+        if (freeSlots.Count > 0)
+        {
+            if (_rosterFiller is not null)
+            {
+                FillRemainingSlots(session, report, freeSlots, placements);
+            }
+            else
+            {
+                ReportUnfilledSlots(report, freeSlots);
+            }
+        }
+
+        return report;
+    }
+
+    /// <summary>
+    /// Turns the slots the historical roster did not fill into end-of-roster
+    /// depth. The ceiling handed to the filler is the weakest historical
+    /// player at each position, which is what actually keeps a leftover
+    /// fictional player off the depth chart.
+    /// </summary>
+    private void FillRemainingSlots(
+        RosterEditSession session,
+        ConversionReport report,
+        IReadOnlyList<Player> freeSlots,
+        IReadOnlyList<(Player Slot, HistoricalPlayer Historical, PlayerConversionEntry Entry)> placements)
+    {
+        var weakestByPosition = placements
+            .GroupBy(p => p.Slot.Position, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.Min(p => p.Slot.OverallRating), StringComparer.Ordinal);
+
+        report.FilledSlots.AddRange(
+            _rosterFiller!.Fill(session, freeSlots, weakestByPosition, placements.Count));
+
+        report.GlobalAssumptions.Add(
+            $"{freeSlots.Count} roster slot(s) had no historical player, so they were re-rated as " +
+            "end-of-roster depth using the overall a real save carries at those roster ranks " +
+            "(data/RosterDepth.json), each held below the weakest historical player at its position. " +
+            "Their names, jersey numbers and portraits are unchanged.");
+    }
+
+    /// <summary>
+    /// Records slots that kept their original fictional players, including how
+    /// many of them are good enough to take a starting job.
+    /// </summary>
+    private static void ReportUnfilledSlots(ConversionReport report, IReadOnlyList<Player> freeSlots)
+    {
         foreach (var slot in freeSlots)
         {
             report.LeftoverDonorSlots.Add($"{slot} — {slot.Position}, OVR {slot.OverallRating}");
         }
 
-        if (freeSlots.Count > 0)
-        {
-            var starters = freeSlots.Count(p => p.OverallRating >= StarterOverallThreshold);
-            report.GlobalWarnings.Add(
-                $"{freeSlots.Count} roster slot(s) were not replaced, so that many original players remain " +
-                $"on the team (listed below){(starters > 0 ? $"; {starters} of them rate {StarterOverallThreshold}+ " +
-                "and may appear ahead of your historical players on the depth chart" : "")}. " +
-                "Supply more players in the roster CSV to replace them.");
-        }
-
-        return report;
+        var starters = freeSlots.Count(p => p.OverallRating >= StarterOverallThreshold);
+        report.GlobalWarnings.Add(
+            $"{freeSlots.Count} roster slot(s) were not replaced, so that many original players remain " +
+            $"on the team (listed below){(starters > 0 ? $"; {starters} of them rate {StarterOverallThreshold}+ " +
+            "and may appear ahead of your historical players on the depth chart" : "")}. " +
+            "Supply more players in the roster CSV, or enable the roster fill, to replace them.");
     }
 
     /// <summary>
