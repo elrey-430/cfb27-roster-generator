@@ -26,11 +26,10 @@ _Last updated: 2026-07-25 — end of Milestone 9._
   community editor produced for the three rows it edited without also
   filling in unrelated Head-loadout defaults. That is a stronger bar than any
   previous milestone had.
-- **Known limit — the catalogue.** Retro helmets appear on *zero* of 12,586
-  players in a base save, so the period vocabulary cannot be mined and must
-  be demonstrated in the editor one helmet at a time. Confirmed so far:
-  Revolution Speed, Revolution, Air XP. Only 2010–2016 is defined, and a
-  season no era covers changes nothing.
+- **The catalogue cannot be mined.** Retro helmets appear on *zero* of 12,586
+  players in a base save, so every period asset had to be demonstrated in the
+  editor and read out of a diff. Two rounds, 25 player edits, covered it. A
+  season no era covers still changes nothing.
 - **Brand carries over, the model changes.** A player's current helmet names
   a manufacturer and the era moves them to that manufacturer's model, so a
   squad stays mixed rather than collapsing into 85 identical helmets. Brands
@@ -41,12 +40,14 @@ _Last updated: 2026-07-25 — end of Milestone 9._
 - **Masks follow position.** Mined from the base save: the game puts a kicker
   cage on 92–98% of kickers and punters, a cage or heavy bar on linemen, an
   open two-bar on quarterbacks. The engine now selects by role, with a
-  deterministic pool for spreading masks across a line. Retro shells have only
-  had their two-bar demonstrated, so they still give everyone that one — the
-  highest-value gap left.
-- **Sleeves and shoulder pads** are era-wide slots alongside the helmet.
-  Confirmed: `Gear_JerseyStyle_SleeveTight`/`_SleeveStandard`/`_RolledLow`
-  and `Small_Pads`/`Medium_Pads`/`Large_Pads`.
+  deterministic pool for spreading masks across a line. The demonstration then
+  showed something finer than the mined data did: offensive and defensive
+  linemen differ, so a centre gets `revofullcage` where an edge rusher gets
+  `RevoRobot`.
+- **Sleeves and shoulder pads** are era-wide slots alongside the helmet:
+  tight/small in the 2010s, loose/medium in the 2000s, long from the 1990s
+  back with large then X-large pads. `SleeveStandard` turned out to be what
+  the editor calls "loose".
 - **A second key-order trap, caught before it shipped.** The exporter writes
   `itemAssetName` and `slotType` in *either* order — 12,570 rows one way, 16
   the other — so any pattern spanning both keys would have missed almost
