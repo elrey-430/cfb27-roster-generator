@@ -6,9 +6,10 @@
     "QB": "Quarterback",
     "WR": "Skill",
     "MLB": "Linebacker",
-    "C": "Lineman",
+    "C": "OffensiveLine",
     "P": "Kicker",
-    "K": "Kicker"
+    "K": "Kicker",
+    "DT": "DefensiveLine"
   },
   "eras": [
     {
@@ -23,8 +24,9 @@
           "Quarterback": "GearFaceMask_Speedflex2Bar",
           "Skill": "GearFaceMask_SpeedflexRobot",
           "Linebacker": "GearFaceMask_SpeedflexRobotRB",
-          "Lineman": "GearFaceMask_SpeedflexRobotRB",
-          "Kicker": "GearFaceMask_SpeedFlexKicker"
+          "Kicker": "GearFaceMask_SpeedFlexKicker",
+          "OffensiveLine": "GearFaceMask_SpeedflexRobotRB",
+          "DefensiveLine": "GearFaceMask_SpeedFlexRobotCage"
         }
       }
     }

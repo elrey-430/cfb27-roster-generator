@@ -51,15 +51,23 @@ _Last updated: 2026-07-25 — end of Milestone 9._
   `itemAssetName` and `slotType` in *either* order — 12,570 rows one way, 16
   the other — so any pattern spanning both keys would have missed almost
   every row. All slots are matched on the value's own prefix instead.
-- **Two eras live**, 2010–2016 and 2000–2009, the latter split by model
-  lineage on the research: the Revolution arrived in 2002 and was on 83% of
-  NFL players by 2008, while the VSR-4 it replaced stayed in college use
-  through 2010.
-- **Three eras specified but blocked** (1990s, 1980s, pre-1980) on asset names
-  that appear nowhere in a base save — the VSR-4, the TK, the vintage masks,
-  X-Large pads and the long/loose jersey cuts. `docs/Equipment_Demo_Spec.md`
-  lists exactly which players to change to unblock them.
-- Tests: 251/251.
+- **Five eras live**: 2010–2016, 2000–2009, 1990–1999, 1980–1989 and
+  pre-1980, every asset in them read out of a demonstration export. A second
+  round of 17 player edits supplied the retro vocabulary that could not be
+  mined: the VSR-4 (`GearHelmet_standardBrady`), the TK
+  (`GearHelmet_RiddellTK`), the Schutt Air Advantage (`GearHelmet_Schutt`,
+  distinct from `GearHelmet_AirXP`), four vintage masks, per-role Revolution
+  and Revolution Speed masks, long sleeves and X-Large pads.
+- **The 2000s split by model** on the research: the Revolution arrived in 2002
+  and was on 83% of NFL players by 2008, while the VSR-4 it replaced stayed in
+  college use through 2010 — so a SpeedFlex wearer takes a Revolution and an
+  Axiom wearer a VSR-4.
+- **Asset names are not UI labels**, which is a trap worth remembering: the
+  VSR-4 is `standardBrady`, and the shell the editor calls "Schutt Air XP" is
+  the real-world Air Advantage and a *different asset* from the Air XP Pro
+  VTD. A test pins every name in the data file to the demonstrated set so a
+  typo cannot reach a user as a broken helmet model.
+- Tests: 272/272.
 
 **Milestone 8 (Draft slot measures the wrong season) is complete.**
 

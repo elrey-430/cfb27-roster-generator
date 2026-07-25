@@ -1,0 +1,155 @@
+[
+  {
+    "cvRow": 1260,
+    "name": "Paul Bowling",
+    "position": "LG",
+    "helmet": "GearHelmet_RiddellTK",
+    "faceMask": "GearFaceMask_VintageHalfCage",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 2076,
+    "name": "Xavier Chaplin",
+    "position": "LT",
+    "helmet": "GearHelmet_RiddellTK",
+    "faceMask": "GearFaceMask_VintageTwoBar",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 2739,
+    "name": "Ashton Daniels",
+    "position": "QB",
+    "helmet": "GearHelmet_standardBrady",
+    "faceMask": "GearFaceMask_2Bar",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 2744,
+    "name": "Jonathan Daniels",
+    "position": "LT",
+    "helmet": "GearHelmet_RiddellTK",
+    "faceMask": "GearFaceMask_VintageLong",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 2755,
+    "name": "Micahi Danzy",
+    "position": "WR",
+    "helmet": "GearHelmet_Revolution",
+    "faceMask": "GearFaceMask_RevoRobot2",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 2962,
+    "name": "Mandrell Desir",
+    "position": "LE",
+    "helmet": "GearHelmet_Revolution",
+    "faceMask": "GearFaceMask_RevoRobot",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 4006,
+    "name": "Brandon Garner",
+    "position": "K",
+    "helmet": "GearHelmet_RevolutionSpeed",
+    "faceMask": "GearFaceMask_revospeedKicker",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 4278,
+    "name": "Omar Graham Jr.",
+    "position": "MLB",
+    "helmet": "GearHelmet_Revolution",
+    "faceMask": "GearFaceMask_REVO3BarLb",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 5856,
+    "name": "Bradyn Joiner",
+    "position": "C",
+    "helmet": "GearHelmet_RevolutionSpeed",
+    "faceMask": "GearFaceMask_revoSpeedFullCage2",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 5882,
+    "name": "Chris Jones",
+    "position": "MLB",
+    "helmet": "GearHelmet_RevolutionSpeed",
+    "faceMask": "GearFaceMask_revospeed3BarLBStraight",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 6861,
+    "name": "Daniel Lyons",
+    "position": "DT",
+    "helmet": "GearHelmet_RevolutionSpeed",
+    "faceMask": "GearFaceMask_revoSpeedFullCage",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 9454,
+    "name": "Duce Robinson",
+    "position": "WR",
+    "helmet": "GearHelmet_RevolutionSpeed",
+    "faceMask": "GearFaceMask_revospeed2bar",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 10458,
+    "name": "Kevin Sperry",
+    "position": "QB",
+    "helmet": "GearHelmet_Schutt",
+    "faceMask": "GearFaceMask_2Bar",
+    "sleeves": "Gear_JerseyStyle_SleeveLong",
+    "shoulderPads": "XLarge_Pads"
+  },
+  {
+    "cvRow": 11076,
+    "name": "Chavez Thompson",
+    "position": "C",
+    "helmet": "GearHelmet_Revolution",
+    "faceMask": "GearFaceMask_revofullcage",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 12228,
+    "name": "Shane Willow",
+    "position": "QB",
+    "helmet": "GearHelmet_Speed_Flex",
+    "faceMask": "GearFaceMask_Speedflex2Bar",
+    "sleeves": "Gear_JerseyStyle_SleeveStandard",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 12348,
+    "name": "Quintrevion Wisner",
+    "position": "HB",
+    "helmet": "GearHelmet_RiddellTK",
+    "faceMask": "GearFaceMask_VintageStandard",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  },
+  {
+    "cvRow": 14790,
+    "name": "Gabe Panikowski",
+    "position": "K",
+    "helmet": "GearHelmet_Revolution",
+    "faceMask": "GearFaceMask_revoKicker",
+    "sleeves": "Gear_JerseyStyle_SleeveTight",
+    "shoulderPads": "Small_Pads"
+  }
+]

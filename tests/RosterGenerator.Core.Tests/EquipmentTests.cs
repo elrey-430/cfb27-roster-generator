@@ -227,7 +227,8 @@ public sealed class EquipmentTests
             Path.Combine(AppContext.BaseDirectory, "Fixtures", "EquipmentEras_Roles.json"));
 
         Assert.Equal(MaskRoles.Kicker, eras.RoleOf("P"));
-        Assert.Equal(MaskRoles.Lineman, eras.RoleOf("C"));
+        Assert.Equal(MaskRoles.OffensiveLine, eras.RoleOf("C"));
+        Assert.Equal(MaskRoles.DefensiveLine, eras.RoleOf("DT"));
         Assert.Equal(MaskRoles.Quarterback, eras.RoleOf("QB"));
         Assert.Equal(MaskRoles.Skill, eras.RoleOf("WR"));
 
@@ -247,10 +248,10 @@ public sealed class EquipmentTests
     [Fact]
     public void AShellWithNoPerRoleMasksGivesEveryoneItsDefault()
     {
-        // The retro shells have only had their two-bar demonstrated, so they
-        // must keep behaving exactly as they did before masks were
-        // position-aware rather than inventing a kicker cage.
-        var option = Eras().ForSeason(2014)!.Fallback;
+        // The Schutt Air XP has only had its two-bar demonstrated, so it must
+        // keep giving everyone that rather than inventing a kicker cage.
+        var option = Eras().ForSeason(2014)!.ByBrand["Schutt"];
+        Assert.Empty(option.MasksByRole);
         Assert.Equal(option.ForRole(MaskRoles.Skill, 0), option.ForRole(MaskRoles.Kicker, 7));
     }
 
@@ -271,11 +272,11 @@ public sealed class EquipmentTests
 
         // Same player, same mask, every run -- a roster that shuffled itself
         // between runs would make the output impossible to check.
-        Assert.Equal(option.ForRole(MaskRoles.Lineman, 41), option.ForRole(MaskRoles.Lineman, 41));
+        Assert.Equal(option.ForRole(MaskRoles.OffensiveLine, 41), option.ForRole(MaskRoles.OffensiveLine, 41));
 
         // And the line is not all in one mask.
         var spread = Enumerable.Range(0, 12)
-            .Select(i => option.ForRole(MaskRoles.Lineman, i).FaceMask)
+            .Select(i => option.ForRole(MaskRoles.OffensiveLine, i).FaceMask)
             .Distinct()
             .Count();
         Assert.Equal(3, spread);
@@ -311,14 +312,21 @@ public sealed class EquipmentTests
     }
 
     [Fact]
-    public void TheTwoThousandsEraUsesTheOlderRiddellShell()
+    public void TheTwoThousandsEraUsesTheOlderRiddellShells()
     {
         var visuals = Before();
         new EquipmentApplier(Eras()).Apply(Players(), visuals, teamIndex: 27, season: 2005);
 
+        // Nehemiah Chandler wore an Axiom, so he belongs in a VSR-4 rather
+        // than the Revolution a SpeedFlex wearer gets.
         Assert.Equal(
-            new HeadGear("GearHelmet_Revolution", "GearFaceMask_RevoNormal"),
+            new HeadGear("GearHelmet_standardBrady", "GearFaceMask_2Bar"),
             visuals.GetHeadGear(2066));
+
+        // Ja'Bril Rawls wore a SpeedFlex, and is a cornerback.
+        Assert.Equal(
+            new HeadGear("GearHelmet_Revolution", "GearFaceMask_RevoRobot2"),
+            visuals.GetHeadGear(9120));
     }
 
     [Fact]
@@ -330,13 +338,13 @@ public sealed class EquipmentTests
         var visuals = Before();
         var before = visuals.GetHeadGear(2066);
 
-        var report = new EquipmentApplier(Eras()).Apply(Players(), visuals, teamIndex: 27, season: 1998);
+        var report = new EquipmentApplier(Eras()).Apply(Players(), visuals, teamIndex: 27, season: 2020);
 
         Assert.Null(report.Era);
         Assert.False(report.Applied);
         Assert.Empty(report.Changed);
         Assert.Equal(before, visuals.GetHeadGear(2066));
-        Assert.Contains("1998", report.Describe());
+        Assert.Contains("2020", report.Describe());
     }
 
     [Fact]
@@ -402,6 +410,117 @@ public sealed class EquipmentTests
         finally
         {
             File.Delete(path);
+        }
+    }
+
+    [Theory]
+    // Every asset name below was read out of a real export after being set in
+    // the community roster editor. These assertions are the guard against a
+    // typo in the data file quietly putting a player in a helmet the game does
+    // not have — the failure mode that would reach a user as a broken model.
+    [InlineData(2014, "MLB", "GearHelmet_Speed_Flex", "GearHelmet_RevolutionSpeed", "GearFaceMask_revospeed3BarLBStraight")]
+    [InlineData(2014, "C", "GearHelmet_Speed_Flex", "GearHelmet_RevolutionSpeed", "GearFaceMask_revoSpeedFullCage2")]
+    [InlineData(2014, "DT", "GearHelmet_Speed_Flex", "GearHelmet_RevolutionSpeed", "GearFaceMask_revoSpeedFullCage")]
+    [InlineData(2014, "K", "GearHelmet_Speed_Flex", "GearHelmet_RevolutionSpeed", "GearFaceMask_revospeedKicker")]
+    [InlineData(2005, "MLB", "GearHelmet_Speed_Flex", "GearHelmet_Revolution", "GearFaceMask_REVO3BarLb")]
+    [InlineData(2005, "C", "GearHelmet_Speed_Flex", "GearHelmet_Revolution", "GearFaceMask_revofullcage")]
+    [InlineData(2005, "LE", "GearHelmet_Speed_Flex", "GearHelmet_Revolution", "GearFaceMask_RevoRobot")]
+    [InlineData(2005, "K", "GearHelmet_Speed_Flex", "GearHelmet_Revolution", "GearFaceMask_revoKicker")]
+    // An Axiom wearer in the 2000s belongs in a VSR-4, not a Revolution.
+    [InlineData(2005, "QB", "GearHelmet_Axiom", "GearHelmet_standardBrady", "GearFaceMask_2Bar")]
+    // Schutt keeps its own line: the Air Advantage, a different asset from the
+    // Air XP Pro VTD despite the editor labelling both "Air XP".
+    [InlineData(2005, "QB", "GearHelmet_SchuttF7", "GearHelmet_Schutt", "GearFaceMask_2Bar")]
+    [InlineData(1995, "QB", "GearHelmet_Speed_Flex", "GearHelmet_standardBrady", "GearFaceMask_2Bar")]
+    [InlineData(1985, "HB", "GearHelmet_Speed_Flex", "GearHelmet_RiddellTK", "GearFaceMask_VintageStandard")]
+    [InlineData(1975, "LT", "GearHelmet_Speed_Flex", "GearHelmet_RiddellTK", "GearFaceMask_VintageTwoBar")]
+    [InlineData(1975, "QB", "GearHelmet_Speed_Flex", "GearHelmet_RiddellTK", "GearFaceMask_VintageTwoBar")]
+    public void EveryEraWritesTheDemonstratedAssets(
+        int season, string position, string wearing, string expectedHelmet, string expectedMask)
+    {
+        var eras = Eras();
+        var era = eras.ForSeason(season);
+        Assert.NotNull(era);
+
+        var gear = era!.For(wearing, eras.BrandOf(wearing)).ForRole(eras.RoleOf(position), seed: 0);
+
+        Assert.Equal(expectedHelmet, gear.Helmet);
+        Assert.Equal(expectedMask, gear.FaceMask);
+    }
+
+    [Fact]
+    public void TheEightiesLineIsSpreadAcrossTheVintageMasks()
+    {
+        // Linemen draw from a pool rather than all wearing one mask; everyone
+        // else takes the Vintage Standard.
+        var eras = Eras();
+        var era = eras.ForSeason(1985)!;
+        var option = era.Fallback;
+
+        var line = Enumerable.Range(0, 15)
+            .Select(i => option.ForRole(MaskRoles.OffensiveLine, i).FaceMask)
+            .Distinct()
+            .ToList();
+        Assert.Equal(3, line.Count);
+        Assert.All(line, m => Assert.Contains("Vintage", m));
+
+        Assert.Equal("GearFaceMask_VintageStandard", option.ForRole(MaskRoles.Skill, 3).FaceMask);
+    }
+
+    [Theory]
+    [InlineData(2014, "Gear_JerseyStyle_SleeveTight", "Small_Pads")]
+    [InlineData(2005, "Gear_JerseyStyle_SleeveStandard", "Medium_Pads")]
+    [InlineData(1995, "Gear_JerseyStyle_SleeveLong", "Large_Pads")]
+    [InlineData(1985, "Gear_JerseyStyle_SleeveLong", "XLarge_Pads")]
+    [InlineData(1975, "Gear_JerseyStyle_SleeveLong", "XLarge_Pads")]
+    public void SleevesAndPadsMatchTheEra(int season, string sleeves, string pads)
+    {
+        var era = Eras().ForSeason(season);
+        Assert.NotNull(era);
+        Assert.Equal(sleeves, era!.Sleeves);
+        Assert.Equal(pads, era.ShoulderPads);
+    }
+
+    [Fact]
+    public void EveryAssetTheDataFileNamesWasActuallyDemonstrated()
+    {
+        // The catalogue of names read out of the two demonstration exports.
+        // Anything the data file mentions that is not in here would be a guess.
+        var confirmed = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "GearHelmet_RevolutionSpeed", "GearHelmet_Revolution", "GearHelmet_AirXP",
+            "GearHelmet_standardBrady", "GearHelmet_RiddellTK", "GearHelmet_Schutt",
+            "GearFaceMask_revospeed2bar", "GearFaceMask_revospeed3BarLBStraight",
+            "GearFaceMask_revoSpeedFullCage", "GearFaceMask_revoSpeedFullCage2",
+            "GearFaceMask_revospeedKicker", "GearFaceMask_RevoRobot", "GearFaceMask_RevoRobot2",
+            "GearFaceMask_REVO3BarLb", "GearFaceMask_revofullcage", "GearFaceMask_revoKicker",
+            "GearFaceMask_RevoNormal", "GearFaceMask_2Bar",
+            "GearFaceMask_VintageStandard", "GearFaceMask_VintageTwoBar",
+            "GearFaceMask_VintageLong", "GearFaceMask_VintageHalfCage",
+            "Gear_JerseyStyle_SleeveTight", "Gear_JerseyStyle_SleeveStandard",
+            "Gear_JerseyStyle_SleeveLong",
+            "Small_Pads", "Medium_Pads", "Large_Pads", "XLarge_Pads",
+        };
+
+        foreach (var era in Eras().Eras)
+        {
+            foreach (var option in era.ByBrand.Values.Concat(era.ByModel.Values).Append(era.Fallback))
+            {
+                Assert.Contains(option.Helmet, confirmed);
+                Assert.Contains(option.FaceMask, confirmed);
+                Assert.All(option.MasksByRole.Values, m => Assert.Contains(m, confirmed));
+                Assert.All(option.LinemanMaskPool, m => Assert.Contains(m, confirmed));
+            }
+
+            if (era.Sleeves is not null)
+            {
+                Assert.Contains(era.Sleeves, confirmed);
+            }
+
+            if (era.ShoulderPads is not null)
+            {
+                Assert.Contains(era.ShoulderPads, confirmed);
+            }
         }
     }
 

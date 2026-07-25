@@ -217,14 +217,21 @@ as varied as it started instead of turning into 85 identical helmets. Players
 wearing a brand that did not exist yet — Vicis, Light — take the era's common
 shell, because there is no same-brand answer for them.
 
-| Wearing now | 2010–2016 | 2000–2009 |
-|---|---|---|
-| Riddell Axiom or SpeedFlex | Riddell Revolution Speed | Riddell Revolution |
-| Schutt F7 or F7 Pro | Schutt Air XP PRO VTD | Riddell Revolution\* |
-| Vicis or Light | Riddell Revolution Speed | Riddell Revolution |
+| Wearing now | 2010–2016 | 2000–2009 | 1990–1999 | 1980–1989 | pre-1980 |
+|---|---|---|---|---|---|
+| Riddell SpeedFlex | Revolution Speed | Revolution | VSR-4 | TK | TK |
+| Riddell Axiom | Revolution Speed | VSR-4 | VSR-4 | TK | TK |
+| Schutt F7 / F7 Pro | Air XP PRO VTD | Air Advantage | VSR-4 | TK | TK |
+| Vicis or Light | Revolution Speed | Revolution | VSR-4 | TK | TK |
 
-\* A Schutt shell from the 2000s has not been confirmed in the game yet, so
-those players fall back to the Riddell for now.
+**Face masks follow the position.** A kicker gets a kicker cage, a centre a
+full cage, an edge rusher a robot, a quarterback an open bar — the same way
+the game's own rosters do it. In the 1980s the line is spread across the
+heavier vintage masks rather than all wearing one.
+
+**Jersey cut and pads change too:** tight sleeves and small pads in the
+2010s, loose and medium in the 2000s, long sleeves from the 1990s back, with
+large pads in the 1990s and X-large before that.
 
 That produces a second file:
 

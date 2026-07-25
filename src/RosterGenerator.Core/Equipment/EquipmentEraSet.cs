@@ -19,8 +19,15 @@ public static class MaskRoles
     /// <summary>Linebackers.</summary>
     public const string Linebacker = "Linebacker";
 
-    /// <summary>Offensive and defensive linemen — cages and heavy bars.</summary>
-    public const string Lineman = "Lineman";
+    /// <summary>Offensive linemen — full cages.</summary>
+    public const string OffensiveLine = "OffensiveLine";
+
+    /// <summary>
+    /// Defensive linemen. A separate role from the offensive line because the
+    /// demonstrations show them apart: on a Revolution a centre wears
+    /// <c>revofullcage</c> and an edge rusher <c>RevoRobot</c>.
+    /// </summary>
+    public const string DefensiveLine = "DefensiveLine";
 
     /// <summary>Kickers and punters.</summary>
     public const string Kicker = "Kicker";
@@ -67,8 +74,9 @@ public sealed class HelmetOption
     /// </summary>
     public HeadGear ForRole(string role, int seed)
     {
-        if (string.Equals(role, MaskRoles.Lineman, StringComparison.OrdinalIgnoreCase)
-            && LinemanMaskPool.Count > 0)
+        var isLineman = string.Equals(role, MaskRoles.OffensiveLine, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(role, MaskRoles.DefensiveLine, StringComparison.OrdinalIgnoreCase);
+        if (isLineman && LinemanMaskPool.Count > 0)
         {
             return new HeadGear(Helmet, LinemanMaskPool[Math.Abs(seed) % LinemanMaskPool.Count]);
         }
