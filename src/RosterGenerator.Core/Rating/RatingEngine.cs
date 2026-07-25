@@ -47,6 +47,18 @@ public sealed class RatingEngine
     public OverallFormulaSet Formulas => _formulas;
 
     /// <summary>
+    /// Depth-chart roles the model understands, for telling a user that the
+    /// role they typed was not one of them. A role is optional and an empty
+    /// one changes nothing, but a misspelled one would otherwise be ignored in
+    /// silence — indistinguishable from leaving it blank.
+    /// </summary>
+    public IReadOnlyCollection<string> KnownRoles => _model.RoleScores.Keys;
+
+    /// <summary>True when the text names a role the model can score.</summary>
+    public bool IsKnownRole(string role) =>
+        _model.RoleScores.ContainsKey(role.Trim().ToLowerInvariant());
+
+    /// <summary>
     /// Generates ratings for one player.
     /// </summary>
     /// <param name="cfb27Position">Target CFB27 position (QB, LT, ...).</param>

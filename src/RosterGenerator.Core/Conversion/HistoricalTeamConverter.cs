@@ -247,6 +247,18 @@ public sealed class HistoricalTeamConverter
 
         foreach (var (slot, historical, entry) in placements)
         {
+            // A blank Role is fine and changes nothing, but a misspelled one
+            // would be dropped in silence — looking exactly like leaving it
+            // out, while the user believes they set it.
+            if (historical.Evidence.Role is { Length: > 0 } role &&
+                !string.IsNullOrWhiteSpace(role) &&
+                !engine.IsKnownRole(role))
+            {
+                entry.Warnings.Add(
+                    $"Role '{role.Trim()}' is not one the tool recognizes, so it was ignored. " +
+                    $"Use one of: {string.Join(", ", engine.KnownRoles)}.");
+            }
+
             var playerType = slot.GetRaw(PlayerTypeColumn);
             if (_archetypeSelector is not null)
             {

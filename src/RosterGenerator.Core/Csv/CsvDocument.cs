@@ -69,7 +69,29 @@ public sealed class CsvDocument
     /// Parses CSV text. Accepts RFC 4180-style quoted fields for robustness,
     /// although CFB27 exports observed so far never quote.
     /// </summary>
-    public static CsvDocument Parse(string text)
+    public static CsvDocument Parse(string text) => Parse(text, RaggedRows.Reject);
+
+    /// <summary>What to do with a row whose field count differs from the header's.</summary>
+    public enum RaggedRows
+    {
+        /// <summary>
+        /// Throw. Correct for the game's own table exports, where a row of the
+        /// wrong width means the file is truncated or is not the table it
+        /// claims to be.
+        /// </summary>
+        Reject,
+
+        /// <summary>
+        /// Pad short rows with empty cells and ignore cells past the header.
+        /// Correct for a roster CSV a person typed: omitting the trailing
+        /// columns on a row is ordinary in spreadsheets and hand-edited files,
+        /// and it means "I have nothing for these", not "this file is corrupt".
+        /// </summary>
+        Pad,
+    }
+
+    /// <summary>Parses CSV text, choosing how strict to be about row width.</summary>
+    public static CsvDocument Parse(string text, RaggedRows ragged)
     {
         var records = CsvFormat.ParseRecords(text);
         if (records.Count == 0)
@@ -84,9 +106,20 @@ public sealed class CsvDocument
             var record = records[i];
             if (record.Length != header.Count)
             {
-                throw new CsvSchemaException(
-                    $"Row {i} has {record.Length} fields but the header has {header.Count}. " +
-                    "The file may be truncated or not a CFB27 table export.");
+                if (ragged == RaggedRows.Reject)
+                {
+                    throw new CsvSchemaException(
+                        $"Row {i} has {record.Length} fields but the header has {header.Count}. " +
+                        "The file may be truncated or not a CFB27 table export.");
+                }
+
+                var padded = new string[header.Count];
+                for (var column = 0; column < header.Count; column++)
+                {
+                    padded[column] = column < record.Length ? record[column] : "";
+                }
+
+                record = padded;
             }
 
             rows.Add(record);

@@ -206,6 +206,72 @@ public sealed class SparseInputTests
         Assert.NotEmpty(export.ChangedColumnsByRowKey);
     }
 
+    /// <summary>Overall by player name, for comparing whole rosters.</summary>
+    private static Dictionary<string, int> Overalls(Core.Model.PlayerRoster roster, int teamId) =>
+        roster.Players.Where(p => p.TeamIndex == teamId)
+            .ToDictionary(p => $"{p.FirstName} {p.LastName}:{p.RowKey}", p => p.OverallRating);
+
+    private const string RoleRows =
+        "Jordan,Travis,QB,13,RS Senior{0}\n" +
+        "Trey,Benson,RB,3,RS Junior{0}\n" +
+        "Keon,Coleman,WR,4,Junior{0}\n" +
+        "Robert,Scott,OT,74,RS Junior{0}\n" +
+        "Ryan,Fitzgerald,K,88,RS Junior{0}\n";
+
+    [Theory]
+    [InlineData("no Role column", "FirstName,LastName,Position,Number,Class\n", "")]
+    [InlineData("empty Role cell", "FirstName,LastName,Position,Number,Class,Role\n", ",")]
+    [InlineData("whitespace Role", "FirstName,LastName,Position,Number,Class,Role\n", ",   ")]
+    [InlineData("row stops before Role", "FirstName,LastName,Position,Number,Class,Role\n", "")]
+    [InlineData("misspelled Role", "FirstName,LastName,Position,Number,Class,Role\n", ",Startr")]
+    public void AnUnfilledRoleChangesNothingAtAll(string form, string header, string suffix)
+    {
+        // Role earns its place in the template by separating starters from
+        // reserves, but it must stay optional: leaving it out, blank, padded
+        // with spaces, or misspelled all has to generate exactly what the tool
+        // produced before the column existed.
+        var baseline = GenerateAndExport(
+            "FirstName,LastName,Position,Number,Class\n" + string.Format(RoleRows, ""));
+        var candidate = GenerateAndExport(header + string.Format(RoleRows, suffix));
+
+        Assert.True(
+            Overalls(baseline.Roster, baseline.Report.TeamId)
+                .SequenceEqual(Overalls(candidate.Roster, candidate.Report.TeamId)),
+            $"{form} changed the generated roster; an unfilled Role must be a no-op");
+    }
+
+    [Fact]
+    public void AMisspelledRoleIsReportedRatherThanSilentlyDropped()
+    {
+        // Ignoring it is right, but doing so in silence is not: the user
+        // believes they set a role and cannot tell the result apart from
+        // having left it blank.
+        var (report, _, _) = GenerateAndExport(
+            "FirstName,LastName,Position,Role\n" +
+            "Jordan,Travis,QB,Startr\n");
+
+        var entry = Assert.Single(report.Converted);
+        Assert.Contains(entry.Warnings, w => w.Contains("Startr") && w.Contains("not one the tool recognizes"));
+    }
+
+    [Fact]
+    public void RoleSeparatesStartersFromTheRestWhenNothingElseIsSupplied()
+    {
+        // The reason it is in the template: with only names, positions and
+        // classes every player lands within a couple of points of every other.
+        var (report, _, _) = GenerateAndExport(
+            "FirstName,LastName,Position,Number,Class,Role\n" +
+            "First,Stringer,WR,1,Senior,Starter\n" +
+            "Second,Stringer,WR,2,Senior,Backup\n" +
+            "Third,Stringer,WR,3,Senior,Reserve\n");
+
+        var byName = report.Converted.ToDictionary(e => e.Player.FirstName, e => e.Ratings!.Overall);
+        Assert.True(byName["First"] > byName["Second"],
+            $"starter {byName["First"]} did not out-rate backup {byName["Second"]}");
+        Assert.True(byName["Second"] > byName["Third"],
+            $"backup {byName["Second"]} did not out-rate reserve {byName["Third"]}");
+    }
+
     [Fact]
     public void TheBasicsTemplateGeneratesWithoutWarningsAboutItself()
     {
@@ -217,7 +283,7 @@ public sealed class SparseInputTests
         Assert.Empty(csv.Warnings);
         Assert.Equal("Florida State", csv.Roster.School);
         Assert.Equal(2023, csv.Roster.Season);
-        Assert.Equal(12, csv.Roster.Players.Count);
+        Assert.Equal(24, csv.Roster.Players.Count);
         Assert.All(csv.Roster.Players, p =>
         {
             Assert.NotEmpty(p.FirstName);

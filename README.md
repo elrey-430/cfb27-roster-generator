@@ -29,9 +29,15 @@ required.
    `templates/HistoricalRosterTemplate_Basics.csv`, one row per player:
 
    ```csv
-   FirstName,LastName,Position,Number,Class,Team,Season
-   Jordan,Travis,QB,13,RS Senior,Florida State,2023
+   FirstName,LastName,Position,Number,Class,Role,Team,Season
+   Jordan,Travis,QB,13,RS Senior,Starter,Florida State,2023
    ```
+
+   `Role` (`Starter` / `Backup` / `Reserve` / `Walk-on`) is worth the most
+   for the least effort — one word per player is what separates a starter
+   from a third-stringer when you have nothing else. Leave it blank where
+   you are unsure; a blank generates exactly what the tool would have
+   without the column.
 
    Old rosters are badly documented and you are **not** expected to find a
    full record for every player. Only the name and position are required;

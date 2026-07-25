@@ -38,7 +38,9 @@ public static class HistoricalCsv
     /// </param>
     public static HistoricalCsvResult Read(string path, string? school = null, int? season = null)
     {
-        var document = CsvDocument.Parse(File.ReadAllText(path));
+        // A person's roster CSV is not a machine-written table: rows that stop
+        // early are ordinary, and must not be treated as a corrupt file.
+        var document = CsvDocument.Parse(File.ReadAllText(path), CsvDocument.RaggedRows.Pad);
         var warnings = new List<string>();
 
         var columns = document.Header

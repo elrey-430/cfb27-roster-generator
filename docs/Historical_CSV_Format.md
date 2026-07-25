@@ -22,14 +22,31 @@ Old rosters are badly documented and you will not find a full record for
 every player. **You are not expected to.** This works:
 
 ```csv
-FirstName,LastName,Position,Number,Class,Team,Season
-Jordan,Travis,QB,13,RS Senior,Florida State,2023
-Trey,Benson,Tailback,3,RS Junior,Florida State,2023
+FirstName,LastName,Position,Number,Class,Role,Team,Season
+Jordan,Travis,QB,13,RS Senior,Starter,Florida State,2023
+Trey,Benson,Tailback,3,RS Junior,Starter,Florida State,2023
+Samuel,Singleton,Tailback,28,Freshman,,Florida State,2023
 ```
 
 That is `templates/HistoricalRosterTemplate_Basics.csv` — start from it.
-Strictly, even **Number** and **Class** are optional: a row needs only a
-first name, a last name and a position.
+Strictly, even **Number**, **Class** and **Role** are optional: a row needs
+only a first name, a last name and a position.
+
+**`Role` is the single most valuable column for the effort.** Without it,
+players you supply nothing else for all come out within a couple of points
+of each other, because class year is the only thing separating them. One
+word per player fixes that:
+
+| Role | Effect on a player with no other data |
+|---|---|
+| `Starter` | ~80 |
+| `Backup` | ~74 |
+| `Reserve` | ~69 |
+| *(blank)* | ~78 — the same as if the column did not exist |
+
+Leaving it blank is not a penalty and not an error; it generates exactly
+what the tool produced before the column existed. Fill it in for the
+players you are sure about and leave the rest empty (the third row above).
 
 Everything you leave out is filled in for you — height, weight, hometown,
 all 56 attributes, the archetype — and **every single substitution is listed
@@ -77,6 +94,7 @@ never required.
 | `Class` | `Freshman`, `RS Junior`, `Redshirt Senior`, `Graduate` | "RS"/"Redshirt" prefixes set the in-game redshirt flag; Graduate becomes Senior |
 | `Team` | `Florida State` | The school this roster belongs to. May instead be chosen when running the generator; must match a team in **your** dynasty (see `list-teams`) |
 | `Season` | `2013` | The historical season, used for labeling and reports |
+| `Role` | `Starter` | `Starter` / `Backup` / `Reserve` / `Walk-on`. The cheapest way to make a roster look right — see above. Blank behaves exactly as if the column were absent; a word the tool does not recognize is ignored and reported |
 
 ## Optional columns — performance evidence (drives rating generation)
 
@@ -86,7 +104,6 @@ from position and class defaults and reported as Low confidence).
 
 | Column | Example | Notes |
 |---|---|---|
-| `Role` | `Starter` | Starter / Backup / Reserve / Walk-on. Also drives the depth-chart sanity rule |
 | `StarRating` | `5` | Recruiting stars, 1–5 |
 | `Forty` | `4.49` | Verified 40-yard dash. **Sets speed exactly** (4.30→99, 4.40→96, 4.50→92) and is never overridden |
 | `Bench` | `21` | 225 lb reps → strength |
