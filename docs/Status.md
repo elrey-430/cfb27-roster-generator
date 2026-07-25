@@ -1,8 +1,38 @@
 # Project Status
 
-_Last updated: 2026-07-24 — end of Milestone 3._
+_Last updated: 2026-07-25 — end of Milestone 4._
 
 ## Current status
+
+**Milestone 4 (Automated ratings & attribute generation) is complete.** A
+user can supply a name, position, height, weight and whatever historical
+performance data they have, and receive a complete CFB27 player — all 56
+attributes plus an overall — with no manual editing.
+
+- **The overall rating is EA's own formula, not an invention.**
+  `data/OverallFormulas.json` holds 79 formulas covering all 21 positions
+  and all 59 archetypes. Verified independently against a full dynasty
+  export: **99.33% exact** (16,148/16,257 players), 99.90% within one
+  point. Because the formula is linear, the engine solves it *backwards* to
+  hit an intended overall exactly — so the overall written always agrees
+  with the attributes written.
+- **Transparent evidence model** (`data/RatingModels.json`) — draft slot
+  (0.34), awards (0.26), production (0.22), recruiting stars (0.10),
+  depth-chart role (0.08), each expressed directly on the overall scale.
+- **Confidence + reasons** on every player (High/Medium/Low with the
+  signals that fired), surfaced in `Generation_Report.txt`.
+- **Verified measurements win and stay put:** a timed 40 sets speed exactly
+  (4.30→99, 4.40→96, 4.50→92) and calibration may never move it.
+- **Guardrails:** OL speed capped at 72, K/P tackling at 45, class-year
+  awareness caps (a Heisman-winning redshirt freshman still tops out at 78
+  awareness), low-confidence freshman overall cap, and a depth-chart rule
+  keeping backups below starters unless a draft slot or major award
+  justifies it.
+- Deliverables: `Ratings/Rating_Model.md`, `Ratings/Position_Formulas.md`,
+  `Ratings/Default_Assumptions.md`, `Ratings/Player_Test_Results.csv`, and
+  `Tests/Ratings_test.csv` (standalone 2015 Dalvin Cook case).
+- Tests: 86/86 passing. The Milestone 3 FSU regression remains byte-stable
+  (it pins `--ratings inherit`, testing the conversion layer).
 
 **Milestone 3 (Generalized historical roster pipeline) is complete.** The
 generator is now a general-purpose end-user tool: it works with any
@@ -74,6 +104,27 @@ brief).
   clean Windows 10/11 machine with no runtime installed
 
 ## Completed features
+
+### Milestone 4 — rating generation
+
+- **EA overall formulas** (`Rating/OverallFormulaSet.cs`) — loads the 79
+  supplied formulas, computes overall with EA's half-down rounding, and
+  inverts them in closed form to calibrate attributes to a target overall.
+- **Evidence model** (`Historical/RatingEvidence.cs`) — role, star rating,
+  combine numbers, draft slot, awards and 26 statistics, all optional and
+  all additive to the golden-standard template CSV.
+- **Talent scorer** (`Rating/TalentScorer.cs`) — weighted blend of the
+  available signals with per-signal explanations; partial stat lines scale
+  their own weight down; derived stats (completion %, YPC, FG%) computed
+  automatically.
+- **Rating engine** (`Rating/RatingEngine.cs`) — position baselines →
+  talent sensitivity → physique (reference sizes derived from real save
+  medians) → verified measurements (locked) → experience shift →
+  sensitivity-weighted calibration → sanity caps.
+- **Depth consistency** (`Rating/DepthConsistency.cs`) — roster-level pass
+  holding backups below starters, with a narrow justification exception.
+- **CLI** `--ratings generate|inherit` (generate is the default) and a
+  ratings section in the generation report.
 
 ### Milestone 3 — generalized end-user pipeline
 
@@ -197,22 +248,22 @@ guessed at (details in `docs/Schema.md`):
 
 ## Next recommended milestone
 
-**Milestone 4 — Realism: ratings generation and identity assets.**
+**Milestone 5 — Archetypes, roster size, and benchmark scoring.**
 
 The pipeline is now general and reliable; the remaining gaps are about how
 *convincing* a generated roster is once it is in the game.
 
-1. **Ratings generation** — the biggest realism gap. Generated players
-   currently inherit the ratings of whoever they replaced, so a walk-on
-   can carry a star's ratings and vice versa. Drive ratings from the
-   historical data the user already supplies (position, class, and
-   optional star rating / usage tier / stats), with a documented,
-   tunable model rather than a black box.
+1. ~~**Ratings generation**~~ — done in Milestone 4.
 2. **Roster-size handling** — when the historical roster has fewer players
    than the team's slots, leftover fictional players remain (10 in the FSU
    run). Decide and implement a policy (leave, deactivate, or fill from
    the historical dataset's walk-ons) rather than only reporting it.
-3. **Asset-field study** — learn how `PLYR_ASSETNAME` /
+3. **Archetype selection.** Players currently inherit the `PlayerType` of
+   the slot they replace, so a power back can be rated against an elusive
+   formula. Choosing the archetype from the historical profile would
+   sharpen every generated player — it needs `PlayerType` confirmed as
+   safe to write first.
+4. **Asset-field study** — learn how `PLYR_ASSETNAME` /
    `GenericHeadAssetName` / `PLYR_PORTRAIT` are generated so replaced
    players stop wearing the donor players' faces.
 4. **Benchmark scoring** — run `compare` against the manually created 2023

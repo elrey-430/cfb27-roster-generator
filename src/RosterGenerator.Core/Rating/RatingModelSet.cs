@@ -1,0 +1,251 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+using RosterGenerator.Core.Historical;
+
+namespace RosterGenerator.Core.Rating;
+
+/// <summary>
+/// One position group's attribute SHAPE model. It does not define the
+/// overall rating — that comes from EA's own formulas
+/// (<see cref="OverallFormulaSet"/>).
+/// </summary>
+public sealed class PositionRatingModel
+{
+    /// <summary>Attribute values for a player at the model's reference talent.</summary>
+    public Dictionary<string, double> Baseline { get; init; } = new();
+
+    /// <summary>Attribute change per point of talent above/below the reference.</summary>
+    public Dictionary<string, double> TalentSensitivity { get; init; } = new();
+
+    /// <summary>Per-attribute [min, max] sanity bounds for this position.</summary>
+    public Dictionary<string, double[]> Caps { get; init; } = new();
+}
+
+/// <summary>One statistic's contribution to the production signal.</summary>
+public sealed class ProductionStatModel
+{
+    /// <summary>Canonical stat name (see <see cref="StatKeys"/>).</summary>
+    public string Stat { get; init; } = "";
+
+    /// <summary>Relative weight within the position's production score.</summary>
+    public double Weight { get; init; }
+
+    /// <summary>[statValue, score] points, interpolated piecewise-linearly.</summary>
+    public double[][] Curve { get; init; } = Array.Empty<double[]>();
+}
+
+/// <summary>Class-year experience adjustments and caps.</summary>
+public sealed class ClassYearExperienceModel
+{
+    /// <summary>Points added to experience-driven attributes.</summary>
+    public int Shift { get; init; }
+
+    /// <summary>Maximum awareness for this class year.</summary>
+    public int AwarenessCap { get; init; }
+
+    /// <summary>Maximum play recognition for this class year.</summary>
+    public int PlayRecognitionCap { get; init; }
+
+    /// <summary>Overall cap applied when confidence is Low (little evidence).</summary>
+    public int LowConfidenceOverallCap { get; init; }
+}
+
+/// <summary>Typical size for a position group, derived from real save data.</summary>
+public sealed class PhysiqueModel
+{
+    /// <summary>Median height in inches for this position group.</summary>
+    public int ReferenceHeightInches { get; init; }
+
+    /// <summary>Median weight in pounds for this position group.</summary>
+    public int ReferenceWeightPounds { get; init; }
+}
+
+/// <summary>How size differences move physical attributes.</summary>
+public sealed class PhysiqueEffectsModel
+{
+    /// <summary>Strength points per 10 lb above the position reference.</summary>
+    public double StrengthPerTenPoundsOverReference { get; init; }
+
+    /// <summary>Speed points per 10 lb above the position reference (negative).</summary>
+    public double SpeedPerTenPoundsOverReference { get; init; }
+
+    /// <summary>Acceleration points per 10 lb above the reference (negative).</summary>
+    public double AccelerationPerTenPoundsOverReference { get; init; }
+
+    /// <summary>Agility points per 10 lb above the reference (negative).</summary>
+    public double AgilityPerTenPoundsOverReference { get; init; }
+
+    /// <summary>Jumping points per inch above the reference height.</summary>
+    public double JumpingPerInchOverReference { get; init; }
+
+    /// <summary>Maximum points any single physique effect may move.</summary>
+    public double MaxPhysiqueAdjustment { get; init; } = 8;
+}
+
+/// <summary>Global floor/ceiling applied to every generated attribute.</summary>
+public sealed class GlobalCapsModel
+{
+    /// <summary>Absolute minimum attribute value.</summary>
+    public int Min { get; init; } = 10;
+
+    /// <summary>Absolute maximum attribute value.</summary>
+    public int Max { get; init; } = 99;
+}
+
+/// <summary>
+/// The complete, tunable rating model loaded from
+/// <c>data/RatingModels.json</c>. Every number the engine uses lives here —
+/// no rating constants are compiled into the code — so the model can be
+/// re-tuned without rebuilding. Documented in <c>Ratings/Rating_Model.md</c>
+/// and <c>Ratings/Position_Formulas.md</c>.
+/// </summary>
+public sealed class RatingModelSet
+{
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+    };
+
+    private Dictionary<string, string>? _groupByPosition;
+
+    /// <summary>Talent value that the baseline attribute values describe.</summary>
+    public int ReferenceTalent { get; init; } = 75;
+
+    /// <summary>Starting attribute values before position baselines are applied.</summary>
+    public Dictionary<string, double> AttributeDefaults { get; init; } = new();
+
+    /// <summary>Per-position-group rating models.</summary>
+    public Dictionary<string, PositionRatingModel> Positions { get; init; } = new();
+
+    /// <summary>Group name → the CFB27 positions it covers.</summary>
+    public Dictionary<string, List<string>> PositionGroups { get; init; } = new();
+
+    /// <summary>Relative weight of each talent signal (draft, awards, ...).</summary>
+    public Dictionary<string, double> SignalWeights { get; init; } = new();
+
+    /// <summary>Signal-coverage thresholds for High/Medium confidence.</summary>
+    public Dictionary<string, double> ConfidenceThresholds { get; init; } = new();
+
+    /// <summary>[overallPick, score] points for the draft signal.</summary>
+    public double[][] DraftScores { get; init; } = Array.Empty<double[]>();
+
+    /// <summary>Talent score for an undrafted free agent.</summary>
+    public double UndraftedFreeAgentScore { get; init; } = 67;
+
+    /// <summary>Recruiting stars ("1".."5") → talent score.</summary>
+    public Dictionary<string, double> RecruitingStarScores { get; init; } = new();
+
+    /// <summary>Depth-chart role → talent score.</summary>
+    public Dictionary<string, double> RoleScores { get; init; } = new();
+
+    /// <summary>Award name (lower-case) → talent score.</summary>
+    public Dictionary<string, double> AwardScores { get; init; } = new();
+
+    /// <summary>[fortyTime, speedRating] points.</summary>
+    public double[][] FortyYardToSpeed { get; init; } = Array.Empty<double[]>();
+
+    /// <summary>[benchReps, strengthRating] points.</summary>
+    public double[][] BenchRepsToStrength { get; init; } = Array.Empty<double[]>();
+
+    /// <summary>[verticalInches, jumpingRating] points.</summary>
+    public double[][] VerticalToJumping { get; init; } = Array.Empty<double[]>();
+
+    /// <summary>[shuttleSeconds, agilityRating] points.</summary>
+    public double[][] ShuttleToAgility { get; init; } = Array.Empty<double[]>();
+
+    /// <summary>[threeConeSeconds, changeOfDirectionRating] points.</summary>
+    public double[][] ThreeConeToChangeOfDirection { get; init; } = Array.Empty<double[]>();
+
+    /// <summary>Class year → experience shift and caps.</summary>
+    public Dictionary<string, ClassYearExperienceModel> ClassYearExperience { get; init; } = new();
+
+    /// <summary>Extra experience points for a player who has used a redshirt.</summary>
+    public int RedshirtExperienceBonus { get; init; }
+
+    /// <summary>Attributes moved by the class-year experience shift.</summary>
+    public List<string> ExperienceAttributes { get; init; } = new();
+
+    /// <summary>Position group → the stats that make up its production score.</summary>
+    public Dictionary<string, List<ProductionStatModel>> Production { get; init; } = new();
+
+    /// <summary>Absolute attribute floor/ceiling.</summary>
+    public GlobalCapsModel GlobalCaps { get; init; } = new();
+
+    /// <summary>Position group → typical size, derived from real save data.</summary>
+    public Dictionary<string, PhysiqueModel> Physique { get; init; } = new();
+
+    /// <summary>How size differences move physical attributes.</summary>
+    public PhysiqueEffectsModel PhysiqueEffects { get; init; } = new();
+
+    /// <summary>Resolves a CFB27 position (e.g. "LT") to its group (e.g. "OL").</summary>
+    /// <exception cref="KeyNotFoundException">The position is in no group.</exception>
+    public string ResolveGroup(string cfb27Position)
+    {
+        _groupByPosition ??= PositionGroups
+            .SelectMany(g => g.Value.Select(p => (Position: p, Group: g.Key)))
+            .ToDictionary(x => x.Position, x => x.Group, StringComparer.Ordinal);
+
+        if (_groupByPosition.TryGetValue(cfb27Position, out var group))
+        {
+            return group;
+        }
+
+        throw new KeyNotFoundException(
+            $"Position '{cfb27Position}' is not assigned to a rating position group in RatingModels.json.");
+    }
+
+    /// <summary>Gets the model for a position group.</summary>
+    public PositionRatingModel GetModel(string group) =>
+        Positions.TryGetValue(group, out var model)
+            ? model
+            : throw new KeyNotFoundException($"No rating model for position group '{group}'.");
+
+    /// <summary>
+    /// Piecewise-linear interpolation over an [input, output] point list.
+    /// Points may ascend or descend in input; values outside the range clamp
+    /// to the nearest endpoint. This is the single curve primitive used by
+    /// every physical and production formula, so all of them are inspectable
+    /// and tunable in the JSON.
+    /// </summary>
+    public static double Interpolate(double[][] points, double input)
+    {
+        if (points.Length == 0)
+        {
+            throw new ArgumentException("Curve has no points.", nameof(points));
+        }
+
+        var ordered = points.OrderBy(p => p[0]).ToArray();
+        if (input <= ordered[0][0])
+        {
+            return ordered[0][1];
+        }
+
+        if (input >= ordered[^1][0])
+        {
+            return ordered[^1][1];
+        }
+
+        for (var i = 1; i < ordered.Length; i++)
+        {
+            if (input <= ordered[i][0])
+            {
+                var (x0, y0) = (ordered[i - 1][0], ordered[i - 1][1]);
+                var (x1, y1) = (ordered[i][0], ordered[i][1]);
+                var t = (input - x0) / (x1 - x0);
+                return y0 + t * (y1 - y0);
+            }
+        }
+
+        return ordered[^1][1];
+    }
+
+    /// <summary>Loads the model file.</summary>
+    public static RatingModelSet Load(string path) =>
+        JsonSerializer.Deserialize<RatingModelSet>(File.ReadAllText(path), JsonOptions)
+        ?? throw new InvalidDataException($"'{path}' does not contain a rating model.");
+}

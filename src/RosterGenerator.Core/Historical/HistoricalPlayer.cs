@@ -50,6 +50,14 @@ public sealed record HistoricalPlayer
     /// <summary>Free-form notes (data caveats, roles). Optional.</summary>
     public string? Notes { get; init; }
 
+    /// <summary>
+    /// Performance evidence used to generate ratings (stats, awards, draft
+    /// slot, combine numbers, depth-chart role). Empty when the user
+    /// supplied none — the rating engine then falls back to position and
+    /// class-year defaults and reports Low confidence.
+    /// </summary>
+    public RatingEvidence Evidence { get; init; } = RatingEvidence.Empty;
+
     /// <summary>"First Last (POS #N)" for messages and reports.</summary>
     public override string ToString() =>
         $"{FirstName} {LastName} ({Position}{(JerseyNumber is null ? "" : $" #{JerseyNumber}")})";

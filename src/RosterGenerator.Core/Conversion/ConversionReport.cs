@@ -29,6 +29,9 @@ public sealed class PlayerConversionEntry
 
     /// <summary>Per-player warnings and assumptions.</summary>
     public List<string> Warnings { get; } = new();
+
+    /// <summary>Generated ratings, or null when ratings were inherited.</summary>
+    public Rating.GeneratedRatings? Ratings { get; set; }
 }
 
 /// <summary>
@@ -144,6 +147,29 @@ public sealed class ConversionReport
                 {
                     sb.AppendLine($"  - {warning}");
                 }
+            }
+        }
+
+        var withRatings = Converted.Where(e => e.Ratings is not null).ToList();
+        if (withRatings.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Generated ratings:");
+            foreach (var confidence in new[] { "High", "Medium", "Low" })
+            {
+                var count = withRatings.Count(e => e.Ratings!.Confidence.ToString() == confidence);
+                sb.AppendLine($"  {confidence,-6} confidence: {count}");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine($"  {"Player",-26} {"Pos",-4} {"OVR",3}  Confidence  Basis");
+            foreach (var entry in withRatings.OrderByDescending(e => e.Ratings!.Overall))
+            {
+                var r = entry.Ratings!;
+                var basis = r.Talent.Reasons.FirstOrDefault() ?? "position and class defaults";
+                sb.AppendLine(
+                    $"  {entry.Player.FirstName + " " + entry.Player.LastName,-26} " +
+                    $"{entry.AssignedPosition,-4} {r.Overall,3}  {r.Confidence,-10}  {basis}");
             }
         }
 

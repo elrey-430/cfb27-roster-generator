@@ -1,0 +1,8 @@
+FirstName,LastName,Position,Number,Height,Weight,Class,Team,Season,Hometown,PreviousSchool,Notes,Role,StarRating,Forty,DraftRound,DraftPick,Awards,RushYards,RushTD,RushAttempts,RecYards,RecTD,Receptions,GamesPlayed,GamesStarted
+Dalvin,Cook,Tailback,4,5-10,203,Sophomore,Florida State,2015,"Miami, FL",,"2015: 1691 rush yds (7.4 ypc), 19 rush TD; First-Team All-ACC; 4.49 forty at the 2017 combine; drafted 41st overall in 2017",Starter,5,4.49,2,41,First-Team All-Conference,1691,19,229,244,1,24,13,13
+Everett,Golson,QB,6,6-0,200,Senior,Florida State,2015,"Myrtle Beach, SC",Notre Dame,Graduate transfer starter; contrast case for the QB model,Starter,4,,,,,,,,,,,12,11
+Roberto,Aguayo,K,19,6-0,203,Junior,Florida State,2015,"Mascotte, FL",,Consensus All-American kicker; drafted in round 2 (59th overall) in 2016,Starter,3,,2,59,Consensus All-American,,,,,,,13,13
+Jalen,Ramsey,CB,8,6-1,202,Junior,Florida State,2015,"Brentwood, TN",,Drafted 5th overall in 2016; contrast case for the CB model,Starter,5,4.41,1,5,First-Team All-Conference,,,,,,,13,13
+Roderick,Johnson,LT,77,6-7,311,Sophomore,Florida State,2015,"Florissant, MO",,Jacobs Blocking Trophy winner; OL sanity-cap case (no speed inflation),Starter,4,,5,160,First-Team All-Conference,,,,,,,13,13
+Ryan,Green,RB,3,5-11,200,Junior,Florida State,2015,"St. Petersburg, FL",,Backup behind Cook; depth-consistency case (must not out-rate the starter),Backup,4,,,,,155,1,36,,,,10,0
+Nobody,Walkon,WR,49,6-0,180,Freshman,Florida State,2015,,,No evidence at all; Low-confidence floor case,Reserve,,,,,,,,,,,,,

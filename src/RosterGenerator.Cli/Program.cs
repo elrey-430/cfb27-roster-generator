@@ -6,13 +6,14 @@ using RosterGenerator.Core.Export;
 using RosterGenerator.Core.Historical;
 using RosterGenerator.Core.Mapping;
 using RosterGenerator.Core.Model;
+using RosterGenerator.Core.Rating;
 using RosterGenerator.Core.Validation;
 
 // End-user front end for the historical roster pipeline.
 //
 //   generate   --dynasty <export folder or Player.csv> --roster <simple .csv or .json>
 //              [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
-//              [--team-mappings <json>] [--position-mappings <json>]
+//              [--ratings generate|inherit] [--team-mappings <json>] [--position-mappings <json>]
 //   list-teams --dynasty <export folder or Player.csv>
 //   compare    --left <Player.csv> --right <Player.csv> --team <name or id>
 //              [--dynasty <export>] [--output <md>]
@@ -45,10 +46,14 @@ static int Usage()
         Usage:
           generate   --dynasty <export folder or Player.csv> --roster <historical roster .csv>
                      [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
-                     [--team-mappings <json>] [--position-mappings <json>]
+                     [--ratings generate|inherit] [--team-mappings <json>] [--position-mappings <json>]
           list-teams --dynasty <export folder or Player.csv>
           compare    --left <Player.csv> --right <Player.csv> --team <name or id>
                      [--dynasty <export>] [--output <md>]
+
+        --ratings generate (the default) builds each player's attributes from the
+        historical evidence in the roster CSV; --ratings inherit keeps the ratings
+        of the players being replaced.
 
         The roster CSV format is documented in docs/Historical_CSV_Format.md
         (template: templates/HistoricalRosterTemplate.csv). Defaults:
@@ -196,9 +201,24 @@ static int Generate(Dictionary<string, string> options)
     Console.WriteLine($"Historical roster: {(historical.Season == 0 ? "season ?" : historical.Season.ToString())} " +
                       $"{historical.School} — {historical.Players.Count} players");
 
+    var ratingsMode = options.GetValueOrDefault("ratings", "generate");
+    RatingEngine? ratingEngine = null;
+    if (ratingsMode.Equals("generate", StringComparison.OrdinalIgnoreCase))
+    {
+        ratingEngine = RatingEngine.Load(
+            FindDataFile(options, "rating-models", "RatingModels.json", required: true)!,
+            FindDataFile(options, "overall-formulas", "OverallFormulas.json", required: true)!);
+        Console.WriteLine("Rating generation: on (EA overall formulas driven by historical evidence)");
+    }
+    else if (!ratingsMode.Equals("inherit", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new ArgumentException("--ratings must be 'generate' or 'inherit'.");
+    }
+
     var donor = export.LoadPlayerRoster();
     var session = new RosterEditSession(donor);
-    var report = new HistoricalTeamConverter(teamMappings, positionMappings).Convert(session, historical);
+    var report = new HistoricalTeamConverter(teamMappings, positionMappings, ratingEngine)
+        .Convert(session, historical);
     Console.WriteLine($"Converted {report.Converted.Count()} players onto team {report.TeamId} " +
                       $"({report.Skipped.Count()} skipped, {report.LeftoverDonorSlots.Count} donor slots left).");
 

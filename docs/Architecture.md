@@ -12,6 +12,10 @@ The system is built in three layers, delivered across three milestones:
    discovery (any user's save), a simple spreadsheet-style input CSV,
    team/season selection, and standard `Output/` generation, with the 2023
    FSU recreation preserved as a byte-stable regression test.
+4. **Rating generation (Milestone 4)** — historical evidence becomes a
+   complete attribute set, with the overall computed by EA's own formulas
+   (solved backwards to hit an intended overall), confidence scores, and
+   sanity guardrails. See `Ratings/`.
 
 ## The three pipelines (Milestone 3 view)
 
@@ -43,6 +47,12 @@ HistoricalRoster + PlayerRoster
       │  – slot assignment: same position → interchangeable group → any
       │  – class → SchoolYear + RedshirtStatus; weight → pounds − 160
       │  – missing values inherit the replaced player's values (reported)
+      │  RatingEngine (when enabled)
+      │  – evidence → target overall (+ confidence and reasons)
+      │  – position baseline → talent sensitivity → physique
+      │    → verified measurements (locked) → experience
+      │  – calibrate against EA's own overall formula, then sanity caps
+      │  – roster pass: backups held below starters
       ▼
 edited PlayerRoster + ConversionReport
 ```
@@ -85,9 +95,12 @@ can add it without reworking this layer.
 cfb27-roster-generator/
 ├── RosterGenerator.sln
 ├── docs/                        ← Architecture, Schema, Status, Historical_CSV_Format
-├── data/                        ← editable mapping files (shipped next to the exe)
+├── data/                        ← editable data files (shipped next to the exe)
 │   ├── TeamMappings.json            optional school-alias overlay
-│   └── PositionMappings.json        position aliases + interchangeability groups
+│   ├── PositionMappings.json        position aliases + interchangeability groups
+│   ├── OverallFormulas.json         EA's 79 overall formulas (authoritative)
+│   └── RatingModels.json            attribute shape: baselines, curves, caps
+├── Ratings/                     ← rating model documentation + test results
 ├── templates/
 │   └── HistoricalRosterTemplate.csv ← the user-facing input template
 ├── HistoricalData/2023/FloridaState.json  ← curated example dataset (JSON form)

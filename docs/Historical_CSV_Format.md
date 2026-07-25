@@ -37,6 +37,35 @@ encoding). A ready-to-fill template lives at
 | `Team` | `Florida State` | The school this roster belongs to. May instead be chosen when running the generator; must match a team in **your** dynasty (see `list-teams`) |
 | `Season` | `2013` | The historical season, used for labeling and reports |
 
+## Optional columns — performance evidence (drives rating generation)
+
+Fill in whatever you have. Each one improves the generated ratings and the
+confidence score; leaving them all blank still works (the player is rated
+from position and class defaults and reported as Low confidence).
+
+| Column | Example | Notes |
+|---|---|---|
+| `Role` | `Starter` | Starter / Backup / Reserve / Walk-on. Also drives the depth-chart sanity rule |
+| `StarRating` | `5` | Recruiting stars, 1–5 |
+| `Forty` | `4.49` | Verified 40-yard dash. **Sets speed exactly** (4.30→99, 4.40→96, 4.50→92) and is never overridden |
+| `Bench` | `21` | 225 lb reps → strength |
+| `Vertical` | `38` | Inches → jumping |
+| `Shuttle` | `4.15` | 20-yard shuttle → agility |
+| `ThreeCone` | `6.95` | Three-cone → change of direction |
+| `DraftRound` / `DraftPick` | `2` / `41` | NFL draft. `DraftPick` is the **overall** pick and is the single strongest signal. Put `UDFA` in `DraftPick` for undrafted free agents |
+| `Awards` | `Heisman; Consensus All-American` | **Semicolon-separated.** Only the best award counts |
+
+### Statistics
+
+Season stats for the player's position. Supply the raw counting stats you
+have — percentages and per-carry averages are derived automatically.
+
+`PassYards` `PassTD` `PassInt` `Completions` `Attempts` `RushYards` `RushTD`
+`RushAttempts` `RecYards` `RecTD` `Receptions` `Tackles` `Sacks`
+`TacklesForLoss` `Interceptions` `PassesDefended` `ForcedFumbles`
+`FieldGoalsMade` `FieldGoalsAttempted` `LongFieldGoal` `PuntAverage`
+`GamesPlayed` `GamesStarted`
+
 ## Optional columns
 
 | Column | Example | Notes |
@@ -65,7 +94,10 @@ Ryan,Fitzgerald,K,88,6-1,190,RS Junior,Florida State,2023,"Colquitt, GA",,
 | Height | `Height` (inches) |
 | Weight | `Weight` using the confirmed encoding (stored = pounds − 160) |
 | Class | `SchoolYear` + `RedshirtStatus` |
+| Role / stats / awards / draft / combine | Generated ratings — all 56 attributes plus the overall, computed with EA's own overall formula |
 
-Ratings, portraits and equipment are inherited from the players being
-replaced (rating/appearance generation is a later milestone); every
-inherited default is listed in `Generation_Report.txt`.
+Portraits, equipment and player archetype are inherited from the players
+being replaced; every inherited default is listed in
+`Generation_Report.txt`. Rating generation can be turned off with
+`--ratings inherit`. See `Ratings/Rating_Model.md` for how ratings are
+derived and `Ratings/Default_Assumptions.md` for the guardrails.

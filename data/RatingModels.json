@@ -1,0 +1,2147 @@
+{
+  "description": "Tunable model behind the historical rating engine: attribute SHAPE per position, physical/combine curves, production curves and sanity caps. The OVERALL rating is NOT computed here - it comes from EA's own formulas in data/OverallFormulas.json. Every number here is data, not code. Documented in Ratings/Rating_Model.md and Ratings/Position_Formulas.md.",
+  "referenceTalent": 75,
+  "attributeDefaults": {
+    "AccelerationRating": 72,
+    "AgilityRating": 68,
+    "AwarenessRating": 68,
+    "BCVisionRating": 45,
+    "BlockSheddingRating": 30,
+    "BreakSackRating": 30,
+    "BreakTackleRating": 30,
+    "CarryingRating": 40,
+    "CatchInTrafficRating": 30,
+    "CatchingRating": 40,
+    "ChangeOfDirectionRating": 68,
+    "ConfidenceRating": 70,
+    "DeepRouteRunningRating": 30,
+    "FinesseMovesRating": 30,
+    "HitPowerRating": 30,
+    "ImpactBlockingRating": 30,
+    "InjuryRating": 82,
+    "JukeMoveRating": 30,
+    "JumpingRating": 70,
+    "KickAccuracyRating": 30,
+    "KickPowerRating": 30,
+    "KickReturnRating": 35,
+    "LeadBlockRating": 30,
+    "LongSnapRating": 25,
+    "ManCoverageRating": 30,
+    "MediumRouteRunningRating": 30,
+    "PassBlockFinesseRating": 30,
+    "PassBlockPowerRating": 30,
+    "PassBlockRating": 30,
+    "PlayActionRating": 30,
+    "PlayRecognitionRating": 60,
+    "PowerMovesRating": 30,
+    "PressRating": 30,
+    "PursuitRating": 55,
+    "ReleaseRating": 30,
+    "RunBlockFinesseRating": 30,
+    "RunBlockPowerRating": 30,
+    "RunBlockRating": 30,
+    "ShortRouteRunningRating": 30,
+    "SpectacularCatchRating": 30,
+    "SpeedRating": 70,
+    "SpinMoveRating": 30,
+    "StaminaRating": 80,
+    "StiffArmRating": 30,
+    "StrengthRating": 65,
+    "TackleRating": 45,
+    "ThrowAccuracyDeepRating": 30,
+    "ThrowAccuracyMidRating": 30,
+    "ThrowAccuracyRating": 30,
+    "ThrowAccuracyShortRating": 30,
+    "ThrowOnTheRunRating": 30,
+    "ThrowPowerRating": 30,
+    "ThrowUnderPressureRating": 30,
+    "ToughnessRating": 76,
+    "TruckingRating": 30,
+    "ZoneCoverageRating": 30
+  },
+  "positions": {
+    "QB": {
+      "baseline": {
+        "ThrowPowerRating": 84,
+        "ThrowAccuracyRating": 78,
+        "ThrowAccuracyShortRating": 82,
+        "ThrowAccuracyMidRating": 78,
+        "ThrowAccuracyDeepRating": 73,
+        "ThrowOnTheRunRating": 74,
+        "ThrowUnderPressureRating": 72,
+        "PlayActionRating": 78,
+        "BreakSackRating": 66,
+        "AwarenessRating": 70,
+        "PlayRecognitionRating": 70,
+        "SpeedRating": 76,
+        "AccelerationRating": 78,
+        "AgilityRating": 76,
+        "CarryingRating": 58,
+        "BCVisionRating": 62,
+        "StrengthRating": 62
+      },
+      "talentSensitivity": {
+        "ThrowPowerRating": 0.45,
+        "ThrowAccuracyRating": 0.55,
+        "ThrowAccuracyShortRating": 0.5,
+        "ThrowAccuracyMidRating": 0.55,
+        "ThrowAccuracyDeepRating": 0.6,
+        "ThrowOnTheRunRating": 0.55,
+        "ThrowUnderPressureRating": 0.6,
+        "PlayActionRating": 0.4,
+        "BreakSackRating": 0.5,
+        "AwarenessRating": 0.85,
+        "PlayRecognitionRating": 0.8,
+        "SpeedRating": 0.3,
+        "AccelerationRating": 0.3,
+        "AgilityRating": 0.3,
+        "CarryingRating": 0.2,
+        "BCVisionRating": 0.3
+      },
+      "caps": {
+        "TackleRating": [
+          10,
+          55
+        ],
+        "HitPowerRating": [
+          10,
+          50
+        ],
+        "RunBlockRating": [
+          10,
+          45
+        ],
+        "ManCoverageRating": [
+          10,
+          35
+        ],
+        "SpeedRating": [
+          55,
+          95
+        ],
+        "StrengthRating": [
+          45,
+          80
+        ]
+      }
+    },
+    "HB": {
+      "baseline": {
+        "SpeedRating": 88,
+        "AccelerationRating": 88,
+        "AgilityRating": 86,
+        "CarryingRating": 82,
+        "BreakTackleRating": 76,
+        "BCVisionRating": 80,
+        "TruckingRating": 70,
+        "JukeMoveRating": 80,
+        "SpinMoveRating": 76,
+        "StiffArmRating": 68,
+        "CatchingRating": 66,
+        "CatchInTrafficRating": 60,
+        "ChangeOfDirectionRating": 84,
+        "StrengthRating": 66,
+        "AwarenessRating": 68,
+        "JumpingRating": 80,
+        "KickReturnRating": 70,
+        "ShortRouteRunningRating": 62,
+        "PassBlockRating": 50,
+        "StaminaRating": 84
+      },
+      "talentSensitivity": {
+        "SpeedRating": 0.35,
+        "AccelerationRating": 0.32,
+        "AgilityRating": 0.35,
+        "CarryingRating": 0.45,
+        "BreakTackleRating": 0.6,
+        "BCVisionRating": 0.55,
+        "TruckingRating": 0.5,
+        "JukeMoveRating": 0.5,
+        "SpinMoveRating": 0.45,
+        "StiffArmRating": 0.45,
+        "CatchingRating": 0.5,
+        "CatchInTrafficRating": 0.45,
+        "ChangeOfDirectionRating": 0.35,
+        "StrengthRating": 0.35,
+        "AwarenessRating": 0.75,
+        "KickReturnRating": 0.4,
+        "PassBlockRating": 0.4
+      },
+      "caps": {
+        "ThrowPowerRating": [
+          10,
+          50
+        ],
+        "RunBlockRating": [
+          10,
+          55
+        ],
+        "ManCoverageRating": [
+          10,
+          40
+        ],
+        "SpeedRating": [
+          70,
+          99
+        ],
+        "StrengthRating": [
+          50,
+          88
+        ]
+      }
+    },
+    "FB": {
+      "baseline": {
+        "LeadBlockRating": 80,
+        "ImpactBlockingRating": 78,
+        "RunBlockRating": 72,
+        "RunBlockPowerRating": 74,
+        "RunBlockFinesseRating": 62,
+        "PassBlockRating": 62,
+        "StrengthRating": 80,
+        "CarryingRating": 72,
+        "BreakTackleRating": 70,
+        "TruckingRating": 76,
+        "CatchingRating": 62,
+        "SpeedRating": 74,
+        "AccelerationRating": 76,
+        "AgilityRating": 66,
+        "AwarenessRating": 68,
+        "BCVisionRating": 64
+      },
+      "talentSensitivity": {
+        "LeadBlockRating": 0.6,
+        "ImpactBlockingRating": 0.55,
+        "RunBlockRating": 0.55,
+        "RunBlockPowerRating": 0.5,
+        "StrengthRating": 0.4,
+        "CarryingRating": 0.4,
+        "BreakTackleRating": 0.5,
+        "TruckingRating": 0.5,
+        "CatchingRating": 0.5,
+        "SpeedRating": 0.25,
+        "AccelerationRating": 0.25,
+        "AwarenessRating": 0.7
+      },
+      "caps": {
+        "SpeedRating": [
+          55,
+          88
+        ],
+        "ManCoverageRating": [
+          10,
+          35
+        ],
+        "ThrowPowerRating": [
+          10,
+          50
+        ]
+      }
+    },
+    "WR": {
+      "baseline": {
+        "SpeedRating": 89,
+        "AccelerationRating": 88,
+        "AgilityRating": 85,
+        "CatchingRating": 80,
+        "CatchInTrafficRating": 70,
+        "SpectacularCatchRating": 72,
+        "ShortRouteRunningRating": 78,
+        "MediumRouteRunningRating": 76,
+        "DeepRouteRunningRating": 74,
+        "ReleaseRating": 70,
+        "JumpingRating": 84,
+        "ChangeOfDirectionRating": 84,
+        "BCVisionRating": 66,
+        "CarryingRating": 62,
+        "BreakTackleRating": 54,
+        "StrengthRating": 58,
+        "AwarenessRating": 66,
+        "KickReturnRating": 66,
+        "RunBlockRating": 48,
+        "StaminaRating": 84
+      },
+      "talentSensitivity": {
+        "SpeedRating": 0.32,
+        "AccelerationRating": 0.3,
+        "AgilityRating": 0.32,
+        "CatchingRating": 0.5,
+        "CatchInTrafficRating": 0.55,
+        "SpectacularCatchRating": 0.5,
+        "ShortRouteRunningRating": 0.55,
+        "MediumRouteRunningRating": 0.55,
+        "DeepRouteRunningRating": 0.55,
+        "ReleaseRating": 0.5,
+        "JumpingRating": 0.3,
+        "ChangeOfDirectionRating": 0.32,
+        "BCVisionRating": 0.4,
+        "CarryingRating": 0.35,
+        "StrengthRating": 0.3,
+        "AwarenessRating": 0.7,
+        "KickReturnRating": 0.4
+      },
+      "caps": {
+        "SpeedRating": [
+          72,
+          99
+        ],
+        "StrengthRating": [
+          45,
+          82
+        ],
+        "ThrowPowerRating": [
+          10,
+          55
+        ],
+        "RunBlockRating": [
+          10,
+          62
+        ],
+        "TackleRating": [
+          10,
+          50
+        ]
+      }
+    },
+    "TE": {
+      "baseline": {
+        "CatchingRating": 76,
+        "CatchInTrafficRating": 72,
+        "SpectacularCatchRating": 64,
+        "ShortRouteRunningRating": 74,
+        "MediumRouteRunningRating": 70,
+        "DeepRouteRunningRating": 60,
+        "ReleaseRating": 62,
+        "RunBlockRating": 68,
+        "RunBlockPowerRating": 68,
+        "RunBlockFinesseRating": 62,
+        "PassBlockRating": 62,
+        "ImpactBlockingRating": 68,
+        "LeadBlockRating": 66,
+        "StrengthRating": 76,
+        "SpeedRating": 78,
+        "AccelerationRating": 78,
+        "AgilityRating": 72,
+        "JumpingRating": 78,
+        "AwarenessRating": 66,
+        "BCVisionRating": 58,
+        "CarryingRating": 60,
+        "LongSnapRating": 40
+      },
+      "talentSensitivity": {
+        "CatchingRating": 0.5,
+        "CatchInTrafficRating": 0.5,
+        "SpectacularCatchRating": 0.45,
+        "ShortRouteRunningRating": 0.5,
+        "MediumRouteRunningRating": 0.5,
+        "DeepRouteRunningRating": 0.45,
+        "ReleaseRating": 0.45,
+        "RunBlockRating": 0.55,
+        "RunBlockPowerRating": 0.5,
+        "PassBlockRating": 0.5,
+        "ImpactBlockingRating": 0.5,
+        "LeadBlockRating": 0.45,
+        "StrengthRating": 0.4,
+        "SpeedRating": 0.35,
+        "AccelerationRating": 0.32,
+        "AgilityRating": 0.3,
+        "AwarenessRating": 0.7
+      },
+      "caps": {
+        "SpeedRating": [
+          58,
+          94
+        ],
+        "ThrowPowerRating": [
+          10,
+          50
+        ],
+        "ManCoverageRating": [
+          10,
+          40
+        ]
+      }
+    },
+    "OL": {
+      "baseline": {
+        "RunBlockRating": 76,
+        "RunBlockPowerRating": 76,
+        "RunBlockFinesseRating": 70,
+        "PassBlockRating": 76,
+        "PassBlockPowerRating": 74,
+        "PassBlockFinesseRating": 72,
+        "ImpactBlockingRating": 74,
+        "LeadBlockRating": 70,
+        "StrengthRating": 86,
+        "AwarenessRating": 70,
+        "SpeedRating": 58,
+        "AccelerationRating": 62,
+        "AgilityRating": 56,
+        "ChangeOfDirectionRating": 54,
+        "ToughnessRating": 82,
+        "StaminaRating": 82,
+        "JumpingRating": 52,
+        "PlayRecognitionRating": 66,
+        "LongSnapRating": 45
+      },
+      "talentSensitivity": {
+        "RunBlockRating": 0.6,
+        "RunBlockPowerRating": 0.55,
+        "RunBlockFinesseRating": 0.55,
+        "PassBlockRating": 0.6,
+        "PassBlockPowerRating": 0.55,
+        "PassBlockFinesseRating": 0.55,
+        "ImpactBlockingRating": 0.55,
+        "LeadBlockRating": 0.5,
+        "StrengthRating": 0.4,
+        "AwarenessRating": 0.8,
+        "PlayRecognitionRating": 0.6,
+        "SpeedRating": 0.2,
+        "AccelerationRating": 0.2,
+        "AgilityRating": 0.2
+      },
+      "caps": {
+        "SpeedRating": [
+          45,
+          72
+        ],
+        "AccelerationRating": [
+          50,
+          76
+        ],
+        "AgilityRating": [
+          45,
+          72
+        ],
+        "ManCoverageRating": [
+          10,
+          25
+        ],
+        "ZoneCoverageRating": [
+          10,
+          25
+        ],
+        "CatchingRating": [
+          10,
+          45
+        ],
+        "ThrowPowerRating": [
+          10,
+          45
+        ],
+        "CarryingRating": [
+          10,
+          55
+        ],
+        "KickReturnRating": [
+          10,
+          30
+        ],
+        "JumpingRating": [
+          30,
+          70
+        ]
+      }
+    },
+    "DL": {
+      "baseline": {
+        "PowerMovesRating": 76,
+        "FinesseMovesRating": 72,
+        "BlockSheddingRating": 74,
+        "TackleRating": 74,
+        "HitPowerRating": 74,
+        "PursuitRating": 74,
+        "PlayRecognitionRating": 70,
+        "StrengthRating": 84,
+        "SpeedRating": 74,
+        "AccelerationRating": 78,
+        "AgilityRating": 68,
+        "AwarenessRating": 68,
+        "JumpingRating": 70,
+        "ToughnessRating": 82,
+        "ChangeOfDirectionRating": 64,
+        "StaminaRating": 82
+      },
+      "talentSensitivity": {
+        "PowerMovesRating": 0.6,
+        "FinesseMovesRating": 0.6,
+        "BlockSheddingRating": 0.6,
+        "TackleRating": 0.5,
+        "HitPowerRating": 0.45,
+        "PursuitRating": 0.5,
+        "PlayRecognitionRating": 0.7,
+        "StrengthRating": 0.4,
+        "SpeedRating": 0.35,
+        "AccelerationRating": 0.35,
+        "AgilityRating": 0.3,
+        "AwarenessRating": 0.75
+      },
+      "caps": {
+        "SpeedRating": [
+          55,
+          90
+        ],
+        "ManCoverageRating": [
+          10,
+          45
+        ],
+        "CatchingRating": [
+          10,
+          50
+        ],
+        "ThrowPowerRating": [
+          10,
+          45
+        ],
+        "RunBlockRating": [
+          10,
+          55
+        ]
+      }
+    },
+    "LB": {
+      "baseline": {
+        "TackleRating": 80,
+        "HitPowerRating": 78,
+        "BlockSheddingRating": 70,
+        "PursuitRating": 80,
+        "PlayRecognitionRating": 72,
+        "ZoneCoverageRating": 66,
+        "ManCoverageRating": 62,
+        "SpeedRating": 82,
+        "AccelerationRating": 83,
+        "AgilityRating": 76,
+        "StrengthRating": 74,
+        "AwarenessRating": 70,
+        "JumpingRating": 78,
+        "CatchingRating": 50,
+        "PowerMovesRating": 60,
+        "FinesseMovesRating": 58,
+        "ChangeOfDirectionRating": 74,
+        "ToughnessRating": 82,
+        "StaminaRating": 84
+      },
+      "talentSensitivity": {
+        "TackleRating": 0.5,
+        "HitPowerRating": 0.45,
+        "BlockSheddingRating": 0.55,
+        "PursuitRating": 0.5,
+        "PlayRecognitionRating": 0.75,
+        "ZoneCoverageRating": 0.65,
+        "ManCoverageRating": 0.6,
+        "SpeedRating": 0.35,
+        "AccelerationRating": 0.32,
+        "AgilityRating": 0.35,
+        "StrengthRating": 0.35,
+        "AwarenessRating": 0.8,
+        "CatchingRating": 0.4,
+        "PowerMovesRating": 0.5,
+        "FinesseMovesRating": 0.5
+      },
+      "caps": {
+        "SpeedRating": [
+          62,
+          94
+        ],
+        "ThrowPowerRating": [
+          10,
+          45
+        ],
+        "RunBlockRating": [
+          10,
+          50
+        ]
+      }
+    },
+    "CB": {
+      "baseline": {
+        "ManCoverageRating": 78,
+        "ZoneCoverageRating": 76,
+        "PressRating": 70,
+        "SpeedRating": 90,
+        "AccelerationRating": 89,
+        "AgilityRating": 87,
+        "ChangeOfDirectionRating": 86,
+        "PlayRecognitionRating": 70,
+        "JumpingRating": 84,
+        "CatchingRating": 58,
+        "TackleRating": 58,
+        "HitPowerRating": 56,
+        "PursuitRating": 74,
+        "StrengthRating": 58,
+        "AwarenessRating": 68,
+        "KickReturnRating": 60,
+        "StaminaRating": 84,
+        "CatchInTrafficRating": 48
+      },
+      "talentSensitivity": {
+        "ManCoverageRating": 0.65,
+        "ZoneCoverageRating": 0.6,
+        "PressRating": 0.55,
+        "SpeedRating": 0.3,
+        "AccelerationRating": 0.28,
+        "AgilityRating": 0.3,
+        "ChangeOfDirectionRating": 0.3,
+        "PlayRecognitionRating": 0.75,
+        "JumpingRating": 0.3,
+        "CatchingRating": 0.5,
+        "TackleRating": 0.4,
+        "PursuitRating": 0.45,
+        "StrengthRating": 0.3,
+        "AwarenessRating": 0.8,
+        "KickReturnRating": 0.4
+      },
+      "caps": {
+        "SpeedRating": [
+          74,
+          99
+        ],
+        "StrengthRating": [
+          40,
+          78
+        ],
+        "ThrowPowerRating": [
+          10,
+          45
+        ],
+        "RunBlockRating": [
+          10,
+          45
+        ],
+        "TackleRating": [
+          35,
+          80
+        ]
+      }
+    },
+    "S": {
+      "baseline": {
+        "ZoneCoverageRating": 78,
+        "ManCoverageRating": 70,
+        "PressRating": 60,
+        "TackleRating": 74,
+        "HitPowerRating": 74,
+        "PursuitRating": 80,
+        "PlayRecognitionRating": 72,
+        "SpeedRating": 87,
+        "AccelerationRating": 87,
+        "AgilityRating": 82,
+        "ChangeOfDirectionRating": 82,
+        "JumpingRating": 82,
+        "CatchingRating": 58,
+        "StrengthRating": 64,
+        "AwarenessRating": 70,
+        "BlockSheddingRating": 56,
+        "KickReturnRating": 52,
+        "StaminaRating": 84
+      },
+      "talentSensitivity": {
+        "ZoneCoverageRating": 0.62,
+        "ManCoverageRating": 0.6,
+        "PressRating": 0.45,
+        "TackleRating": 0.45,
+        "HitPowerRating": 0.45,
+        "PursuitRating": 0.45,
+        "PlayRecognitionRating": 0.75,
+        "SpeedRating": 0.3,
+        "AccelerationRating": 0.28,
+        "AgilityRating": 0.3,
+        "ChangeOfDirectionRating": 0.3,
+        "JumpingRating": 0.3,
+        "CatchingRating": 0.5,
+        "StrengthRating": 0.3,
+        "AwarenessRating": 0.8
+      },
+      "caps": {
+        "SpeedRating": [
+          70,
+          98
+        ],
+        "StrengthRating": [
+          42,
+          82
+        ],
+        "ThrowPowerRating": [
+          10,
+          45
+        ],
+        "RunBlockRating": [
+          10,
+          48
+        ]
+      }
+    },
+    "K": {
+      "baseline": {
+        "KickPowerRating": 80,
+        "KickAccuracyRating": 78,
+        "AwarenessRating": 66,
+        "SpeedRating": 62,
+        "AccelerationRating": 64,
+        "AgilityRating": 58,
+        "StrengthRating": 48,
+        "ToughnessRating": 58,
+        "JumpingRating": 56,
+        "StaminaRating": 80,
+        "LongSnapRating": 30
+      },
+      "talentSensitivity": {
+        "KickPowerRating": 0.75,
+        "KickAccuracyRating": 0.8,
+        "AwarenessRating": 0.6,
+        "SpeedRating": 0.15,
+        "AccelerationRating": 0.15
+      },
+      "caps": {
+        "TackleRating": [
+          10,
+          45
+        ],
+        "HitPowerRating": [
+          10,
+          40
+        ],
+        "SpeedRating": [
+          45,
+          80
+        ],
+        "StrengthRating": [
+          25,
+          65
+        ],
+        "ThrowPowerRating": [
+          10,
+          55
+        ],
+        "CatchingRating": [
+          10,
+          50
+        ],
+        "BlockSheddingRating": [
+          10,
+          35
+        ],
+        "ManCoverageRating": [
+          10,
+          30
+        ],
+        "RunBlockRating": [
+          10,
+          35
+        ],
+        "PursuitRating": [
+          10,
+          50
+        ]
+      }
+    },
+    "P": {
+      "baseline": {
+        "KickPowerRating": 82,
+        "KickAccuracyRating": 76,
+        "AwarenessRating": 64,
+        "SpeedRating": 62,
+        "AccelerationRating": 64,
+        "AgilityRating": 58,
+        "StrengthRating": 50,
+        "ToughnessRating": 58,
+        "JumpingRating": 56,
+        "StaminaRating": 80,
+        "LongSnapRating": 35,
+        "ThrowPowerRating": 55
+      },
+      "talentSensitivity": {
+        "KickPowerRating": 0.8,
+        "KickAccuracyRating": 0.75,
+        "AwarenessRating": 0.6,
+        "SpeedRating": 0.15,
+        "AccelerationRating": 0.15
+      },
+      "caps": {
+        "TackleRating": [
+          10,
+          45
+        ],
+        "HitPowerRating": [
+          10,
+          40
+        ],
+        "SpeedRating": [
+          45,
+          80
+        ],
+        "StrengthRating": [
+          25,
+          65
+        ],
+        "ThrowPowerRating": [
+          10,
+          60
+        ],
+        "CatchingRating": [
+          10,
+          50
+        ],
+        "BlockSheddingRating": [
+          10,
+          35
+        ],
+        "ManCoverageRating": [
+          10,
+          30
+        ],
+        "RunBlockRating": [
+          10,
+          35
+        ],
+        "PursuitRating": [
+          10,
+          50
+        ]
+      }
+    }
+  },
+  "positionGroups": {
+    "QB": [
+      "QB"
+    ],
+    "HB": [
+      "HB"
+    ],
+    "FB": [
+      "FB"
+    ],
+    "WR": [
+      "WR"
+    ],
+    "TE": [
+      "TE"
+    ],
+    "OL": [
+      "LT",
+      "LG",
+      "C",
+      "RG",
+      "RT"
+    ],
+    "DL": [
+      "LE",
+      "RE",
+      "DT"
+    ],
+    "LB": [
+      "LOLB",
+      "MLB",
+      "ROLB"
+    ],
+    "CB": [
+      "CB"
+    ],
+    "S": [
+      "FS",
+      "SS"
+    ],
+    "K": [
+      "K"
+    ],
+    "P": [
+      "P"
+    ]
+  },
+  "physique": {
+    "QB": {
+      "referenceHeightInches": 74,
+      "referenceWeightPounds": 203
+    },
+    "HB": {
+      "referenceHeightInches": 71,
+      "referenceWeightPounds": 197
+    },
+    "FB": {
+      "referenceHeightInches": 72,
+      "referenceWeightPounds": 202
+    },
+    "WR": {
+      "referenceHeightInches": 73,
+      "referenceWeightPounds": 186
+    },
+    "TE": {
+      "referenceHeightInches": 76,
+      "referenceWeightPounds": 236
+    },
+    "OL": {
+      "referenceHeightInches": 76,
+      "referenceWeightPounds": 305
+    },
+    "DL": {
+      "referenceHeightInches": 75,
+      "referenceWeightPounds": 265
+    },
+    "LB": {
+      "referenceHeightInches": 73,
+      "referenceWeightPounds": 225
+    },
+    "CB": {
+      "referenceHeightInches": 72,
+      "referenceWeightPounds": 185
+    },
+    "S": {
+      "referenceHeightInches": 72,
+      "referenceWeightPounds": 195
+    },
+    "K": {
+      "referenceHeightInches": 71,
+      "referenceWeightPounds": 188
+    },
+    "P": {
+      "referenceHeightInches": 74,
+      "referenceWeightPounds": 200
+    }
+  },
+  "physiqueEffects": {
+    "strengthPerTenPoundsOverReference": 1.6,
+    "speedPerTenPoundsOverReference": -1.1,
+    "accelerationPerTenPoundsOverReference": -1.0,
+    "agilityPerTenPoundsOverReference": -1.2,
+    "jumpingPerInchOverReference": 0.6,
+    "maxPhysiqueAdjustment": 8
+  },
+  "signalWeights": {
+    "draft": 0.34,
+    "awards": 0.26,
+    "production": 0.22,
+    "recruiting": 0.1,
+    "role": 0.08
+  },
+  "confidenceThresholds": {
+    "high": 0.6,
+    "medium": 0.3
+  },
+  "draftScores": [
+    [
+      1,
+      99
+    ],
+    [
+      2,
+      98
+    ],
+    [
+      3,
+      97
+    ],
+    [
+      5,
+      96
+    ],
+    [
+      10,
+      94
+    ],
+    [
+      16,
+      92
+    ],
+    [
+      25,
+      90
+    ],
+    [
+      32,
+      89
+    ],
+    [
+      40,
+      87
+    ],
+    [
+      50,
+      86
+    ],
+    [
+      64,
+      84
+    ],
+    [
+      80,
+      82
+    ],
+    [
+      100,
+      80
+    ],
+    [
+      130,
+      78
+    ],
+    [
+      160,
+      76
+    ],
+    [
+      200,
+      74
+    ],
+    [
+      256,
+      71
+    ]
+  ],
+  "undraftedFreeAgentScore": 67,
+  "recruitingStarScores": {
+    "5": 86,
+    "4": 79,
+    "3": 72,
+    "2": 66,
+    "1": 62
+  },
+  "roleScores": {
+    "starter": 76,
+    "backup": 69,
+    "reserve": 64,
+    "walk-on": 61
+  },
+  "awardScores": {
+    "heisman": 98,
+    "heisman winner": 98,
+    "heisman runner-up": 94,
+    "heisman finalist": 93,
+    "unanimous all-american": 95,
+    "consensus all-american": 93,
+    "all-american": 90,
+    "first-team all-american": 92,
+    "second-team all-american": 88,
+    "third-team all-american": 85,
+    "freshman all-american": 84,
+    "conference player of the year": 94,
+    "conference offensive player of the year": 93,
+    "conference defensive player of the year": 93,
+    "conference freshman of the year": 84,
+    "first-team all-conference": 86,
+    "second-team all-conference": 82,
+    "third-team all-conference": 79,
+    "all-conference": 84,
+    "bowl mvp": 85,
+    "national champion": 80,
+    "team captain": 78
+  },
+  "fortyYardToSpeed": [
+    [
+      4.2,
+      99
+    ],
+    [
+      4.3,
+      99
+    ],
+    [
+      4.4,
+      96
+    ],
+    [
+      4.5,
+      92
+    ],
+    [
+      4.6,
+      87
+    ],
+    [
+      4.7,
+      82
+    ],
+    [
+      4.8,
+      76
+    ],
+    [
+      4.9,
+      70
+    ],
+    [
+      5.0,
+      64
+    ],
+    [
+      5.2,
+      52
+    ],
+    [
+      5.4,
+      42
+    ]
+  ],
+  "benchRepsToStrength": [
+    [
+      40,
+      99
+    ],
+    [
+      35,
+      95
+    ],
+    [
+      30,
+      90
+    ],
+    [
+      25,
+      85
+    ],
+    [
+      20,
+      79
+    ],
+    [
+      15,
+      72
+    ],
+    [
+      10,
+      64
+    ],
+    [
+      5,
+      55
+    ]
+  ],
+  "verticalToJumping": [
+    [
+      42,
+      99
+    ],
+    [
+      39,
+      95
+    ],
+    [
+      36,
+      90
+    ],
+    [
+      33,
+      84
+    ],
+    [
+      30,
+      77
+    ],
+    [
+      27,
+      70
+    ],
+    [
+      24,
+      62
+    ]
+  ],
+  "shuttleToAgility": [
+    [
+      3.95,
+      99
+    ],
+    [
+      4.1,
+      95
+    ],
+    [
+      4.25,
+      90
+    ],
+    [
+      4.4,
+      84
+    ],
+    [
+      4.55,
+      77
+    ],
+    [
+      4.7,
+      69
+    ],
+    [
+      4.9,
+      58
+    ]
+  ],
+  "threeConeToChangeOfDirection": [
+    [
+      6.6,
+      99
+    ],
+    [
+      6.8,
+      95
+    ],
+    [
+      7.0,
+      90
+    ],
+    [
+      7.2,
+      84
+    ],
+    [
+      7.4,
+      77
+    ],
+    [
+      7.6,
+      69
+    ],
+    [
+      7.9,
+      58
+    ]
+  ],
+  "classYearExperience": {
+    "Freshman": {
+      "shift": -8,
+      "awarenessCap": 78,
+      "playRecognitionCap": 80,
+      "lowConfidenceOverallCap": 68
+    },
+    "Sophomore": {
+      "shift": -3,
+      "awarenessCap": 88,
+      "playRecognitionCap": 90,
+      "lowConfidenceOverallCap": 74
+    },
+    "Junior": {
+      "shift": 1,
+      "awarenessCap": 95,
+      "playRecognitionCap": 96,
+      "lowConfidenceOverallCap": 78
+    },
+    "Senior": {
+      "shift": 4,
+      "awarenessCap": 99,
+      "playRecognitionCap": 99,
+      "lowConfidenceOverallCap": 80
+    }
+  },
+  "redshirtExperienceBonus": 3,
+  "experienceAttributes": [
+    "AwarenessRating",
+    "PlayRecognitionRating",
+    "ThrowUnderPressureRating",
+    "BlockSheddingRating",
+    "ZoneCoverageRating",
+    "ManCoverageRating",
+    "PlayActionRating"
+  ],
+  "production": {
+    "QB": [
+      {
+        "stat": "PassYards",
+        "weight": 0.45,
+        "curve": [
+          [
+            4200,
+            97
+          ],
+          [
+            3500,
+            91
+          ],
+          [
+            2800,
+            84
+          ],
+          [
+            2000,
+            76
+          ],
+          [
+            1200,
+            68
+          ],
+          [
+            400,
+            60
+          ]
+        ]
+      },
+      {
+        "stat": "PassTD",
+        "weight": 0.3,
+        "curve": [
+          [
+            40,
+            97
+          ],
+          [
+            30,
+            91
+          ],
+          [
+            22,
+            84
+          ],
+          [
+            14,
+            76
+          ],
+          [
+            7,
+            68
+          ],
+          [
+            2,
+            60
+          ]
+        ]
+      },
+      {
+        "stat": "CompletionPct",
+        "weight": 0.25,
+        "curve": [
+          [
+            70,
+            95
+          ],
+          [
+            65,
+            89
+          ],
+          [
+            60,
+            82
+          ],
+          [
+            55,
+            74
+          ],
+          [
+            50,
+            66
+          ],
+          [
+            45,
+            58
+          ]
+        ]
+      }
+    ],
+    "HB": [
+      {
+        "stat": "RushYards",
+        "weight": 0.55,
+        "curve": [
+          [
+            1700,
+            96
+          ],
+          [
+            1300,
+            90
+          ],
+          [
+            950,
+            83
+          ],
+          [
+            600,
+            75
+          ],
+          [
+            300,
+            67
+          ],
+          [
+            80,
+            59
+          ]
+        ]
+      },
+      {
+        "stat": "RushTD",
+        "weight": 0.25,
+        "curve": [
+          [
+            20,
+            96
+          ],
+          [
+            15,
+            90
+          ],
+          [
+            10,
+            83
+          ],
+          [
+            6,
+            75
+          ],
+          [
+            3,
+            67
+          ],
+          [
+            1,
+            60
+          ]
+        ]
+      },
+      {
+        "stat": "YardsPerCarry",
+        "weight": 0.2,
+        "curve": [
+          [
+            7.5,
+            96
+          ],
+          [
+            6.5,
+            91
+          ],
+          [
+            5.5,
+            84
+          ],
+          [
+            4.5,
+            76
+          ],
+          [
+            3.5,
+            66
+          ],
+          [
+            2.5,
+            56
+          ]
+        ]
+      }
+    ],
+    "FB": [
+      {
+        "stat": "RushYards",
+        "weight": 0.5,
+        "curve": [
+          [
+            500,
+            92
+          ],
+          [
+            300,
+            86
+          ],
+          [
+            150,
+            79
+          ],
+          [
+            50,
+            72
+          ],
+          [
+            10,
+            66
+          ]
+        ]
+      },
+      {
+        "stat": "RushTD",
+        "weight": 0.5,
+        "curve": [
+          [
+            8,
+            92
+          ],
+          [
+            5,
+            86
+          ],
+          [
+            3,
+            79
+          ],
+          [
+            1,
+            72
+          ],
+          [
+            0,
+            66
+          ]
+        ]
+      }
+    ],
+    "WR": [
+      {
+        "stat": "RecYards",
+        "weight": 0.5,
+        "curve": [
+          [
+            1300,
+            95
+          ],
+          [
+            1000,
+            89
+          ],
+          [
+            700,
+            82
+          ],
+          [
+            450,
+            75
+          ],
+          [
+            200,
+            67
+          ],
+          [
+            60,
+            59
+          ]
+        ]
+      },
+      {
+        "stat": "Receptions",
+        "weight": 0.25,
+        "curve": [
+          [
+            85,
+            95
+          ],
+          [
+            65,
+            89
+          ],
+          [
+            45,
+            82
+          ],
+          [
+            28,
+            74
+          ],
+          [
+            12,
+            66
+          ],
+          [
+            4,
+            58
+          ]
+        ]
+      },
+      {
+        "stat": "RecTD",
+        "weight": 0.25,
+        "curve": [
+          [
+            13,
+            95
+          ],
+          [
+            9,
+            89
+          ],
+          [
+            6,
+            82
+          ],
+          [
+            3,
+            74
+          ],
+          [
+            1,
+            66
+          ],
+          [
+            0,
+            60
+          ]
+        ]
+      }
+    ],
+    "TE": [
+      {
+        "stat": "RecYards",
+        "weight": 0.5,
+        "curve": [
+          [
+            800,
+            94
+          ],
+          [
+            550,
+            87
+          ],
+          [
+            350,
+            80
+          ],
+          [
+            180,
+            73
+          ],
+          [
+            60,
+            66
+          ],
+          [
+            15,
+            60
+          ]
+        ]
+      },
+      {
+        "stat": "Receptions",
+        "weight": 0.25,
+        "curve": [
+          [
+            60,
+            94
+          ],
+          [
+            45,
+            88
+          ],
+          [
+            30,
+            81
+          ],
+          [
+            18,
+            74
+          ],
+          [
+            8,
+            66
+          ],
+          [
+            2,
+            59
+          ]
+        ]
+      },
+      {
+        "stat": "RecTD",
+        "weight": 0.25,
+        "curve": [
+          [
+            9,
+            94
+          ],
+          [
+            6,
+            88
+          ],
+          [
+            4,
+            81
+          ],
+          [
+            2,
+            74
+          ],
+          [
+            1,
+            67
+          ],
+          [
+            0,
+            62
+          ]
+        ]
+      }
+    ],
+    "OL": [],
+    "DL": [
+      {
+        "stat": "Sacks",
+        "weight": 0.5,
+        "curve": [
+          [
+            12,
+            96
+          ],
+          [
+            9,
+            91
+          ],
+          [
+            6,
+            85
+          ],
+          [
+            3.5,
+            78
+          ],
+          [
+            1.5,
+            71
+          ],
+          [
+            0,
+            63
+          ]
+        ]
+      },
+      {
+        "stat": "TacklesForLoss",
+        "weight": 0.3,
+        "curve": [
+          [
+            20,
+            95
+          ],
+          [
+            15,
+            90
+          ],
+          [
+            10,
+            84
+          ],
+          [
+            6,
+            77
+          ],
+          [
+            3,
+            70
+          ],
+          [
+            0,
+            62
+          ]
+        ]
+      },
+      {
+        "stat": "Tackles",
+        "weight": 0.2,
+        "curve": [
+          [
+            70,
+            92
+          ],
+          [
+            55,
+            87
+          ],
+          [
+            40,
+            81
+          ],
+          [
+            25,
+            74
+          ],
+          [
+            12,
+            67
+          ],
+          [
+            3,
+            60
+          ]
+        ]
+      }
+    ],
+    "LB": [
+      {
+        "stat": "Tackles",
+        "weight": 0.5,
+        "curve": [
+          [
+            130,
+            94
+          ],
+          [
+            105,
+            89
+          ],
+          [
+            80,
+            83
+          ],
+          [
+            55,
+            76
+          ],
+          [
+            30,
+            69
+          ],
+          [
+            10,
+            61
+          ]
+        ]
+      },
+      {
+        "stat": "TacklesForLoss",
+        "weight": 0.25,
+        "curve": [
+          [
+            18,
+            94
+          ],
+          [
+            13,
+            89
+          ],
+          [
+            9,
+            83
+          ],
+          [
+            5,
+            76
+          ],
+          [
+            2,
+            69
+          ],
+          [
+            0,
+            62
+          ]
+        ]
+      },
+      {
+        "stat": "Sacks",
+        "weight": 0.25,
+        "curve": [
+          [
+            9,
+            94
+          ],
+          [
+            6,
+            89
+          ],
+          [
+            4,
+            83
+          ],
+          [
+            2,
+            76
+          ],
+          [
+            1,
+            70
+          ],
+          [
+            0,
+            64
+          ]
+        ]
+      }
+    ],
+    "CB": [
+      {
+        "stat": "Interceptions",
+        "weight": 0.4,
+        "curve": [
+          [
+            6,
+            94
+          ],
+          [
+            4,
+            89
+          ],
+          [
+            2,
+            82
+          ],
+          [
+            1,
+            76
+          ],
+          [
+            0,
+            68
+          ]
+        ]
+      },
+      {
+        "stat": "PassesDefended",
+        "weight": 0.35,
+        "curve": [
+          [
+            16,
+            94
+          ],
+          [
+            12,
+            89
+          ],
+          [
+            8,
+            83
+          ],
+          [
+            5,
+            76
+          ],
+          [
+            2,
+            69
+          ],
+          [
+            0,
+            62
+          ]
+        ]
+      },
+      {
+        "stat": "Tackles",
+        "weight": 0.25,
+        "curve": [
+          [
+            65,
+            90
+          ],
+          [
+            50,
+            85
+          ],
+          [
+            38,
+            80
+          ],
+          [
+            25,
+            74
+          ],
+          [
+            12,
+            67
+          ],
+          [
+            3,
+            60
+          ]
+        ]
+      }
+    ],
+    "S": [
+      {
+        "stat": "Tackles",
+        "weight": 0.45,
+        "curve": [
+          [
+            100,
+            93
+          ],
+          [
+            80,
+            88
+          ],
+          [
+            60,
+            82
+          ],
+          [
+            40,
+            75
+          ],
+          [
+            22,
+            68
+          ],
+          [
+            6,
+            60
+          ]
+        ]
+      },
+      {
+        "stat": "Interceptions",
+        "weight": 0.3,
+        "curve": [
+          [
+            6,
+            94
+          ],
+          [
+            4,
+            89
+          ],
+          [
+            2,
+            82
+          ],
+          [
+            1,
+            76
+          ],
+          [
+            0,
+            69
+          ]
+        ]
+      },
+      {
+        "stat": "PassesDefended",
+        "weight": 0.25,
+        "curve": [
+          [
+            14,
+            93
+          ],
+          [
+            10,
+            88
+          ],
+          [
+            7,
+            82
+          ],
+          [
+            4,
+            75
+          ],
+          [
+            1,
+            68
+          ],
+          [
+            0,
+            62
+          ]
+        ]
+      }
+    ],
+    "K": [
+      {
+        "stat": "FieldGoalsMade",
+        "weight": 0.45,
+        "curve": [
+          [
+            26,
+            95
+          ],
+          [
+            21,
+            90
+          ],
+          [
+            16,
+            84
+          ],
+          [
+            11,
+            77
+          ],
+          [
+            6,
+            70
+          ],
+          [
+            1,
+            62
+          ]
+        ]
+      },
+      {
+        "stat": "FieldGoalPct",
+        "weight": 0.4,
+        "curve": [
+          [
+            92,
+            96
+          ],
+          [
+            85,
+            91
+          ],
+          [
+            78,
+            85
+          ],
+          [
+            70,
+            78
+          ],
+          [
+            60,
+            70
+          ],
+          [
+            50,
+            61
+          ]
+        ]
+      },
+      {
+        "stat": "LongFieldGoal",
+        "weight": 0.15,
+        "curve": [
+          [
+            56,
+            95
+          ],
+          [
+            52,
+            90
+          ],
+          [
+            48,
+            84
+          ],
+          [
+            44,
+            77
+          ],
+          [
+            40,
+            70
+          ],
+          [
+            35,
+            62
+          ]
+        ]
+      }
+    ],
+    "P": [
+      {
+        "stat": "PuntAverage",
+        "weight": 1.0,
+        "curve": [
+          [
+            47,
+            95
+          ],
+          [
+            45,
+            90
+          ],
+          [
+            43,
+            84
+          ],
+          [
+            41,
+            77
+          ],
+          [
+            39,
+            69
+          ],
+          [
+            36,
+            60
+          ]
+        ]
+      }
+    ]
+  },
+  "globalCaps": {
+    "min": 10,
+    "max": 99
+  }
+}

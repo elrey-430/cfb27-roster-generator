@@ -150,6 +150,25 @@ public sealed class RosterEditSession
         Record(player, EditIntent.AttributeChange, $"Set position of {player} to {position}");
     }
 
+    /// <summary>
+    /// Writes a complete generated rating set, recorded as a single edit.
+    /// Unknown column names are ignored so a future model can add attributes
+    /// without breaking older saves.
+    /// </summary>
+    public void SetGeneratedRatings(Player player, IReadOnlyDictionary<string, int> ratings, int overall)
+    {
+        foreach (var (column, value) in ratings)
+        {
+            if (PlayerSchema.NumericRatingColumns.Contains(column))
+            {
+                player.SetRaw(column, value.ToString());
+            }
+        }
+
+        player.SetRaw(PlayerColumns.OverallRating, overall.ToString());
+        Record(player, EditIntent.AttributeChange, $"Generated {ratings.Count} ratings for {player} (OVR {overall})");
+    }
+
     /// <summary>Sets one numeric rating column.</summary>
     public void SetRating(Player player, string ratingColumn, int value)
     {

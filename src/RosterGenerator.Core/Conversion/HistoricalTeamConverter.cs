@@ -2,6 +2,7 @@ using RosterGenerator.Core.Editing;
 using RosterGenerator.Core.Historical;
 using RosterGenerator.Core.Mapping;
 using RosterGenerator.Core.Model;
+using RosterGenerator.Core.Rating;
 using RosterGenerator.Core.Schema;
 
 namespace RosterGenerator.Core.Conversion;
@@ -24,12 +25,25 @@ public sealed class HistoricalTeamConverter
 {
     private readonly TeamMappingSet _teamMappings;
     private readonly PositionMappingSet _positionMappings;
+    private readonly RatingEngine? _ratingEngine;
 
-    /// <summary>Creates a converter over the two external mapping sets.</summary>
-    public HistoricalTeamConverter(TeamMappingSet teamMappings, PositionMappingSet positionMappings)
+    /// <summary>
+    /// Creates a converter.
+    /// </summary>
+    /// <param name="teamMappings">School name → team index lookup.</param>
+    /// <param name="positionMappings">Historical → CFB27 position lookup.</param>
+    /// <param name="ratingEngine">
+    /// Rating engine to generate attributes with. When null, each player
+    /// inherits the ratings of the roster slot they replace.
+    /// </param>
+    public HistoricalTeamConverter(
+        TeamMappingSet teamMappings,
+        PositionMappingSet positionMappings,
+        RatingEngine? ratingEngine = null)
     {
         _teamMappings = teamMappings;
         _positionMappings = positionMappings;
+        _ratingEngine = ratingEngine;
     }
 
     /// <summary>
@@ -43,9 +57,10 @@ public sealed class HistoricalTeamConverter
         var teamId = _teamMappings.Resolve(historical.School);
         var report = new ConversionReport(historical, teamId);
 
-        report.GlobalAssumptions.Add(
-            "Ratings are inherited from the donor slot each player replaces — automatic rating " +
-            "generation is out of scope for this milestone.");
+        report.GlobalAssumptions.Add(_ratingEngine is null
+            ? "Ratings are inherited from the roster slot each player replaces (rating generation disabled)."
+            : "Ratings are generated from each player's historical evidence and calibrated so EA's own overall " +
+              "formula reproduces the intended overall; see Ratings/Rating_Model.md.");
         report.GlobalAssumptions.Add(
             "Weight is written using the confirmed encoding (stored value = pounds − 160, representable " +
             "range 160–400 lb); weights outside that range or missing from the dataset inherit the donor " +
@@ -67,6 +82,7 @@ public sealed class HistoricalTeamConverter
             .OrderBy(p => p.RowKey)
             .ToList();
         var freeSlots = new List<Player>(slots);
+        var placements = new List<(Player Slot, HistoricalPlayer Historical, PlayerConversionEntry Entry)>();
 
         foreach (var historicalPlayer in historical.Players)
         {
@@ -93,6 +109,12 @@ public sealed class HistoricalTeamConverter
             freeSlots.Remove(slot);
             entry.AssignedRowKey = slot.RowKey;
             ApplyPlayer(session, slot, historicalPlayer, targetPosition, entry);
+            placements.Add((slot, historicalPlayer, entry));
+        }
+
+        if (_ratingEngine is not null)
+        {
+            GenerateRatings(session, report, placements);
         }
 
         foreach (var slot in freeSlots)
@@ -109,6 +131,61 @@ public sealed class HistoricalTeamConverter
 
         return report;
     }
+
+    /// <summary>
+    /// Generates and writes ratings for every placed player, then runs the
+    /// roster-level depth-consistency pass and regenerates anyone it caps.
+    /// </summary>
+    private void GenerateRatings(
+        RosterEditSession session,
+        ConversionReport report,
+        IReadOnlyList<(Player Slot, HistoricalPlayer Historical, PlayerConversionEntry Entry)> placements)
+    {
+        var engine = _ratingEngine!;
+        var rated = new List<RatedPlayer>();
+        var byPlayer = new Dictionary<HistoricalPlayer, (Player Slot, PlayerConversionEntry Entry)>();
+
+        foreach (var (slot, historical, entry) in placements)
+        {
+            var playerType = slot.GetRaw(PlayerTypeColumn);
+            var ratings = engine.Generate(slot.Position, playerType, historical, historical.Evidence);
+            rated.Add(new RatedPlayer(historical, slot.Position, ratings.PlayerType, ratings));
+            byPlayer[historical] = (slot, entry);
+        }
+
+        // Roster-level rule: a backup must not out-rate the starter without
+        // strong individual evidence. Violators are regenerated under a cap.
+        foreach (var (violator, ceiling, reason) in DepthConsistency.FindViolations(rated))
+        {
+            var (slot, entry) = byPlayer[violator.Player];
+            var regenerated = engine.Generate(
+                slot.Position, slot.GetRaw(PlayerTypeColumn), violator.Player, violator.Player.Evidence, ceiling);
+            var index = rated.FindIndex(r => ReferenceEquals(r.Player, violator.Player));
+            rated[index] = violator with { Ratings = regenerated };
+            entry.Warnings.Add(reason);
+        }
+
+        foreach (var player in rated)
+        {
+            var (slot, entry) = byPlayer[player.Player];
+            session.SetGeneratedRatings(slot, player.Ratings.Attributes, player.Ratings.Overall);
+            entry.Ratings = player.Ratings;
+            if (player.Ratings.Confidence == RatingConfidence.Low)
+            {
+                entry.Warnings.Add(
+                    "Ratings generated with Low confidence — supply stats, awards, a draft slot or a " +
+                    "recruiting rating for a better estimate.");
+            }
+
+            foreach (var adjustment in player.Ratings.Adjustments)
+            {
+                entry.Warnings.Add(adjustment);
+            }
+        }
+    }
+
+    /// <summary>Column holding the archetype whose EA overall formula applies.</summary>
+    private const string PlayerTypeColumn = "PlayerType";
 
     private void ApplyPlayer(
         RosterEditSession session,

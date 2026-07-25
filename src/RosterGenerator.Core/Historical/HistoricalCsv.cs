@@ -112,6 +112,7 @@ public static class HistoricalCsv
                 Hometown = NullIfEmpty(Cell(row, "hometown")),
                 PreviousSchool = NullIfEmpty(Cell(row, "previousschool")),
                 Notes = NullIfEmpty(Cell(row, "notes")),
+                Evidence = ReadEvidence(Cell, row, rowLabel, warnings),
             });
         }
 
@@ -128,6 +129,87 @@ public static class HistoricalCsv
             Players = players,
         };
         return new HistoricalCsvResult(roster, warnings);
+    }
+
+    /// <summary>
+    /// Reads the optional rating-evidence columns. All are additive to the
+    /// golden-standard template: a file with none of them still parses, and
+    /// any stat named in <see cref="StatKeys"/> is picked up automatically,
+    /// so new statistics need no code change here.
+    /// </summary>
+    private static RatingEvidence ReadEvidence(
+        Func<int, string, string> cell, int row, string rowLabel, List<string> warnings)
+    {
+        var stats = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in StatColumnNames)
+        {
+            var raw = cell(row, Normalize(key));
+            if (raw.Length == 0)
+            {
+                continue;
+            }
+
+            if (double.TryParse(raw, out var value))
+            {
+                stats[key] = value;
+            }
+            else
+            {
+                warnings.Add($"{rowLabel}: {key} '{raw}' is not a number — ignored.");
+            }
+        }
+
+        var awards = cell(row, "awards")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+
+        var draftPickText = cell(row, "draftpick");
+        var undrafted = draftPickText.Equals("UDFA", StringComparison.OrdinalIgnoreCase) ||
+                        draftPickText.Equals("Undrafted", StringComparison.OrdinalIgnoreCase);
+
+        return new RatingEvidence
+        {
+            Role = NullIfEmpty(cell(row, "role")),
+            StarRating = ParseInt(cell(row, "starrating"), rowLabel, "StarRating", warnings),
+            FortyYardDash = ParseDouble(cell(row, "forty"), rowLabel, "Forty", warnings),
+            BenchPressReps = ParseInt(cell(row, "bench"), rowLabel, "Bench", warnings),
+            VerticalJumpInches = ParseDouble(cell(row, "vertical"), rowLabel, "Vertical", warnings),
+            ShuttleSeconds = ParseDouble(cell(row, "shuttle"), rowLabel, "Shuttle", warnings),
+            ThreeConeSeconds = ParseDouble(cell(row, "threecone"), rowLabel, "ThreeCone", warnings),
+            DraftPickOverall = undrafted ? null : ParseInt(draftPickText, rowLabel, "DraftPick", warnings),
+            DraftRound = ParseInt(cell(row, "draftround"), rowLabel, "DraftRound", warnings),
+            UndraftedFreeAgent = undrafted,
+            Awards = awards,
+            Stats = stats,
+        };
+    }
+
+    /// <summary>Stat columns recognized in the input CSV.</summary>
+    private static readonly string[] StatColumnNames =
+    {
+        StatKeys.PassYards, StatKeys.PassTD, StatKeys.PassInt, StatKeys.Completions, StatKeys.Attempts,
+        StatKeys.CompletionPct, StatKeys.RushYards, StatKeys.RushTD, StatKeys.RushAttempts,
+        StatKeys.YardsPerCarry, StatKeys.RecYards, StatKeys.RecTD, StatKeys.Receptions,
+        StatKeys.Tackles, StatKeys.Sacks, StatKeys.TacklesForLoss, StatKeys.Interceptions,
+        StatKeys.PassesDefended, StatKeys.ForcedFumbles, StatKeys.FieldGoalsMade,
+        StatKeys.FieldGoalsAttempted, StatKeys.FieldGoalPct, StatKeys.LongFieldGoal,
+        StatKeys.PuntAverage, StatKeys.GamesPlayed, StatKeys.GamesStarted,
+    };
+
+    private static double? ParseDouble(string value, string rowLabel, string field, List<string> warnings)
+    {
+        if (value.Length == 0)
+        {
+            return null;
+        }
+
+        if (double.TryParse(value, out var parsed))
+        {
+            return parsed;
+        }
+
+        warnings.Add($"{rowLabel}: {field} '{value}' is not a number — ignored.");
+        return null;
     }
 
     /// <summary>

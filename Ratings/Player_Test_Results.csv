@@ -1,0 +1,11 @@
+Season,Team,Player,Position,Archetype,Class,Overall,Confidence,Speed,Strength,Awareness,Carrying,Catching,ThrowPower,ThrowAccShort,ManCoverage,RunBlock,Tackle,KickPower,KickAccuracy,TopReason,Expectation
+2013,Florida State,Jameis Winston,QB,QB_FieldGeneral,Redshirt Freshman,94,High,89,66,78,68,40,99,99,25,30,45,30,30,Drafted #1 overall,Elite: Heisman + national title + #1 overall pick
+2013,Florida State,Devonta Freeman,HB,HB_ElusiveBack,Junior,81,High,89,69,74,85,69,30,30,31,30,45,30,30,Drafted #103 overall,"Very good starter, 4th-round pick"
+2013,Florida State,Lamarcus Joyner,FS,S_Hybrid,Senior,87,High,93,69,88,40,64,30,30,85,30,82,30,30,Drafted #41 overall,"All-American senior, 2nd-round pick"
+2005,Texas,Vince Young,QB,QB_Scrambler,Junior,91,High,88,66,95,68,40,99,99,31,30,45,30,30,Drafted #3 overall,"Elite dual-threat, #3 overall pick"
+2005,USC,Reggie Bush,HB,HB_ElusiveBack,Junior,94,High,98,74,86,92,77,30,30,31,30,45,30,30,Drafted #2 overall,Elite: Heisman + #2 overall pick + 4.33 forty
+2015,Florida State,Dalvin Cook,HB,HB_ElusiveBack,Sophomore,88,High,92,73,77,89,74,30,30,27,30,45,30,30,Drafted #41 overall,"Star sophomore back, later 2nd-round pick"
+2015,Florida State,Roberto Aguayo,K,KP_Accurate,Junior,86,High,62,50,78,40,40,30,30,30,30,45,93,92,Drafted #59 overall,All-American kicker; must not get high tackling
+2015,Florida State,Roderick Johnson,LT,OT_Power,Sophomore,80,High,61,94,81,40,40,30,30,25,87,45,30,30,Drafted #160 overall,All-conference tackle; must not get high speed
+2015,Florida State,Ryan Green,HB,HB_ElusiveBack,Junior,68,Medium,84,63,61,77,61,30,30,31,30,45,30,30,"Season production: 155 RushYards, 1 RushTD, 4.3 YardsPerCarry",Backup behind Cook; must stay below the starter
+2015,Florida State,Nobody Walkon,WR,WR_ShiftyRouteRunner,Freshman,64,Low,93,60,65,65,85,33,30,22,51,45,30,30,Depth chart role: Reserve,"No evidence: Low confidence, freshman floor"
