@@ -375,7 +375,7 @@ public sealed class SparseInputTests
     {
         // The template a user is pointed at first must itself be sufficient.
         var basics = Path.Combine(
-            AppContext.BaseDirectory, "Templates", "HistoricalRosterTemplate_Basics.csv");
+            AppContext.BaseDirectory, "Fixtures", "Templates", "HistoricalRosterTemplate_Basics.csv");
         var csv = HistoricalCsv.Read(basics);
 
         Assert.Empty(csv.Warnings);

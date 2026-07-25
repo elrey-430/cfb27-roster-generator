@@ -206,9 +206,14 @@ public sealed class ValidateIntegrityTests
         // The other half of integrity: it must not cry wolf. The shipped
         // template is the file users are told to start from.
         var dynasty = DynastyExport.Open(TestsPath("DonorDynasty"));
-        var check = RosterCsvValidator.Check(
-            Path.Combine(AppContext.BaseDirectory, "Templates", "HistoricalRosterTemplate_Basics.csv"),
-            Positions(), dynasty, ratings: Engine());
+        var template = Path.Combine(
+            AppContext.BaseDirectory, "Fixtures", "Templates", "HistoricalRosterTemplate_Basics.csv");
+
+        // Without this the missing file arrives as a blocking finding, and the
+        // failure below reads as if the template itself were broken.
+        Assert.True(File.Exists(template), $"template not copied to the test output: {template}");
+
+        var check = RosterCsvValidator.Check(template, Positions(), dynasty, ratings: Engine());
 
         Assert.True(check.CanGenerate);
         Assert.Empty(check.OfSeverity(RosterCsvSeverity.Blocking));
