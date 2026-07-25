@@ -16,6 +16,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Avalonia.Headless" Version="11.0.10" />
     <PackageReference Include="coverlet.collector" Version="6.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -24,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\RosterGenerator.Core\RosterGenerator.Core.csproj" />
+    <ProjectReference Include="..\..\src\RosterGenerator.Gui\RosterGenerator.Gui.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -13,6 +13,8 @@ required.
   rationale.
 - **`docs/Schema.md`** — column-level ground truth for the CFB27 player
   table (what is confirmed safe to write and why).
+- **`QUICKSTART.md`** — the page that ships with the release: install-free
+  setup, the four steps, and what to do when something goes wrong.
 - **`docs/Status.md`** — current status, known unknowns, next milestone.
 - **`Ratings/`** — how ratings are generated: `Rating_Model.md` (the
   pipeline and its verification), `Position_Formulas.md` (every position's
@@ -47,11 +49,17 @@ required.
    fuller `templates/HistoricalRosterTemplate.csv` when you *do* have
    statistics, draft positions or awards — more detail buys better ratings,
    but it is never required.
-3. **Run the generator:**
+3. **Run the generator.** Open `RosterGenerator.Gui.exe` and follow the four
+   steps, or from a command prompt:
 
    ```
-   RosterGenerator.Cli generate --dynasty <your export folder> --roster MyRoster.csv
+   RosterGenerator.Cli validate --roster MyRoster.csv --dynasty <your export folder>
+   RosterGenerator.Cli generate --roster MyRoster.csv --dynasty <your export folder>
    ```
+
+   `validate` checks your roster file and writes nothing, so a mistake shows
+   up in a few lines instead of inside a 27 MB file's report. The desktop app
+   runs the same check the moment you choose a file.
 
    If your CSV has no `Team` column, the generator lists your dynasty's
    teams and asks you to pick one (`list-teams` shows them any time).
@@ -85,23 +93,24 @@ RosterGenerator.Cli compare --left Output/Generated_Roster.csv --right OtherExpo
 
 ## Distribution (Windows 10/11)
 
-One self-contained executable — no Python, Node, WSL or .NET runtime
-needed on the target machine:
-
 ```
-dotnet publish src/RosterGenerator.Cli -c Release -r win-x64 \
-  --self-contained true -p:PublishSingleFile=true
+./build-release.sh 7.0.0
 ```
 
-The publish folder contains `RosterGenerator.Cli.exe` plus the editable
-`data/` mapping files and the roster template.
+Produces `dist/CFB27-Roster-Generator-7.0.0-win-x64/` and a zip of it: the
+desktop app and the command-line tool as self-contained executables that run
+on a clean Windows 10/11 machine with no .NET runtime, Python, Node or WSL,
+alongside the editable `data/` files, the roster `templates/` and
+`QUICKSTART.md`.
 
 ## Build & test (developers)
 
 Requires the .NET 8 SDK (developers only — end users need nothing):
 
 ```
-dotnet test    # 118 tests: round-trip fidelity, validation, pipeline, ratings, 2023 FSU regression
+dotnet test    # 221 tests: round-trip fidelity, validation, pipeline, ratings,
+               # roster fill, sparse input, validate integrity, GUI smoke,
+               # and the 2023 FSU byte-stability regression
 ```
 
 The 2023 Florida State recreation (Milestone 2) is preserved as a
@@ -111,6 +120,6 @@ exactly.
 
 ## What is deliberately not implemented yet
 
-Equipment/face recreation, GUI polish,
-automatic historical data gathering, multi-season bulk generation, dynasty
-editing, and the derived `Player[]` array recompute — see `docs/Status.md`.
+Equipment and face recreation, automatic historical data gathering,
+multi-season bulk generation, dynasty editing, and the derived `Player[]`
+array recompute — see `docs/Status.md`.

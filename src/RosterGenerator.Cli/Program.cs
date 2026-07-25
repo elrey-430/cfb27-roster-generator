@@ -5,6 +5,7 @@ using RosterGenerator.Core.Editing;
 using RosterGenerator.Core.Export;
 using RosterGenerator.Core.Historical;
 using RosterGenerator.Core.Mapping;
+using RosterGenerator.Core.Pipeline;
 using RosterGenerator.Core.Model;
 using RosterGenerator.Core.Rating;
 using RosterGenerator.Core.Validation;
@@ -199,11 +200,6 @@ static int Validate(Dictionary<string, string> options)
 static int Generate(Dictionary<string, string> options)
 {
     var export = OpenDynasty(options);
-    var positionMappings = PositionMappingSet.Load(
-        FindDataFile(options, "position-mappings", "PositionMappings.json", required: true)!);
-    var teamMappings = export.Teams.Count > 0
-        ? export.BuildTeamMappings(FindDataFile(options, "team-mappings", "TeamMappings.json", required: false))
-        : TeamMappingSet.Load(FindDataFile(options, "team-mappings", "TeamMappings.json", required: true)!);
 
     // --historical is the pre-Milestone-3 spelling; accept both.
     var rosterPath = options.TryGetValue("roster", out var roster)
@@ -215,24 +211,11 @@ static int Generate(Dictionary<string, string> options)
     var teamOption = options.TryGetValue("team", out var teamValue) ? teamValue : null;
     int? seasonOption = options.TryGetValue("season", out var seasonValue) ? int.Parse(seasonValue) : null;
 
-    HistoricalRoster historical;
-    if (Path.GetExtension(rosterPath).Equals(".json", StringComparison.OrdinalIgnoreCase))
+    // Asking the user questions is the front-end's job; everything after this
+    // is the shared pipeline, so the command line and the desktop app cannot
+    // grow different behaviour.
+    if (!Path.GetExtension(rosterPath).Equals(".json", StringComparison.OrdinalIgnoreCase))
     {
-        historical = HistoricalRoster.Load(rosterPath);
-        if (teamOption is not null)
-        {
-            historical = historical with { School = teamOption };
-        }
-
-        if (seasonOption is int seasonOverride)
-        {
-            historical = historical with { Season = seasonOverride };
-        }
-    }
-    else
-    {
-        // The simple CSV may omit Team/Season; ask interactively when the
-        // console allows it.
         if (teamOption is null && !CsvHasTeam(rosterPath))
         {
             teamOption = SelectTeamInteractively(export);
@@ -241,125 +224,73 @@ static int Generate(Dictionary<string, string> options)
         if (seasonOption is null && teamOption is not null && !Console.IsInputRedirected)
         {
             Console.Write("Season (e.g. 2013, Enter to skip): ");
-            var input = Console.ReadLine();
-            if (int.TryParse(input, out var enteredSeason))
+            if (int.TryParse(Console.ReadLine(), out var enteredSeason))
             {
                 seasonOption = enteredSeason;
             }
         }
-
-        var result = HistoricalCsv.Read(rosterPath, teamOption, seasonOption);
-        foreach (var warning in result.Warnings)
-        {
-            Console.WriteLine($"  roster CSV: {warning}");
-        }
-
-        historical = result.Roster;
     }
-
-    Console.WriteLine($"Historical roster: {(historical.Season == 0 ? "season ?" : historical.Season.ToString())} " +
-                      $"{historical.School} — {historical.Players.Count} players");
 
     var ratingsMode = options.GetValueOrDefault("ratings", "generate");
-    RatingEngine? ratingEngine = null;
-    OverallFormulaSet? formulas = null;
-    if (ratingsMode.Equals("generate", StringComparison.OrdinalIgnoreCase))
-    {
-        var formulaPath = FindDataFile(options, "overall-formulas", "OverallFormulas.json", required: true)!;
-        formulas = OverallFormulaSet.Load(formulaPath);
-        ratingEngine = RatingEngine.Load(
-            FindDataFile(options, "rating-models", "RatingModels.json", required: true)!, formulaPath);
-        Console.WriteLine("Rating generation: on (EA overall formulas driven by historical evidence)");
-    }
-    else if (!ratingsMode.Equals("inherit", StringComparison.OrdinalIgnoreCase))
+    if (!ratingsMode.Equals("generate", StringComparison.OrdinalIgnoreCase) &&
+        !ratingsMode.Equals("inherit", StringComparison.OrdinalIgnoreCase))
     {
         throw new ArgumentException("--ratings must be 'generate' or 'inherit'.");
     }
 
-    // Archetype selection only makes sense alongside rating generation: the
-    // archetype decides which overall formula applies, so it must be paired
-    // with a recompute.
-    var archetypeMode = options.GetValueOrDefault("archetypes", ratingEngine is null ? "inherit" : "select");
-    ArchetypeSelector? archetypeSelector = null;
-    if (archetypeMode.Equals("select", StringComparison.OrdinalIgnoreCase))
-    {
-        if (ratingEngine is null)
-        {
-            throw new ArgumentException(
-                "--archetypes select requires --ratings generate: changing a player's archetype changes " +
-                "which overall formula applies, so the overall must be recomputed at the same time.");
-        }
+    var generateRatings = ratingsMode.Equals("generate", StringComparison.OrdinalIgnoreCase);
 
-        archetypeSelector = ArchetypeSelector.Load(
-            FindDataFile(options, "archetype-rules", "ArchetypeRules.json", required: true)!);
-        Console.WriteLine("Archetype selection: on (PlayerType chosen from each player's profile)");
-    }
-    else if (!archetypeMode.Equals("inherit", StringComparison.OrdinalIgnoreCase))
+    var archetypeMode = options.GetValueOrDefault("archetypes", generateRatings ? "select" : "inherit");
+    if (!archetypeMode.Equals("select", StringComparison.OrdinalIgnoreCase) &&
+        !archetypeMode.Equals("inherit", StringComparison.OrdinalIgnoreCase))
     {
         throw new ArgumentException("--archetypes must be 'select' or 'inherit'.");
     }
 
-    // Filling the rest of the roster means writing ratings, so like archetype
-    // selection it requires the engine.
-    var fillMode = options.GetValueOrDefault("fill", ratingEngine is null ? "leave" : "fill");
+    var fillMode = options.GetValueOrDefault("fill", generateRatings ? "fill" : "leave");
     if (!fillMode.Equals("fill", StringComparison.OrdinalIgnoreCase) &&
         !fillMode.Equals("leave", StringComparison.OrdinalIgnoreCase))
     {
         throw new ArgumentException("--fill must be 'fill' or 'leave'.");
     }
 
-    // The measured roster shape drives two things, so it is loaded whenever
-    // ratings are generated, not only when the fill is on: it tells the engine
-    // how strong the program is, and it tells the filler what end-of-roster
-    // depth looks like.
-    RosterDepthModel? rosterDepth = null;
-    RosterFiller? rosterFiller = null;
-    if (ratingEngine is not null)
+    var request = new RosterGenerationRequest
     {
-        rosterDepth = RosterDepthModel.Load(
-            FindDataFile(options, "roster-depth", "RosterDepth.json", required: true)!);
+        DynastyPath = DynastyPathOption(options),
+        RosterPath = rosterPath,
+        DataDirectory = options.GetValueOrDefault("data"),
+        Team = teamOption,
+        Season = seasonOption,
+        OutputPath = options.TryGetValue("output", out var output)
+            ? output
+            : Path.Combine("Output", "Generated_Roster.csv"),
+        ReportPath = options.TryGetValue("report", out var reportOption)
+            ? reportOption
+            : Path.Combine("Output", "Generation_Report.txt"),
+        Ratings = generateRatings ? RatingsMode.Generate : RatingsMode.Inherit,
+        SelectArchetypes = archetypeMode.Equals("select", StringComparison.OrdinalIgnoreCase),
+        FillRoster = fillMode.Equals("fill", StringComparison.OrdinalIgnoreCase),
+    };
+
+    if (generateRatings)
+    {
+        Console.WriteLine("Rating generation: on (EA overall formulas driven by historical evidence)");
     }
 
-    if (fillMode.Equals("fill", StringComparison.OrdinalIgnoreCase))
+    if (request.SelectArchetypes)
     {
-        if (ratingEngine is null)
-        {
-            throw new ArgumentException(
-                "--fill fill requires --ratings generate: filling a roster slot means writing a rating " +
-                "for it.");
-        }
+        Console.WriteLine("Archetype selection: on (PlayerType chosen from each player's profile)");
+    }
 
-        rosterFiller = new RosterFiller(rosterDepth!, ratingEngine);
+    if (request.FillRoster)
+    {
         Console.WriteLine("Roster fill: on (unsupplied slots re-rated as end-of-roster depth)");
     }
 
-    var donor = export.LoadPlayerRoster();
-    var session = new RosterEditSession(donor);
-    var report = new HistoricalTeamConverter(
-            teamMappings, positionMappings, ratingEngine, archetypeSelector, rosterFiller, rosterDepth,
-            export.BuildPreviousSchoolMappings(
-                FindDataFile(options, "team-mappings", "TeamMappings.json", required: false)))
-        .Convert(session, historical);
-    var slotSummary = report.FilledSlots.Count > 0
-        ? $"{report.FilledSlots.Count} slots filled as depth"
-        : $"{report.LeftoverDonorSlots.Count} donor slots left";
-    Console.WriteLine($"Converted {report.Converted.Count()} players onto team {report.TeamId} " +
-                      $"({report.Skipped.Count()} skipped, {slotSummary}).");
-
-    var outputPath = options.TryGetValue("output", out var output)
-        ? output
-        : Path.Combine("Output", "Generated_Roster.csv");
-    var reportPath = options.TryGetValue("report", out var reportOption)
-        ? reportOption
-        : Path.Combine("Output", "Generation_Report.txt");
-    CreateParentDirectory(outputPath);
-    CreateParentDirectory(reportPath);
-
-    ExportResult result2;
+    RosterGenerationResult result;
     try
     {
-        result2 = new RosterExporter().Export(
-            new RosterValidationContext(donor, session, overallFormulas: formulas), outputPath);
+        result = new RosterGenerationService().Run(request);
     }
     catch (RosterExportException ex)
     {
@@ -367,16 +298,37 @@ static int Generate(Dictionary<string, string> options)
         return 1;
     }
 
-    File.WriteAllText(reportPath,
-        Path.GetExtension(reportPath).Equals(".md", StringComparison.OrdinalIgnoreCase)
-            ? report.ToMarkdown()
-            : report.ToText());
+    foreach (var correction in result.CsvCorrections)
+    {
+        Console.WriteLine($"  roster CSV: {correction}");
+    }
 
-    Console.WriteLine($"Validation: 0 errors, {result2.Report.Warnings.Count()} warnings.");
-    Console.WriteLine($"Generated roster: {outputPath} ({result2.ChangedColumnsByRowKey.Count} rows modified)");
-    Console.WriteLine($"Report:           {reportPath}");
+    foreach (var warning in result.CsvWarnings)
+    {
+        Console.WriteLine($"  roster CSV: {warning}");
+    }
+
+    Console.WriteLine($"Historical roster: {result.Conversion.Source.Season} {result.Conversion.Source.School} " +
+                      $"— {result.Conversion.Entries.Count} players");
+    var slotSummary = result.Filled > 0
+        ? $"{result.Filled} slots filled as depth"
+        : $"{result.Conversion.LeftoverDonorSlots.Count} donor slots left";
+    Console.WriteLine($"Converted {result.Converted} players onto team {result.Conversion.TeamId} " +
+                      $"({result.Skipped} skipped, {slotSummary}).");
+    Console.WriteLine($"Validation: 0 errors, {result.Export.Report.Warnings.Count()} warnings.");
+    Console.WriteLine($"Generated roster: {result.OutputPath} " +
+                      $"({result.Export.ChangedColumnsByRowKey.Count} rows modified)");
+    Console.WriteLine($"Report:           {result.ReportPath}");
     return 0;
 }
+
+static string DynastyPathOption(Dictionary<string, string> options) =>
+    options.TryGetValue("dynasty", out var dynasty)
+        ? dynasty
+        : options.TryGetValue("base", out var legacy)
+            ? legacy
+            : throw new ArgumentException(
+                "Missing required option --dynasty (your dynasty export folder or its Player table CSV).");
 
 static bool CsvHasTeam(string rosterPath)
 {
@@ -429,14 +381,6 @@ static string SelectTeamInteractively(DynastyExport export)
     }
 }
 
-static void CreateParentDirectory(string path)
-{
-    var directory = Path.GetDirectoryName(Path.GetFullPath(path));
-    if (directory is not null)
-    {
-        Directory.CreateDirectory(directory);
-    }
-}
 
 static int Compare(Dictionary<string, string> options)
 {

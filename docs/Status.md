@@ -1,8 +1,35 @@
 # Project Status
 
-_Last updated: 2026-07-25 — end of Milestone 6._
+_Last updated: 2026-07-25 — end of Milestone 7._
 
 ## Current status
+
+**Milestone 7 (Ship it) is complete.** The tool is no longer something only
+this repository can run.
+
+- **A desktop app.** `RosterGenerator.Gui.exe` — pick the dynasty folder, pick
+  the roster CSV, confirm team and season, click Generate. The roster file is
+  checked the moment it is chosen, so problems appear before anything is
+  written. Built with Avalonia; WinForms and WPF cannot build on this Linux
+  SDK, so choosing them would have meant shipping code that was never compiled
+  or run here.
+- **A `validate` command.** Checks a roster CSV on its own and writes nothing.
+  Held to the standard that makes a validator worth having: over a corpus of
+  fifteen real mistakes, "ready to generate" must mean generation succeeds,
+  a blocking verdict must mean it fails, every player generation skips and
+  every value it rejects must have been flagged first, and a clean file must
+  produce no warnings at all. Building those tests found two defects in the
+  validator itself.
+- **One pipeline, two front-ends.** `RosterGenerationService` holds every
+  decision that shapes a roster; the command line and the desktop app only ask
+  questions and display answers. They cannot grow different behaviour.
+- **A release.** `./build-release.sh` produces two self-contained
+  `win-x64` executables (~67 MB and ~74 MB) with `data/` and `templates/`
+  beside them and a quick start, zipped and ready to hand to someone. This is
+  what the Milestone 1 brief asked for and no build had ever produced.
+- Tests: 221/221, including the window building and showing under Avalonia's
+  headless platform. The 2023 Florida State deliverable still regenerates
+  byte-identically after the pipeline was extracted.
 
 **Milestone 6 (Roster completion and fidelity benchmark) is complete.** The
 generator now produces a whole believable roster rather than a believable
@@ -159,6 +186,27 @@ brief).
   clean Windows 10/11 machine with no runtime installed
 
 ## Completed features
+
+### Milestone 7 — shipping
+
+- **`RosterGenerationService`** (`Core/Pipeline/`) — the whole pipeline in one
+  place: open the dynasty, read the roster, convert, validate, export, write
+  the report. Both front-ends call it, so a fix reaches both and neither can
+  quietly grow its own behaviour.
+- **`RosterCsvValidator`** — a pre-flight check producing Blocking / Warning /
+  Note findings. Runs the same reader, position mappings, bounds and role
+  vocabulary generation uses rather than reimplementing them.
+- **`RosterGenerator.Gui`** — Avalonia desktop app, window built in C# so the
+  build stays a plain compile. Validates on file selection, preselects the
+  team and season it finds, disables the options that cannot work, and runs
+  generation off the UI thread.
+- **CLI `validate`**, exiting non-zero only on blocking findings.
+- **`build-release.sh`** — self-contained `win-x64` publish of both
+  executables with `data/`, `templates/` and `QUICKSTART.md`, zipped.
+- **`GuiSmokeTests`** — builds and shows the real window under Avalonia's
+  headless platform, and asserts Generate is disabled until both files are
+  chosen.
+
 
 ### Milestone 6 — roster completion and benchmarking
 
@@ -349,76 +397,52 @@ guessed at (details in `docs/Schema.md`):
 
 ## Next recommended milestone
 
-**Milestone 7 — Ship it: a release someone can actually run.**
+**Milestone 8 — Draft slot measures the wrong season.**
 
-Six milestones have gone into making the output correct, and Milestone 6
-put a number on it: the generated roster tracks the game's own roster shape
-to within 2.01 points per rank, closer than a person managed by hand. The
-engine is not the bottleneck any more. **Getting it into someone's hands
-is.**
+The one rating defect Milestone 6 found and neither it nor Milestone 7 fixed,
+and now the most valuable thing left.
 
-Today, using this tool means having the .NET SDK, a checkout of the
-repository, and a command line like:
+Draft position is the strongest single signal in the model, and it records
+where a player was taken, not how they played. Jordan Travis generates at 83
+against the manual export's 90: he was a fifth-round pick because of a
+November leg injury, in a season where he was an ACC Player of the Year
+candidate. It distorts exactly the marquee players a historical roster exists
+for — the ones a user will look at first.
 
-```
-dotnet run --project src/RosterGenerator.Cli -- generate --dynasty <path> \
-    --roster <path> --output <path> --report <path>
-```
+Options worth weighing, cheapest first:
 
-The Milestone 1 brief called for a single self-contained Windows executable
-with no runtime to install. That publish path is verified and produces a
-~67 MB exe — but no build has ever been produced as an artifact, so in
-practice nobody outside this repository can run any of it.
+1. An explicit `Injured` or `DraftStockNote` column. The `Notes` column
+   already records the injury and nothing reads it.
+2. Weight the draft signal down when strong production disagrees with it —
+   the model already computes both.
+3. Cap how far a draft slot may pull a player below their statistical
+   evidence, the mirror of the signal floor that fixed first-round picks.
 
-### 1. A versioned Windows release
+Option 2 needs no new input from the user, which makes it the one to try
+first.
 
-`dotnet publish -r win-x64 --self-contained -p:PublishSingleFile=true`,
-packaged with `data/` and `templates/` alongside, as a downloadable zip with
-a version number and a one-page quick start. Nothing about this is
-technically hard; it has simply never been done.
+### Also worth doing
 
-### 2. Remove the flag ceremony from the common path
-
-Running the executable with no arguments should walk the user through it:
-locate the dynasty export, pick the roster CSV, choose the team and season
-from a numbered list (that prompt already exists for team/season), and write
-to the default output paths. The flags stay for anyone who wants them.
-
-Add a **`validate`** command that checks a roster CSV on its own — unknown
-columns, unmappable positions, out-of-range numbers, rows missing a required
-field — so mistakes surface before a 27 MB file is written rather than as
-warnings buried in a report afterwards.
-
-### 3. Draft slot measures the wrong season for injured players
-
-The one rating defect Milestone 6 found and did **not** fix. Draft position
-is the strongest single signal in the model, and it records where a player
-was taken, not how they played. Jordan Travis generates at 83 against the
-manual export's 90: he was a fifth-round pick because of a November leg
-injury, in a season where he was an ACC Player of the Year candidate.
-
-This distorts exactly the marquee players a historical roster exists for.
-The `Notes` column already records the injury and nothing reads it. Options
-worth weighing: an explicit `Injured` or `DraftStockNote` column, weighting
-the draft signal down when strong production disagrees with it, or capping
-how far the draft slot may pull a player below their statistical evidence.
+- **Roster CSV round-trip.** The generator can already read a roster; it
+  cannot write one. Exporting a team's current roster as a roster CSV would
+  give users a starting point to edit rather than a blank template, and would
+  make "tweak one player and regenerate" a two-minute job.
+- **Sign the executables.** Windows SmartScreen will warn on an unsigned
+  download from an unknown publisher, which is a real barrier for the
+  non-technical users this milestone was for.
 
 ### Deliberately *not* next
 
 - **The asset-field study.** `PLYR_ASSETNAME` / `GenericHeadAssetName` /
-  `PLYR_PORTRAIT` are still unmapped (Known unknown 6 in the list above), so
-  replaced players wear the donor players' faces. Still the wrong trade:
-  purely cosmetic, most inherited heads are generic anyway, and the payoff
-  needs a reverse-engineered generation algorithm — high effort, uncertain
-  outcome, adjacent to what the Milestone 1 brief scoped out.
+  `PLYR_PORTRAIT` are still unmapped (Known unknown 6), so replaced players
+  wear the donor players' faces. Still the wrong trade: purely cosmetic, most
+  inherited heads are generic anyway, and the payoff needs a
+  reverse-engineered generation algorithm.
 - **Multi-team and multi-season generation.** Recreating a whole historical
-  season means 138 teams' rosters, which is a data-gathering problem far
-  larger than the tool. Worth revisiting only once single-team generation is
-  something people are actually using.
-- **Jersey numbers.** The dataset still carries "verify jersey" notes on
-  about 25 players, and the generated and manual rosters disagree on roughly
-  40% of numbers. Neither side is authoritative and no amount of code
-  resolves it — it needs sources, not engineering.
+  season means 138 teams' rosters — a data-gathering problem far larger than
+  the tool.
+- **Jersey numbers.** About 25 remain unverified in the FSU dataset and the
+  two rosters disagree on roughly 40%. This needs sources, not engineering.
 
-Explicitly still deferred: GUI polish, automatic historical data gathering,
+Explicitly still deferred: automatic historical data gathering,
 equipment/face generation, dynasty editing, and the derived-array recompute.
