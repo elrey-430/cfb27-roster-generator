@@ -123,7 +123,20 @@ public sealed class RosterGenerationService
     /// Resolves a data file: an explicit folder if given, otherwise
     /// <c>data/</c> beside the executable, then the current directory.
     /// </summary>
-    public static string FindDataFile(string? dataDirectory, string fileName)
+    public static string FindDataFile(string? dataDirectory, string fileName) =>
+        FindOptionalDataFile(dataDirectory, fileName)
+        ?? throw new FileNotFoundException(
+            $"Could not find the data file '{fileName}'. It should sit in a 'data' folder next to the " +
+            "application. Looked in: " + string.Join("; ", DataFileCandidates(dataDirectory, fileName)));
+
+    /// <summary>
+    /// Resolves a data file the same way as <see cref="FindDataFile"/> but
+    /// returns null when it is absent, for files the tool can work without.
+    /// </summary>
+    public static string? FindOptionalDataFile(string? dataDirectory, string fileName) =>
+        DataFileCandidates(dataDirectory, fileName).FirstOrDefault(File.Exists);
+
+    private static List<string> DataFileCandidates(string? dataDirectory, string fileName)
     {
         var candidates = new List<string>();
         if (dataDirectory is { Length: > 0 })
@@ -133,18 +146,7 @@ public sealed class RosterGenerationService
 
         candidates.Add(Path.Combine(AppContext.BaseDirectory, "data", fileName));
         candidates.Add(Path.Combine(Directory.GetCurrentDirectory(), "data", fileName));
-
-        foreach (var candidate in candidates)
-        {
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new FileNotFoundException(
-            $"Could not find the data file '{fileName}'. It should sit in a 'data' folder next to the " +
-            "application. Looked in: " + string.Join("; ", candidates));
+        return candidates;
     }
 
     /// <summary>Reads the roster file, applying the request's team and season overrides.</summary>
@@ -195,7 +197,9 @@ public sealed class RosterGenerationService
         {
             var formulaPath = FindDataFile(data, "OverallFormulas.json");
             formulas = OverallFormulaSet.Load(formulaPath);
-            ratingEngine = RatingEngine.Load(FindDataFile(data, "RatingModels.json"), formulaPath);
+            ratingEngine = RatingEngine.Load(
+                FindDataFile(data, "RatingModels.json"), formulaPath,
+                FindOptionalDataFile(data, "ArchetypeProfiles.json"));
         }
 
         // Both of these write ratings, so both need the engine. Silently

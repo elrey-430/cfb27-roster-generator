@@ -62,6 +62,11 @@ public sealed class HistoricalTeamConverter
     /// (<see cref="Dynasty.DynastyExport.BuildPreviousSchoolMappings"/>). When
     /// null, transfers' previous schools are not written.
     /// </param>
+    /// <param name="replaceRealPersonFaces">
+    /// When true, a donor slot carrying a real person's head scan is given a
+    /// generated face instead, so a recreated player never wears the likeness
+    /// of somebody who is not them.
+    /// </param>
     public HistoricalTeamConverter(
         TeamMappingSet teamMappings,
         PositionMappingSet positionMappings,

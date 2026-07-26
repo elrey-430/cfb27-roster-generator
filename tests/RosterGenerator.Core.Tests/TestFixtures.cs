@@ -19,4 +19,16 @@ internal static class TestFixtures
 
     /// <summary>Loads the sample roster.</summary>
     public static PlayerRoster LoadSampleRoster() => PlayerRoster.Load(PlayerSamplePath);
+
+    /// <summary>Absolute path to a data file linked into the fixtures folder.</summary>
+    public static string DataPath(string fileName) =>
+        Path.Combine(AppContext.BaseDirectory, "Fixtures", fileName);
+
+    /// <summary>
+    /// A rating engine configured exactly as the shipped application
+    /// configures it — measured archetype profiles included. Tests asserting
+    /// what a user will actually get must use this, not a partial engine.
+    /// </summary>
+    public static Rating.RatingEngine RatingEngine() => Rating.RatingEngine.Load(
+        DataPath("RatingModels.json"), DataPath("OverallFormulas.json"), DataPath("ArchetypeProfiles.json"));
 }

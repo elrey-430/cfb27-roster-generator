@@ -35,6 +35,62 @@ public sealed class ProductionStatModel
     public double[][] Curve { get; init; } = Array.Empty<double[]>();
 }
 
+/// <summary>
+/// One thing a football player can be doing on the field — passing, rushing,
+/// covering — expressed as the statistics that measure it and the attributes
+/// that perform it.
+/// </summary>
+public sealed class ProductionRoleModel
+{
+    /// <summary>Attributes this role is performed with.</summary>
+    public List<string> Attributes { get; init; } = new();
+
+    /// <summary>Statistics that measure it, scored on the overall scale.</summary>
+    public List<ProductionStatModel> Stats { get; init; } = new();
+}
+
+/// <summary>Which roles a position group is judged on.</summary>
+public sealed class RoleUseModel
+{
+    /// <summary>Roles the group's talent score already accounts for.</summary>
+    public List<string> Primary { get; init; } = new();
+
+    /// <summary>
+    /// Roles the group can also fill. These shape attributes like a primary
+    /// role and additionally raise the target overall, because production the
+    /// primary curves cannot see still won games.
+    /// </summary>
+    public List<string> Secondary { get; init; } = new();
+}
+
+/// <summary>
+/// Turns what a player actually did into movement on the attributes that did
+/// it. See the <c>//</c> note in <c>data/RatingModels.json</c>.
+/// </summary>
+public sealed class ProductionEmphasisModel
+{
+    /// <summary>Role score below which production says nothing worth acting on.</summary>
+    public double Threshold { get; init; } = 68;
+
+    /// <summary>Role-score points that amount to one standard deviation of movement.</summary>
+    public double ScorePerSigma { get; init; } = 12;
+
+    /// <summary>Most standard deviations any attribute may be moved.</summary>
+    public double MaxSigma { get; init; } = 2;
+
+    /// <summary>Most overall points a secondary role may add.</summary>
+    public double SecondaryOverallBonusMax { get; init; } = 4;
+
+    /// <summary>Role score at which the secondary bonus is fully earned.</summary>
+    public double SecondaryOverallBonusCeiling { get; init; } = 95;
+
+    /// <summary>Role name → its statistics and attributes.</summary>
+    public Dictionary<string, ProductionRoleModel> Roles { get; init; } = new();
+
+    /// <summary>Position group → the roles it is judged on.</summary>
+    public Dictionary<string, RoleUseModel> Groups { get; init; } = new();
+}
+
 /// <summary>Class-year experience adjustments and caps.</summary>
 public sealed class ClassYearExperienceModel
 {
@@ -179,6 +235,9 @@ public sealed class RatingModelSet
 
     /// <summary>Position group → the stats that make up its production score.</summary>
     public Dictionary<string, List<ProductionStatModel>> Production { get; init; } = new();
+
+    /// <summary>How production moves the attributes that produced it.</summary>
+    public ProductionEmphasisModel ProductionEmphasis { get; init; } = new();
 
     /// <summary>
     /// Points deducted from an award's score when the player was only in

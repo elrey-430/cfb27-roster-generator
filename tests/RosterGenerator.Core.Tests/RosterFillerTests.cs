@@ -24,7 +24,7 @@ public sealed class RosterFillerTests
         Path.Combine(new[] { AppContext.BaseDirectory, "Tests" }.Concat(parts).ToArray());
 
     private static RatingEngine Engine() =>
-        RatingEngine.Load(FixturePath("RatingModels.json"), FixturePath("OverallFormulas.json"));
+        TestFixtures.RatingEngine();
 
     private static RosterDepthModel Depth() => RosterDepthModel.Load(FixturePath("RosterDepth.json"));
 

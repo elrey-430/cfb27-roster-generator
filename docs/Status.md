@@ -1,10 +1,55 @@
 # Project Status
 
-_Last updated: 2026-07-25 — end of Milestone 10._
+_Last updated: 2026-07-26 — end of Milestone 11._
 
 ## Current status
 
-**Milestone 10 (Faces) is in progress — the first tier is complete.**
+**Milestone 11 (Attributes that match the archetype) is complete.**
+
+- **The defect, reported twice from opposite sides.** A user's Marcus Allen —
+  a back who caught 34 passes, correctly classified `HB_PowerReceiving` — came
+  out with **30 in all three route-running attributes**. Another user's
+  Marqise Lee, a receiver, came out with **34 juke and 30 trucking**. Same
+  bug: the archetype was chosen correctly and then ignored. The attribute
+  shape was assembled from hand-written position baselines that named only a
+  subset of the 56 attributes, and everything they omitted fell to a global
+  default of 30.
+- **The fix is measured, not authored.** `tools/build_archetype_profiles.py`
+  reads a real dynasty export and fits `value = intercept + slope × overall`
+  for **all 59 archetypes × all 56 attributes** across 16,256 players, and
+  records the residual spread too. `data/ArchetypeProfiles.json` is that
+  measurement; a generated player now starts from what the game itself gives
+  their archetype at their overall. The seed is self-consistent: fed back
+  through EA's own formula it returns the overall it was built for to within
+  0.3 points for 56 of the 59 archetypes.
+- **Production now moves the attributes it was earned with.** Each role a
+  player produced in (passing, rushing, receiving, pass rush, run stop,
+  coverage, kicking, punting) raises that role's attributes by a number of
+  standard deviations **of the spread the game itself shows** for that
+  archetype. Nothing invents a magnitude. It only ever raises — a 1968
+  receiver must not be marked down for numbers nobody kept — because shaping
+  downward is the archetype's job.
+- **A second role now counts toward the overall.** `HB` asks how well someone
+  ran; a back who caught 37 passes answered a question it never asked and used
+  to tie with a back who caught none. Secondary-role production adds a bounded
+  bonus to the target.
+- **Sanity caps yield to measurements.** Several hand-written position caps
+  would have held an archetype below where every player of it in the game
+  actually sits. The cap is widened to admit the measured value and goes on
+  bounding everything else.
+- **The guardrail is general, not two special cases.** `ArchetypeFloorTests`
+  asserts that no generated player sits below the floor the game's own players
+  of that archetype occupy, in any attribute that archetype's overall formula
+  weights heavily. It fails on the old engine with **48 breaches** across the
+  Florida State fixture and passes on the new one.
+- **Roster strength is untouched; only shape moved.** Regenerating the 2014
+  Florida State roster old-vs-new: **all 85 overalls identical**, mean
+  attribute movement 8.7 points, and 147 attributes moved 30+ points into the
+  range the game actually uses.
+- Tests: 295/295, with the whole suite now running the engine configured the
+  way the shipped application configures it.
+
+**Milestone 10 (Faces) is complete — the first tier.**
 
 - **The defect.** A replaced player inherited the roster slot's head, and
   **9,011 of 16,257** players in a base save wear a `Unique_` scan of a real

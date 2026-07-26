@@ -13,10 +13,13 @@ namespace RosterGenerator.Core.Rating;
 /// <list type="number">
 /// <item>Weigh the evidence into a <b>target overall</b> (<see cref="TalentScorer"/>).</item>
 /// <item>Cap the target for class year when confidence is low.</item>
-/// <item>Build the attribute <b>shape</b>: position baselines moved by talent
-///       sensitivity, then overridden by verified measurements (40 time,
-///       bench, vertical, shuttle, three-cone), nudged by physique, and
-///       shifted for experience.</item>
+/// <item>Build the attribute <b>shape</b>: the archetype's MEASURED profile at
+///       that overall (<see cref="ArchetypeProfileSet"/>) — falling back to the
+///       position baseline for anything unmeasured — then raised on the
+///       attributes the player's own production was earned with
+///       (<see cref="ProductionEmphasis"/>), overridden by verified
+///       measurements (40 time, bench, vertical, shuttle, three-cone), nudged
+///       by physique, and shifted for experience.</item>
 /// <item><b>Calibrate</b>: because EA's overall formula is linear, solve for
 ///       the attribute offset that makes the game's own formula return the
 ///       target overall.</item>
@@ -30,18 +33,43 @@ public sealed class RatingEngine
     private readonly RatingModelSet _model;
     private readonly OverallFormulaSet _formulas;
     private readonly TalentScorer _scorer;
+    private readonly ArchetypeProfileSet? _profiles;
+    private readonly ProductionEmphasis _emphasis;
 
     /// <summary>Creates an engine over the shape model and EA's formulas.</summary>
-    public RatingEngine(RatingModelSet model, OverallFormulaSet formulas)
+    /// <param name="model">Tunable shape model (<c>data/RatingModels.json</c>).</param>
+    /// <param name="formulas">EA's own overall formulas.</param>
+    /// <param name="profiles">
+    /// Measured per-archetype attribute profiles
+    /// (<c>data/ArchetypeProfiles.json</c>). Optional: without them the engine
+    /// falls back to the hand-written position baselines, which is the
+    /// Milestone-2 behaviour and is what the older regression fixtures expect.
+    /// </param>
+    public RatingEngine(RatingModelSet model, OverallFormulaSet formulas, ArchetypeProfileSet? profiles = null)
     {
         _model = model;
         _formulas = formulas;
+        _profiles = profiles;
         _scorer = new TalentScorer(model);
+        _emphasis = new ProductionEmphasis(model);
     }
 
-    /// <summary>Loads an engine from the two data files.</summary>
-    public static RatingEngine Load(string ratingModelsPath, string overallFormulasPath) =>
-        new(RatingModelSet.Load(ratingModelsPath), OverallFormulaSet.Load(overallFormulasPath));
+    /// <summary>Loads an engine from the data files.</summary>
+    /// <param name="ratingModelsPath">Path to <c>RatingModels.json</c>.</param>
+    /// <param name="overallFormulasPath">Path to <c>OverallFormulas.json</c>.</param>
+    /// <param name="archetypeProfilesPath">
+    /// Path to <c>ArchetypeProfiles.json</c>. A null or missing file leaves the
+    /// engine on position baselines rather than failing.
+    /// </param>
+    public static RatingEngine Load(
+        string ratingModelsPath, string overallFormulasPath, string? archetypeProfilesPath = null) =>
+        new(RatingModelSet.Load(ratingModelsPath), OverallFormulaSet.Load(overallFormulasPath),
+            archetypeProfilesPath is { Length: > 0 } path && File.Exists(path)
+                ? ArchetypeProfileSet.Load(path)
+                : null);
+
+    /// <summary>The measured archetype profiles in use, if any.</summary>
+    public ArchetypeProfileSet? Profiles => _profiles;
 
     /// <summary>EA's overall formulas, for callers that need to recompute.</summary>
     public OverallFormulaSet Formulas => _formulas;
@@ -122,6 +150,20 @@ public sealed class RatingEngine
             }
         }
 
+        // 1c. Secondary production. The talent score asks one question per
+        //     position — "how well did this back run?" — and a back who caught
+        //     37 passes answered a second one it never asked. Credit it here,
+        //     bounded, so the roster's shape still comes from the primary role.
+        var roles = _emphasis.Score(group, normalized.Stats);
+        var secondary = _emphasis.SecondaryOverallBonus(roles, out var secondaryNote);
+        var secondaryPoints = (int)Math.Round(secondary);
+        if (secondaryPoints > 0)
+        {
+            adjustments.Add(
+                $"Target overall moved {target} -> {target + secondaryPoints}: {secondaryNote}");
+            target += secondaryPoints;
+        }
+
         // 2. Class-year ceiling when the evidence is thin. A true freshman
         //    with no record must not be handed veteran ratings; a freshman
         //    with a Heisman (High confidence) is left alone.
@@ -158,11 +200,17 @@ public sealed class RatingEngine
         }
 
         // 3. Attribute shape.
+        var profile = _profiles?.Find(formula.PlayerType);
         var locked = new HashSet<string>(StringComparer.Ordinal);
-        var attributes = BuildShape(positionModel, group, talent.Score, player, normalized, adjustments, locked);
+        var attributes = BuildShape(
+            positionModel, profile, group, target, talent.Score, player, normalized, roles, adjustments, locked);
 
-        // 4. Calibrate against EA's own formula.
-        void Clamp(Dictionary<string, double> values) => ApplyCaps(values, positionModel, classModel);
+        // 4. Calibrate against EA's own formula. The position's sanity caps are
+        //    widened to admit the archetype's measured values first: those caps
+        //    were written before the game's own players were measured, and a
+        //    guess must never overrule a measurement.
+        var caps = EffectiveCaps(positionModel, profile, target);
+        void Clamp(Dictionary<string, double> values) => ApplyCaps(values, caps, classModel);
         Clamp(attributes);
         var achieved = OverallFormulaSet.Calibrate(formula, attributes, target, Clamp, locked,
             share: a => positionModel.TalentSensitivity.GetValueOrDefault(a, 0.15));
@@ -180,7 +228,7 @@ public sealed class RatingEngine
         //    the target. This keeps the written overall and the written
         //    attributes in agreement while still landing on the target.
         var final = attributes.ToDictionary(a => a.Key, a => (int)Math.Round(a.Value));
-        var finalOverall = SettleIntegers(formula, final, target, positionModel, classModel, locked);
+        var finalOverall = SettleIntegers(formula, final, target, caps, classModel, locked);
         if (finalOverall != achieved && finalOverall != target)
         {
             adjustments.Add($"Overall settled at {finalOverall} rather than {target} after rounding to integers.");
@@ -199,7 +247,7 @@ public sealed class RatingEngine
         OverallFormula formula,
         Dictionary<string, int> values,
         int target,
-        PositionRatingModel positionModel,
+        IReadOnlyDictionary<string, double[]> caps,
         ClassYearExperienceModel? classModel,
         IReadOnlySet<string> locked)
     {
@@ -226,7 +274,7 @@ public sealed class RatingEngine
             foreach (var attribute in candidates)
             {
                 var proposed = values[attribute] + direction;
-                var bounded = Bound(attribute, proposed, positionModel, classModel);
+                var bounded = Bound(attribute, proposed, caps, classModel);
                 if (bounded == values[attribute])
                 {
                     continue;
@@ -251,9 +299,10 @@ public sealed class RatingEngine
 
     /// <summary>Applies position, class-year and global bounds to one integer value.</summary>
     private int Bound(
-        string attribute, int value, PositionRatingModel positionModel, ClassYearExperienceModel? classModel)
+        string attribute, int value, IReadOnlyDictionary<string, double[]> caps,
+        ClassYearExperienceModel? classModel)
     {
-        if (positionModel.Caps.TryGetValue(attribute, out var bounds) && bounds.Length == 2)
+        if (caps.TryGetValue(attribute, out var bounds) && bounds.Length == 2)
         {
             value = (int)Math.Clamp(value, bounds[0], bounds[1]);
         }
@@ -275,34 +324,96 @@ public sealed class RatingEngine
 
     private Dictionary<string, double> BuildShape(
         PositionRatingModel positionModel,
+        ArchetypeProfile? profile,
         string group,
+        int target,
         double talent,
         HistoricalPlayer player,
         RatingEvidence evidence,
+        IReadOnlyList<RoleProduction> roles,
         List<string> adjustments,
         HashSet<string> locked)
     {
         var attributes = new Dictionary<string, double>(_model.AttributeDefaults, StringComparer.Ordinal);
+
+        // Where the archetype has been measured, that measurement IS the
+        // shape: it is what the game itself gives this archetype at this
+        // overall, across every player of it in a real export. The position
+        // baseline is a hand-written approximation of the same thing and only
+        // fills in what the export could not measure.
+        var measured = new HashSet<string>(StringComparer.Ordinal);
+        if (profile is not null)
+        {
+            foreach (var attribute in attributes.Keys.ToList())
+            {
+                if (profile.TryExpected(attribute, target, out var value))
+                {
+                    attributes[attribute] = value;
+                    measured.Add(attribute);
+                }
+            }
+
+            adjustments.Add(
+                $"Attributes start from what the game gives {profile.SampleSize} real " +
+                $"players of this archetype at overall {target}, not from a written-down baseline.");
+        }
+
         foreach (var (attribute, value) in positionModel.Baseline)
         {
-            attributes[attribute] = value;
+            if (!measured.Contains(attribute))
+            {
+                attributes[attribute] = value;
+            }
         }
 
         // Talent moves each attribute by its own sensitivity, so an elite QB
-        // gains far more accuracy than speed.
+        // gains far more accuracy than speed. A measured attribute already
+        // carries its own dependence on overall and must not be moved twice.
         var talentDelta = talent - _model.ReferenceTalent;
         foreach (var (attribute, sensitivity) in positionModel.TalentSensitivity)
         {
-            if (attributes.ContainsKey(attribute))
+            if (attributes.ContainsKey(attribute) && !measured.Contains(attribute))
             {
                 attributes[attribute] += talentDelta * sensitivity;
             }
         }
 
+        _emphasis.Apply(roles, profile, attributes, locked, adjustments);
         ApplyPhysique(attributes, group, player, adjustments);
         ApplyMeasurements(attributes, evidence, adjustments, locked);
         ApplyExperience(attributes, player);
         return attributes;
+    }
+
+    /// <summary>
+    /// The position's sanity caps, widened wherever the archetype's measured
+    /// value falls outside them.
+    ///
+    /// Those caps were written by hand before the game's own 16,000 players
+    /// were measured, and several of them are simply wrong: they would hold a
+    /// pass-protecting centre's acceleration below what every pass-protecting
+    /// centre in the game has. A guess must not overrule a measurement, so the
+    /// cap yields to the profile — and goes on bounding everything else,
+    /// including how far calibration may drag the attribute afterwards.
+    /// </summary>
+    private static Dictionary<string, double[]> EffectiveCaps(
+        PositionRatingModel positionModel, ArchetypeProfile? profile, int target)
+    {
+        var caps = positionModel.Caps.ToDictionary(c => c.Key, c => c.Value, StringComparer.Ordinal);
+        if (profile is null)
+        {
+            return caps;
+        }
+
+        foreach (var (attribute, bounds) in caps.ToList())
+        {
+            if (bounds.Length == 2 && profile.TryExpected(attribute, target, out var value))
+            {
+                caps[attribute] = new[] { Math.Min(bounds[0], value), Math.Max(bounds[1], value) };
+            }
+        }
+
+        return caps;
     }
 
     private void ApplyPhysique(
@@ -408,9 +519,10 @@ public sealed class RatingEngine
     }
 
     private void ApplyCaps(
-        Dictionary<string, double> attributes, PositionRatingModel positionModel, ClassYearExperienceModel? classModel)
+        Dictionary<string, double> attributes, IReadOnlyDictionary<string, double[]> caps,
+        ClassYearExperienceModel? classModel)
     {
-        foreach (var (attribute, bounds) in positionModel.Caps)
+        foreach (var (attribute, bounds) in caps)
         {
             if (attributes.TryGetValue(attribute, out var value) && bounds.Length == 2)
             {

@@ -55,7 +55,7 @@ public sealed class RosterFidelityTests
         Assert.Equal(85, reference.Count);
 
         var session = new RosterEditSession(donor);
-        var engine = RatingEngine.Load(FixturePath("RatingModels.json"), FixturePath("OverallFormulas.json"));
+        var engine = TestFixtures.RatingEngine();
         var depth = RosterDepthModel.Load(FixturePath("RosterDepth.json"));
         new HistoricalTeamConverter(
                 export.BuildTeamMappings(),
@@ -82,7 +82,7 @@ public sealed class RosterFidelityTests
     [Fact]
     public void ProgramStandingLiftsThinlyEvidencedPlayersButNotWellEvidencedOnes()
     {
-        var engine = RatingEngine.Load(FixturePath("RatingModels.json"), FixturePath("OverallFormulas.json"));
+        var engine = TestFixtures.RatingEngine();
         var player = new HistoricalPlayer
         {
             FirstName = "Anonymous", LastName = "Backup", Position = "CB",
@@ -114,7 +114,7 @@ public sealed class RosterFidelityTests
     public void NoPlayerIsGeneratedBetterThanTheBestOneTheGameCarriesAtThatPosition()
     {
         var models = RatingModelSet.Load(FixturePath("RatingModels.json"));
-        var engine = new RatingEngine(models, OverallFormulaSet.Load(FixturePath("OverallFormulas.json")));
+        var engine = TestFixtures.RatingEngine();
 
         // Award and draft scores share one scale across every position, but the
         // game's positions do not share a range: its best punter is an 86 and

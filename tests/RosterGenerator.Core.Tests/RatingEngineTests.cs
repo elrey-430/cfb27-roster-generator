@@ -11,9 +11,7 @@ namespace RosterGenerator.Core.Tests;
 /// </summary>
 public sealed class RatingEngineTests
 {
-    private static readonly RatingEngine Engine = RatingEngine.Load(
-        Path.Combine(AppContext.BaseDirectory, "Fixtures", "RatingModels.json"),
-        Path.Combine(AppContext.BaseDirectory, "Fixtures", "OverallFormulas.json"));
+    private static readonly RatingEngine Engine = TestFixtures.RatingEngine();
 
     private static readonly OverallFormulaSet Formulas = OverallFormulaSet.Load(
         Path.Combine(AppContext.BaseDirectory, "Fixtures", "OverallFormulas.json"));

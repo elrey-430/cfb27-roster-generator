@@ -276,7 +276,8 @@ public sealed class MainWindow : Window
                     RosterGenerationService.FindDataFile(null, "PositionMappings.json"));
                 var ratings = RatingEngine.Load(
                     RosterGenerationService.FindDataFile(null, "RatingModels.json"),
-                    RosterGenerationService.FindDataFile(null, "OverallFormulas.json"));
+                    RosterGenerationService.FindDataFile(null, "OverallFormulas.json"),
+                    RosterGenerationService.FindOptionalDataFile(null, "ArchetypeProfiles.json"));
                 return RosterCsvValidator.Check(rosterPath, positions, _dynasty, team, season, ratings);
             });
 

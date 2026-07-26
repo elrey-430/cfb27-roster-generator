@@ -2155,6 +2155,782 @@
       }
     ]
   },
+  "productionEmphasis": {
+    "//": [
+      "What a player actually DID, applied to the attributes that did it.",
+      "",
+      "A role's score comes from the curves this file already uses for the",
+      "position that specialises in it, so 'how good was this player at",
+      "receiving' is answered by the same curve that answers it for a receiver.",
+      "Scores above 'threshold' move that role's attributes upward by",
+      "(score - threshold) / scorePerSigma standard deviations, where the",
+      "standard deviation is the one MEASURED for the player's archetype in",
+      "data/ArchetypeProfiles.json - the spread the game itself shows among its",
+      "own players of that archetype. Nothing here invents a magnitude.",
+      "",
+      "The nudge is one-directional. Thin or missing statistics are the normal",
+      "case for a historical roster, and a player must never be punished for a",
+      "box score nobody kept. Downward shaping is the archetype's job: the",
+      "selector reads the same statistics and puts a power back in a power",
+      "back's profile to begin with.",
+      "",
+      "A secondary role additionally raises the target overall, capped at",
+      "secondaryOverallBonusMax, because a back who caught 37 passes was worth",
+      "more to his team than one who caught none and the primary curves cannot",
+      "see it."
+    ],
+    "threshold": 68,
+    "scorePerSigma": 12,
+    "maxSigma": 2.0,
+    "secondaryOverallBonusMax": 4,
+    "secondaryOverallBonusCeiling": 95,
+    "roles": {
+      "passing": {
+        "attributes": [
+          "ThrowPowerRating",
+          "ThrowAccuracyRating",
+          "ThrowAccuracyShortRating",
+          "ThrowAccuracyMidRating",
+          "ThrowAccuracyDeepRating",
+          "ThrowOnTheRunRating",
+          "ThrowUnderPressureRating",
+          "PlayActionRating",
+          "BreakSackRating"
+        ],
+        "stats": [
+          {
+            "stat": "PassYards",
+            "weight": 0.45,
+            "curve": [
+              [
+                4200,
+                97
+              ],
+              [
+                3500,
+                91
+              ],
+              [
+                2800,
+                84
+              ],
+              [
+                2000,
+                76
+              ],
+              [
+                1200,
+                68
+              ],
+              [
+                400,
+                60
+              ]
+            ]
+          },
+          {
+            "stat": "PassTD",
+            "weight": 0.3,
+            "curve": [
+              [
+                40,
+                97
+              ],
+              [
+                30,
+                91
+              ],
+              [
+                22,
+                84
+              ],
+              [
+                14,
+                76
+              ],
+              [
+                7,
+                68
+              ],
+              [
+                2,
+                60
+              ]
+            ]
+          },
+          {
+            "stat": "CompletionPct",
+            "weight": 0.25,
+            "curve": [
+              [
+                70,
+                95
+              ],
+              [
+                65,
+                89
+              ],
+              [
+                60,
+                82
+              ],
+              [
+                55,
+                74
+              ],
+              [
+                50,
+                66
+              ],
+              [
+                45,
+                58
+              ]
+            ]
+          }
+        ]
+      },
+      "rushing": {
+        "attributes": [
+          "CarryingRating",
+          "BCVisionRating",
+          "BreakTackleRating",
+          "TruckingRating",
+          "JukeMoveRating",
+          "SpinMoveRating",
+          "StiffArmRating",
+          "ChangeOfDirectionRating"
+        ],
+        "stats": [
+          {
+            "stat": "RushYards",
+            "weight": 0.55,
+            "curve": [
+              [
+                1700,
+                96
+              ],
+              [
+                1300,
+                90
+              ],
+              [
+                950,
+                83
+              ],
+              [
+                600,
+                75
+              ],
+              [
+                300,
+                67
+              ],
+              [
+                80,
+                59
+              ]
+            ]
+          },
+          {
+            "stat": "RushTD",
+            "weight": 0.25,
+            "curve": [
+              [
+                20,
+                96
+              ],
+              [
+                15,
+                90
+              ],
+              [
+                10,
+                83
+              ],
+              [
+                6,
+                75
+              ],
+              [
+                3,
+                67
+              ],
+              [
+                1,
+                60
+              ]
+            ]
+          },
+          {
+            "stat": "YardsPerCarry",
+            "weight": 0.2,
+            "curve": [
+              [
+                7.5,
+                96
+              ],
+              [
+                6.5,
+                91
+              ],
+              [
+                5.5,
+                84
+              ],
+              [
+                4.5,
+                76
+              ],
+              [
+                3.5,
+                66
+              ],
+              [
+                2.5,
+                56
+              ]
+            ]
+          }
+        ]
+      },
+      "receiving": {
+        "attributes": [
+          "CatchingRating",
+          "ShortRouteRunningRating",
+          "MediumRouteRunningRating",
+          "DeepRouteRunningRating",
+          "CatchInTrafficRating",
+          "SpectacularCatchRating",
+          "ReleaseRating"
+        ],
+        "stats": [
+          {
+            "stat": "RecYards",
+            "weight": 0.5,
+            "curve": [
+              [
+                1300,
+                95
+              ],
+              [
+                1000,
+                89
+              ],
+              [
+                700,
+                82
+              ],
+              [
+                450,
+                75
+              ],
+              [
+                200,
+                67
+              ],
+              [
+                60,
+                59
+              ]
+            ]
+          },
+          {
+            "stat": "Receptions",
+            "weight": 0.25,
+            "curve": [
+              [
+                85,
+                95
+              ],
+              [
+                65,
+                89
+              ],
+              [
+                45,
+                82
+              ],
+              [
+                28,
+                74
+              ],
+              [
+                12,
+                66
+              ],
+              [
+                4,
+                58
+              ]
+            ]
+          },
+          {
+            "stat": "RecTD",
+            "weight": 0.25,
+            "curve": [
+              [
+                13,
+                95
+              ],
+              [
+                9,
+                89
+              ],
+              [
+                6,
+                82
+              ],
+              [
+                3,
+                74
+              ],
+              [
+                1,
+                66
+              ],
+              [
+                0,
+                60
+              ]
+            ]
+          }
+        ]
+      },
+      "passRush": {
+        "attributes": [
+          "PowerMovesRating",
+          "FinesseMovesRating",
+          "BlockSheddingRating",
+          "PursuitRating"
+        ],
+        "stats": [
+          {
+            "stat": "Sacks",
+            "weight": 0.625,
+            "curve": [
+              [
+                12,
+                96
+              ],
+              [
+                9,
+                91
+              ],
+              [
+                6,
+                85
+              ],
+              [
+                3.5,
+                78
+              ],
+              [
+                1.5,
+                71
+              ],
+              [
+                0,
+                63
+              ]
+            ]
+          },
+          {
+            "stat": "TacklesForLoss",
+            "weight": 0.375,
+            "curve": [
+              [
+                20,
+                95
+              ],
+              [
+                15,
+                90
+              ],
+              [
+                10,
+                84
+              ],
+              [
+                6,
+                77
+              ],
+              [
+                3,
+                70
+              ],
+              [
+                0,
+                62
+              ]
+            ]
+          }
+        ]
+      },
+      "runStop": {
+        "attributes": [
+          "TackleRating",
+          "BlockSheddingRating",
+          "PursuitRating",
+          "HitPowerRating",
+          "PlayRecognitionRating"
+        ],
+        "stats": [
+          {
+            "stat": "Tackles",
+            "weight": 0.6667,
+            "curve": [
+              [
+                130,
+                94
+              ],
+              [
+                105,
+                89
+              ],
+              [
+                80,
+                83
+              ],
+              [
+                55,
+                76
+              ],
+              [
+                30,
+                69
+              ],
+              [
+                10,
+                61
+              ]
+            ]
+          },
+          {
+            "stat": "TacklesForLoss",
+            "weight": 0.3333,
+            "curve": [
+              [
+                18,
+                94
+              ],
+              [
+                13,
+                89
+              ],
+              [
+                9,
+                83
+              ],
+              [
+                5,
+                76
+              ],
+              [
+                2,
+                69
+              ],
+              [
+                0,
+                62
+              ]
+            ]
+          }
+        ]
+      },
+      "coverage": {
+        "attributes": [
+          "ManCoverageRating",
+          "ZoneCoverageRating",
+          "PressRating",
+          "PlayRecognitionRating"
+        ],
+        "stats": [
+          {
+            "stat": "Interceptions",
+            "weight": 0.5333,
+            "curve": [
+              [
+                6,
+                94
+              ],
+              [
+                4,
+                89
+              ],
+              [
+                2,
+                82
+              ],
+              [
+                1,
+                76
+              ],
+              [
+                0,
+                68
+              ]
+            ]
+          },
+          {
+            "stat": "PassesDefended",
+            "weight": 0.4667,
+            "curve": [
+              [
+                16,
+                94
+              ],
+              [
+                12,
+                89
+              ],
+              [
+                8,
+                83
+              ],
+              [
+                5,
+                76
+              ],
+              [
+                2,
+                69
+              ],
+              [
+                0,
+                62
+              ]
+            ]
+          }
+        ]
+      },
+      "kicking": {
+        "attributes": [
+          "KickPowerRating",
+          "KickAccuracyRating"
+        ],
+        "stats": [
+          {
+            "stat": "FieldGoalsMade",
+            "weight": 0.45,
+            "curve": [
+              [
+                26,
+                95
+              ],
+              [
+                21,
+                90
+              ],
+              [
+                16,
+                84
+              ],
+              [
+                11,
+                77
+              ],
+              [
+                6,
+                70
+              ],
+              [
+                1,
+                62
+              ]
+            ]
+          },
+          {
+            "stat": "FieldGoalPct",
+            "weight": 0.4,
+            "curve": [
+              [
+                92,
+                96
+              ],
+              [
+                85,
+                91
+              ],
+              [
+                78,
+                85
+              ],
+              [
+                70,
+                78
+              ],
+              [
+                60,
+                70
+              ],
+              [
+                50,
+                61
+              ]
+            ]
+          },
+          {
+            "stat": "LongFieldGoal",
+            "weight": 0.15,
+            "curve": [
+              [
+                56,
+                95
+              ],
+              [
+                52,
+                90
+              ],
+              [
+                48,
+                84
+              ],
+              [
+                44,
+                77
+              ],
+              [
+                40,
+                70
+              ],
+              [
+                35,
+                62
+              ]
+            ]
+          }
+        ]
+      },
+      "punting": {
+        "attributes": [
+          "KickPowerRating",
+          "KickAccuracyRating"
+        ],
+        "stats": [
+          {
+            "stat": "PuntAverage",
+            "weight": 1.0,
+            "curve": [
+              [
+                47,
+                95
+              ],
+              [
+                45,
+                90
+              ],
+              [
+                43,
+                84
+              ],
+              [
+                41,
+                77
+              ],
+              [
+                39,
+                69
+              ],
+              [
+                36,
+                60
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "groups": {
+      "QB": {
+        "primary": [
+          "passing"
+        ],
+        "secondary": [
+          "rushing"
+        ]
+      },
+      "HB": {
+        "primary": [
+          "rushing"
+        ],
+        "secondary": [
+          "receiving"
+        ]
+      },
+      "FB": {
+        "primary": [
+          "rushing"
+        ],
+        "secondary": [
+          "receiving"
+        ]
+      },
+      "WR": {
+        "primary": [
+          "receiving"
+        ],
+        "secondary": [
+          "rushing"
+        ]
+      },
+      "TE": {
+        "primary": [
+          "receiving"
+        ],
+        "secondary": [
+          "rushing"
+        ]
+      },
+      "OL": {
+        "primary": [],
+        "secondary": []
+      },
+      "DL": {
+        "primary": [
+          "passRush",
+          "runStop"
+        ],
+        "secondary": []
+      },
+      "LB": {
+        "primary": [
+          "runStop"
+        ],
+        "secondary": [
+          "passRush",
+          "coverage"
+        ]
+      },
+      "CB": {
+        "primary": [
+          "coverage"
+        ],
+        "secondary": [
+          "runStop"
+        ]
+      },
+      "S": {
+        "primary": [
+          "coverage",
+          "runStop"
+        ],
+        "secondary": []
+      },
+      "K": {
+        "primary": [
+          "kicking"
+        ],
+        "secondary": []
+      },
+      "P": {
+        "primary": [
+          "punting"
+        ],
+        "secondary": []
+      }
+    }
+  },
   "globalCaps": {
     "min": 10,
     "max": 99

@@ -216,7 +216,8 @@ static int Validate(Dictionary<string, string> options)
         options.TryGetValue("season", out var season) && int.TryParse(season, out var year) ? year : null,
         RatingEngine.Load(
             FindDataFile(options, "rating-models", "RatingModels.json", required: true)!,
-            FindDataFile(options, "overall-formulas", "OverallFormulas.json", required: true)!));
+            FindDataFile(options, "overall-formulas", "OverallFormulas.json", required: true)!,
+            FindDataFile(options, "archetype-profiles", "ArchetypeProfiles.json", required: false)));
 
     Console.WriteLine();
     Console.Write(report.ToText());

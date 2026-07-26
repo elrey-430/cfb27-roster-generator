@@ -52,8 +52,7 @@ public sealed class SparseInputTests
             var csv = HistoricalCsv.Read(path, school: "Florida State");
             var donor = export.LoadPlayerRoster();
             var session = new RosterEditSession(donor);
-            var engine = RatingEngine.Load(
-                FixturePath("RatingModels.json"), FixturePath("OverallFormulas.json"));
+            var engine = TestFixtures.RatingEngine();
             var depth = RosterDepthModel.Load(FixturePath("RosterDepth.json"));
             var formulas = OverallFormulaSet.Load(FixturePath("OverallFormulas.json"));
 

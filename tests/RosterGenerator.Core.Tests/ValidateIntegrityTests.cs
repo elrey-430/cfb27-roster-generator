@@ -32,7 +32,7 @@ public sealed class ValidateIntegrityTests
         Path.Combine(new[] { AppContext.BaseDirectory, "Tests" }.Concat(parts).ToArray());
 
     private static RatingEngine Engine() =>
-        RatingEngine.Load(FixturePath("RatingModels.json"), FixturePath("OverallFormulas.json"));
+        TestFixtures.RatingEngine();
 
     private static PositionMappingSet Positions() =>
         PositionMappingSet.Load(FixturePath("PositionMappings.json"));

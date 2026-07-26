@@ -208,9 +208,7 @@ public sealed class ArchetypeAndHometownTests
     {
         var roster = TestFixtures.LoadSampleRoster();
         var session = new RosterEditSession(roster);
-        var engine = RatingEngine.Load(
-            Path.Combine(AppContext.BaseDirectory, "Fixtures", "RatingModels.json"),
-            Path.Combine(AppContext.BaseDirectory, "Fixtures", "OverallFormulas.json"));
+        var engine = TestFixtures.RatingEngine();
         var converter = new HistoricalTeamConverter(
             Mapping.TeamMappingSet.Load(Path.Combine(AppContext.BaseDirectory, "Fixtures", "TeamMappings.json")),
             Mapping.PositionMappingSet.Load(Path.Combine(AppContext.BaseDirectory, "Fixtures", "PositionMappings.json")),
