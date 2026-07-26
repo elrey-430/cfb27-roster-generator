@@ -99,8 +99,16 @@ cfb27-roster-generator/
 │   ├── TeamMappings.json            optional school-alias overlay
 │   ├── PositionMappings.json        position aliases + interchangeability groups
 │   ├── OverallFormulas.json         EA's 79 overall formulas (authoritative)
-│   └── RatingModels.json            attribute shape: baselines, curves, caps
+│   ├── RatingModels.json            evidence curves, caps, production emphasis
+│   ├── ArchetypeProfiles.json       GENERATED: what the game gives each of the
+│   │                                59 archetypes, per attribute, per overall
+│   ├── ArchetypeRules.json          which archetype a player's profile implies
+│   ├── RosterDepth.json             roster shape and program standing
+│   └── EquipmentEras.json           period-correct helmets, masks, sleeves, pads
 ├── Ratings/                     ← rating model documentation + test results
+├── tools/                       ← measurement scripts that generate data/ files
+│   └── build_archetype_profiles.py  fits every archetype's every attribute
+│                                    against overall across a real export
 ├── templates/
 │   └── HistoricalRosterTemplate.csv ← the user-facing input template
 ├── HistoricalData/2023/FloridaState.json  ← curated example dataset (JSON form)

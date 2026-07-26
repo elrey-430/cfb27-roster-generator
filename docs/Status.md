@@ -48,8 +48,17 @@ _Last updated: 2026-07-26 — end of Milestone 11._
   range the game actually uses.
 - Tests: 295/295, with the whole suite now running the engine configured the
   way the shipped application configures it.
+- **Verified on both reporters' own files before release.** The 2014 Florida
+  State roster was rebuilt from public sources and reviewed by hand; the other
+  user's All-Time USC template was run unmodified. On USC: all 85 overalls
+  identical again, mean attribute movement 9.35, and 197 attributes moved 30+
+  points — Marcus Allen's medium route 30 → 86, Reggie Bush's 30 → 94, Marqise
+  Lee's juke 34 → 89. The secondary-role bonus fires on Bush and says so in
+  the report.
+- Shipped together with Milestone 10 as
+  [v0.4.0-alpha](https://github.com/elrey-430/cfb27-historical-rosters/releases/tag/v0.4.0-alpha).
 
-**Milestone 10 (Faces) is complete — the first tier.**
+**Milestone 10 (Faces) is complete — the first tier. Shipped in v0.4.0-alpha.**
 
 - **The defect.** A replaced player inherited the roster slot's head, and
   **9,011 of 16,257** players in a base save wear a `Unique_` scan of a real
@@ -556,60 +565,65 @@ guessed at (details in `docs/Schema.md`):
 5. **~250 unconfirmed columns.** Statistically profiled (type/range/enum
    values) in the Schema.md appendix but never verified by a controlled
    edit. None are written by the tool.
-6. **Asset regeneration rules.** `PLYR_ASSETNAME` /
-   `GenericHeadAssetName` / `PLYR_PORTRAIT` formats are observed but the
-   generation algorithm (and which values are safe to synthesize for a
-   replacement player) is unknown — currently the caller must supply
-   values on a replace.
+6. **Asset regeneration rules.** ~~Unknown.~~ **WORKED AROUND (Milestone 10):**
+   the generation algorithm behind `GenericHeadAssetName` / `PLYR_PORTRAIT` is
+   still not decoded, and the segments inside a generated head's name are not
+   understood — but nothing needs to synthesize one. A replaced player is given
+   a head that already exists in the user's own export, `PLYR_PORTRAIT` written
+   to match and `PLYR_ASSETNAME` cleared. Reassignment, never authoring. What
+   remains unknown is only *which* generated head suits a given player, which
+   is cosmetic.
 
 ## Next recommended milestone
 
-**Milestone 8 — Draft slot measures the wrong season.**
+**Milestone 12 — Roster CSV round-trip.**
 
-The one rating defect Milestone 6 found and neither it nor Milestone 7 fixed,
-and now the most valuable thing left.
+The generator can read a roster file; it cannot write one. That asymmetry is
+now the biggest thing standing between a user and a good result.
 
-Draft position is the strongest single signal in the model, and it records
-where a player was taken, not how they played. Jordan Travis generates at 83
-against the manual export's 90: he was a fifth-round pick because of a
-November leg injury, in a season where he was an ACC Player of the Year
-candidate. It distorts exactly the marquee players a historical roster exists
-for — the ones a user will look at first.
+Every rating defect reported so far arrived the same way: a user generated a
+roster, looked at one player, and disagreed. The answer to that is not another
+rating rule — it is letting them fix it and regenerate without retyping 85
+lines. Exporting a team's current roster *as a roster CSV* turns "tweak one
+player" from an afternoon into two minutes, and it turns a blank template into
+a filled starting point, which is the single most common complaint about the
+input step.
 
-Options worth weighing, cheapest first:
-
-1. An explicit `Injured` or `DraftStockNote` column. The `Notes` column
-   already records the injury and nothing reads it.
-2. Weight the draft signal down when strong production disagrees with it —
-   the model already computes both.
-3. Cap how far a draft slot may pull a player below their statistical
-   evidence, the mirror of the signal floor that fixed first-round picks.
-
-Option 2 needs no new input from the user, which makes it the one to try
-first.
+It also removes the standing awkwardness that the only way to correct a
+generated player is in the third-party editor, where the correction is invisible
+to this tool and lost on the next run.
 
 ### Also worth doing
 
-- **Roster CSV round-trip.** The generator can already read a roster; it
-  cannot write one. Exporting a team's current roster as a roster CSV would
-  give users a starting point to edit rather than a blank template, and would
-  make "tweak one player and regenerate" a two-minute job.
-- **Sign the executables.** Windows SmartScreen will warn on an unsigned
-  download from an unknown publisher, which is a real barrier for the
-  non-technical users this milestone was for.
+- **A `Season` per row.** The All-Time USC file carried a different season on
+  every player and the tool had to pick one (1980), which then put the whole
+  squad in Riddell TKs. All-time rosters are clearly a thing users want; per
+  player equipment eras would serve them properly.
+- **Archetype rules deserve a second pass.** Two questionable calls surfaced
+  in verification: a Groza-winning kicker classified `KP_Power` off a 53-yard
+  long, and a 278 lb Anthony Munoz classified `OT_PassProtector` by a weight
+  threshold, costing him run blocking. Both are one-line data edits; neither is
+  obviously wrong; both are worth a deliberate review rather than a reaction.
+- **Sign the executables.** SmartScreen still warns on every download.
 
 ### Deliberately *not* next
 
-- **The asset-field study.** `PLYR_ASSETNAME` / `GenericHeadAssetName` /
-  `PLYR_PORTRAIT` are still unmapped (Known unknown 6), so replaced players
-  wear the donor players' faces. Still the wrong trade: purely cosmetic, most
-  inherited heads are generic anyway, and the payoff needs a
-  reverse-engineered generation algorithm.
+- **Position-cap and program-adjustment interaction.** On an all-time roster a
+  receiver with Medium-confidence evidence can clear a Heisman-winning back,
+  because the WR cap is 99 where HB is 96 and the program adjustment applies in
+  full at Medium confidence. Both parts are measured and defensible on their
+  own. Judged not worth changing: it is visible only on all-time rosters, and a
+  user who disagrees can edit it.
+- **Tier 2 faces (decoding the head segments).** Tier 1 stopped recreated
+  players wearing real people's faces, which was the actual harm. Choosing
+  *which* generated head is cosmetic.
+- **Create-A-Face import.** Confirmed Road To Glory exclusive; the conversion
+  path through a Dynasty save is unverified.
 - **Multi-team and multi-season generation.** Recreating a whole historical
   season means 138 teams' rosters — a data-gathering problem far larger than
   the tool.
 - **Jersey numbers.** About 25 remain unverified in the FSU dataset and the
   two rosters disagree on roughly 40%. This needs sources, not engineering.
 
-Explicitly still deferred: automatic historical data gathering,
-equipment/face generation, dynasty editing, and the derived-array recompute.
+Explicitly still deferred: automatic historical data gathering, dynasty
+editing, and the derived-array recompute.

@@ -116,9 +116,10 @@ alongside the editable `data/` files, the roster `templates/` and
 Requires the .NET 8 SDK (developers only — end users need nothing):
 
 ```
-dotnet test    # 221 tests: round-trip fidelity, validation, pipeline, ratings,
-               # roster fill, sparse input, validate integrity, GUI smoke,
-               # and the 2023 FSU byte-stability regression
+dotnet test    # 295 tests: round-trip fidelity, validation, pipeline, ratings,
+               # archetype floors, equipment eras, faces, roster fill, sparse
+               # input, validate integrity, GUI smoke, and the 2023 FSU
+               # byte-stability regression
 ```
 
 The 2023 Florida State recreation (Milestone 2) is preserved as a
