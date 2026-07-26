@@ -51,23 +51,30 @@ static int Usage()
         Historical CFB27 Roster Generator
 
         Usage:
-          generate   --dynasty <folder of exported CSVs> --roster <historical roster .csv>
+          generate   --dynasty <exported CSVs: folder or .zip> --roster <historical roster .csv>
                      [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
                      [--ratings generate|inherit] [--archetypes select|inherit]
                      [--fill fill|leave] [--equipment era|leave] [--faces replace|inherit]
-                     [--equipment-output <csv>]
+                     [--equipment-output <csv>] [--package <out.zip>]
                      [--team-mappings <json>] [--position-mappings <json>]
           validate   --roster <historical roster .csv>
-                     [--dynasty <folder of exported CSVs>] [--team <name>] [--season <year>]
-          list-teams --dynasty <folder of exported CSVs>
+                     [--dynasty <exported CSVs: folder or .zip>] [--team <name>] [--season <year>]
+          list-teams --dynasty <exported CSVs: folder or .zip>
           compare    --left <Player.csv> --right <Player.csv> --team <name or id>
-                     [--dynasty <folder of exported CSVs>] [--output <md>]
+                     [--dynasty <exported CSVs: folder or .zip>] [--output <md>]
 
         --dynasty is the folder of CSV files the community export tool writes
-        out of a dynasty — one CSV per table. This program never opens a save
-        file: export first, point it at that folder, and it finds the Player
-        and Team tables itself. The Player CSV on its own also works, though
-        team names then have to be given with --team.
+        out of a dynasty — one CSV per table — or a .zip of that folder, which
+        is what you get if you moved it off the machine that made it. Either
+        works. This program never opens a save file: export first, point it at
+        that folder or archive, and it finds the Player and Team tables itself.
+        The Player CSV on its own also works, though team names then have to be
+        given with --team. Nothing you point it at is ever modified.
+
+        --package writes your whole dynasty back out as a single .zip with the
+        generated tables inside it and every other file copied through byte for
+        byte, so you get one archive back instead of loose CSVs to place. It is
+        always a NEW archive; the one you supplied is left alone.
 
         validate checks your roster CSV without generating anything, so a
         mistake shows up in a few lines instead of inside a 27 MB file's report.
@@ -174,7 +181,10 @@ static DynastyExport OpenDynasty(Dictionary<string, string> options)
             : throw new ArgumentException(
                 "Missing required option --dynasty (the folder of CSV files exported from your " +
                 "dynasty, or the Player table CSV itself).");
-    var export = DynastyExport.Open(path);
+    // A .zip of the export folder is accepted wherever the folder is. The
+    // scratch copy is deliberately not cleaned up here: the caller goes on
+    // reading the tables through the returned export.
+    var export = DynastyPackage.Open(path).Export;
     Console.WriteLine($"Player table: {export.PlayerTablePath}");
     Console.WriteLine($"  {export.Teams.Count} teams discovered");
     return export;
@@ -319,6 +329,7 @@ static int Generate(Dictionary<string, string> options)
         EquipmentOutputPath = options.TryGetValue("equipment-output", out var equipmentOutput)
             ? equipmentOutput
             : Path.Combine("Output", "Generated_Equipment.csv"),
+        PackageOutputPath = options.GetValueOrDefault("package"),
     };
 
     if (generateRatings)
@@ -376,6 +387,15 @@ static int Generate(Dictionary<string, string> options)
         {
             Console.WriteLine($"Equipment table:  {equipmentPath} — import this as well as the roster.");
         }
+    }
+
+    if (result.PackageOutputPath is { } packagePath)
+    {
+        var tables = result.PackagedTables ?? Array.Empty<string>();
+        Console.WriteLine(
+            $"Dynasty package:  {packagePath} — your whole dynasty with {tables.Count} table(s) replaced " +
+            $"({string.Join(", ", tables.Select(Path.GetFileName))}). Everything else is byte-for-byte " +
+            "what you gave it.");
     }
 
     return 0;

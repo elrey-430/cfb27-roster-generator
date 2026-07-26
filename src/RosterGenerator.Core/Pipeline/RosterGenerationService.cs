@@ -72,6 +72,16 @@ public sealed record RosterGenerationRequest
     /// <summary>Where the modified equipment table is written, when one is produced.</summary>
     public string EquipmentOutputPath { get; init; } =
         Path.Combine("Output", "Generated_Equipment.csv");
+
+    /// <summary>
+    /// Write the whole dynasty back out as a single <c>.zip</c> at this path,
+    /// with the generated tables inside it and every other file copied through
+    /// untouched. Null writes only the loose CSVs, as before.
+    ///
+    /// The dynasty that came in is never modified — a package is always a new
+    /// archive, so a user who dislikes the result still has their original.
+    /// </summary>
+    public string? PackageOutputPath { get; init; }
 }
 
 /// <summary>What a generation run produced.</summary>
@@ -83,6 +93,8 @@ public sealed record RosterGenerationRequest
 /// <param name="CsvCorrections">Roster CSV values that were cleaned up and used.</param>
 /// <param name="Equipment">What the era did to the team's head gear, if anything.</param>
 /// <param name="EquipmentOutputPath">Where the equipment table went, when one was written.</param>
+/// <param name="PackageOutputPath">Where the whole dynasty was written back, when asked for.</param>
+/// <param name="PackagedTables">Tables substituted inside that package.</param>
 public sealed record RosterGenerationResult(
     ConversionReport Conversion,
     ExportResult Export,
@@ -91,7 +103,9 @@ public sealed record RosterGenerationResult(
     IReadOnlyList<string> CsvWarnings,
     IReadOnlyList<string> CsvCorrections,
     EquipmentReport? Equipment = null,
-    string? EquipmentOutputPath = null)
+    string? EquipmentOutputPath = null,
+    string? PackageOutputPath = null,
+    IReadOnlyList<string>? PackagedTables = null)
 {
     /// <summary>Players written to the save.</summary>
     public int Converted => Conversion.Converted.Count();
@@ -178,7 +192,10 @@ public sealed class RosterGenerationService
     /// <exception cref="RosterExportException">Validation rejected the result; nothing was written.</exception>
     public RosterGenerationResult Run(RosterGenerationRequest request)
     {
-        var export = DynastyExport.Open(request.DynastyPath);
+        // The dynasty may be a folder or a .zip of one; the package owns the
+        // difference, and owns cleaning up after an archive it expanded.
+        using var package = DynastyPackage.Open(request.DynastyPath);
+        var export = package.Export;
         var data = request.DataDirectory;
 
         var positionMappings = PositionMappingSet.Load(FindDataFile(data, "PositionMappings.json"));
@@ -254,9 +271,31 @@ public sealed class RosterGenerationService
                 ? conversion.ToMarkdown()
                 : conversion.ToText() + EquipmentSection(equipment, equipmentPath));
 
+        // Finally, if asked for, hand the whole dynasty back as one archive.
+        // This happens last for the same reason equipment does: a run that
+        // refused to produce a roster must not leave a package behind
+        // suggesting it succeeded.
+        string? packagePath = null;
+        IReadOnlyList<string>? packaged = null;
+        if (request.PackageOutputPath is { Length: > 0 } destination)
+        {
+            var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [export.PlayerTablePath] = request.OutputPath,
+            };
+            if (equipmentPath is not null && export.CharacterVisualsPath is not null)
+            {
+                replacements[export.CharacterVisualsPath] = equipmentPath;
+            }
+
+            CreateParentDirectory(destination);
+            packaged = package.WriteArchive(destination, replacements);
+            packagePath = destination;
+        }
+
         return new RosterGenerationResult(
             conversion, result, request.OutputPath, request.ReportPath,
-            roster.Warnings, roster.Corrections, equipment, equipmentPath);
+            roster.Warnings, roster.Corrections, equipment, equipmentPath, packagePath, packaged);
     }
 
     /// <summary>
