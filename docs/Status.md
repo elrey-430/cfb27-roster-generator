@@ -58,6 +58,23 @@ named as such rather than reported as an implausible height, so the user looks
 at the right thing. `Height` keeps reading the same cell for good, so files
 already filled in under the old name are unaffected. Tests: 343/343.
 
+**Research: native dynasty saves can be read and written.** Five real save
+files (not exports) were measured against the PocketScout CSV exports of the
+same saves. A CFB27 save is an extensionless `FBCHUNKS` file, 9,646,981 bytes
+packed and ~30 MB unpacked, zstd-compressed with a trained dictionary; it is
+EA's franchise database, schema `C27_468_2`, handled by the MIT-licensed
+`madden-franchise` library. Four things were established, all against real
+data: it **opens** (all five, correct schema and table count, no override);
+the **read is exact** (4,584,474 field comparisons over 16,257 live players
+against PocketScout's own CSV, zero mismatches, on two different saves); the
+**round trip is lossless** (unpack → repack on all five gives a byte-identical
+30 MB database — the packed file differs because zstd will not reproduce EA's
+stream, so packed-byte equality is the wrong test); and a **single edit stays
+single** (one jersey number: 1 byte changed in 30 MB, 1 cell in the Player
+table). The unknown that matters is whether the game loads a repacked save,
+which needs the game and cannot be tested here. Details and the harness are in
+`tools/native-save/`. See also the next milestone below.
+
 **Milestone 12 (One file in, one file out; and appearance) is complete.**
 
 - **A dynasty goes in as one file and comes back as one file.** `--dynasty`
@@ -690,7 +707,27 @@ guessed at (details in `docs/Schema.md`):
 
 ## Next recommended milestone
 
-**Milestone 14 — Roster CSV round-trip.**
+**Milestone 14 — Native saves: drop a dynasty in, get a dynasty back.**
+
+The research above moved this from "a data-gathering problem far larger than
+the tool" to a wiring job. Reading a save is proven exact against 4.5 million
+field comparisons; the round trip is proven byte-identical on five saves; a
+one-field edit is proven to change one field. What is left is a Node sidecar
+doing `save -> CSVs` and `CSVs + save -> save`, which is precisely the shape
+the pipeline already works in — `DynastyPackage` would gain a third input kind
+beside "folder" and "zip", and nothing above it would change.
+
+That would delete the two worst steps of the user's workflow: no PocketScout
+export, no third-party importer. It is also the honest answer to the question
+asked in Milestone 12 — upload a dynasty, receive one back — which was a no at
+the time.
+
+**One gate first, and it is not ours.** Nobody has confirmed the game loads a
+repacked save. That needs the game. Until it is confirmed, this must not ship,
+and no user's dynasty should be written by it. The schema is also pinned at
+`C27_468_2`; an unrecognised version must refuse to write rather than guess.
+
+**Milestone 15 — Roster CSV round-trip.**
 
 The generator can read a roster file; it cannot write one. That asymmetry is
 now the biggest thing standing between a user and a good result — and a

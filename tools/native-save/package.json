@@ -1,0 +1,12 @@
+{
+  "name": "cfb27-native-save-probe",
+  "private": true,
+  "type": "module",
+  "description": "Read/write probe for native CFB27 dynasty saves.",
+  "dependencies": {
+    "madden-franchise": "^4.3.5"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}
