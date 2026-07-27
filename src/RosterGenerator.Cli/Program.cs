@@ -20,6 +20,7 @@ using RosterGenerator.Core.Validation;
 //   generate   --dynasty <folder of exported CSVs> --roster <simple .csv or .json>
 //              [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
 //              [--ratings generate|inherit] [--team-mappings <json>] [--position-mappings <json>]
+//   template   --dynasty <folder of exported CSVs> --season <year> [--output <csv>]
 //   list-teams --dynasty <folder of exported CSVs>
 //   compare    --left <Player.csv> --right <Player.csv> --team <name or id>
 //              [--dynasty <folder of exported CSVs>] [--output <md>]
@@ -34,6 +35,7 @@ try
         "generate" => Generate(ParseOptions(args[1..])),
         "validate" => Validate(ParseOptions(args[1..])),
         "list-teams" => ListTeams(ParseOptions(args[1..])),
+        "template" => Template(ParseOptions(args[1..])),
         "compare" => Compare(ParseOptions(args[1..])),
         _ => Usage(),
     };
@@ -57,11 +59,28 @@ static int Usage()
                      [--fill fill|leave] [--equipment era|leave] [--faces replace|inherit]
                      [--equipment-output <csv>] [--package <out.zip>]
                      [--team-mappings <json>] [--position-mappings <json>]
+          template   --dynasty <exported CSVs: folder or .zip> --season <year>
+                     [--output <csv>] [--from-template <csv>]
+                     [--fbs-membership <json>] [--roster-skeleton <json>]
           validate   --roster <historical roster .csv>
                      [--dynasty <exported CSVs: folder or .zip>] [--team <name>] [--season <year>]
           list-teams --dynasty <exported CSVs: folder or .zip>
           compare    --left <Player.csv> --right <Player.csv> --team <name or id>
                      [--dynasty <exported CSVs: folder or .zip>] [--output <md>]
+
+        template writes a blank roster file for a whole season: every team
+        that played that year, each with its 85 slots and its Team, Season and
+        Position already filled in, ready to hand to a spreadsheet. Doing it by
+        hand means typing over 11,000 rows, and the easy mistake is invisible —
+        CFB27 ships today's 138 teams, so a 2010 file assembled from that list
+        silently includes schools that were still in the FCS. Teams that had
+        not reached the FBS that season are left out and named on the way past.
+        The dates are in data/FbsMembership.json and the position layout in
+        data/RosterSkeleton.json; both are plain files you can correct.
+
+        generate then takes that filled file back. One file may carry any
+        number of teams: each team's slots are disjoint, so they all convert
+        into the single output table you import once.
 
         --dynasty is the folder of CSV files the community export tool writes
         out of a dynasty — one CSV per table — or a .zip of that folder, which
@@ -209,6 +228,83 @@ static int ListTeams(Dictionary<string, string> options)
     return 0;
 }
 
+// Writes the blank roster template for a whole season: every team that played
+// that year, each with its 85 slots, Team/Season/Position already filled in.
+static int Template(Dictionary<string, string> options)
+{
+    var seasonText = Require(options, "season");
+    if (!int.TryParse(seasonText, out var season) || season <= 0)
+    {
+        throw new ArgumentException($"--season '{seasonText}' is not a year.");
+    }
+
+    var export = OpenDynasty(options);
+    var teams = export.Teams.Select(t => t.DisplayName).ToList();
+
+    var membershipPath = FindDataFile(options, "fbs-membership", "FbsMembership.json", required: false);
+    var membership = membershipPath is null ? FbsMembership.Empty : FbsMembership.Load(membershipPath);
+    if (membershipPath is null)
+    {
+        Console.WriteLine(
+            "No FbsMembership.json found, so every team in the dynasty is included — including any that " +
+            "had not reached the FBS in " + season + ".");
+    }
+
+    var skeletonPath = FindDataFile(options, "roster-skeleton", "RosterSkeleton.json", required: true)!;
+    var templatePath = options.TryGetValue("from-template", out var explicitTemplate)
+        ? explicitTemplate
+        : FindTemplate();
+
+    var output = options.TryGetValue("output", out var chosen)
+        ? chosen
+        : Path.Combine("Output", $"{season}_AllTeams_Template.csv");
+
+    var result = SeasonTemplateWriter.Load(skeletonPath)
+        .Write(output, templatePath, teams, season, membership);
+
+    Console.WriteLine();
+    Console.WriteLine($"Blank template for {season}: {result.Path}");
+    Console.WriteLine(
+        $"  {result.Teams} teams x {result.SlotsPerTeam} roster slots = {result.Rows} rows to fill in.");
+
+    if (result.Excluded.Count > 0)
+    {
+        Console.WriteLine();
+        Console.WriteLine($"Left out ({result.Excluded.Count}) — not FBS in {season}:");
+        foreach (var problem in result.Excluded.OrderBy(p => p.School, StringComparer.Ordinal))
+        {
+            Console.WriteLine($"  {problem.Reason}.");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(
+            "Membership dates live in data/FbsMembership.json and are yours to correct.");
+    }
+
+    return 0;
+}
+
+// The shipped template supplies the header, so the blank file and the
+// documented format cannot drift apart.
+static string FindTemplate()
+{
+    foreach (var candidate in new[]
+             {
+                 Path.Combine("templates", "HistoricalRosterTemplate.csv"),
+                 Path.Combine(AppContext.BaseDirectory, "templates", "HistoricalRosterTemplate.csv"),
+             })
+    {
+        if (File.Exists(candidate))
+        {
+            return candidate;
+        }
+    }
+
+    throw new ArgumentException(
+        "templates/HistoricalRosterTemplate.csv was not found next to the executable or the current " +
+        "directory. Pass --from-template to point at it.");
+}
+
 static int Validate(Dictionary<string, string> options)
 {
     var rosterPath = options.TryGetValue("roster", out var roster)
@@ -233,7 +329,10 @@ static int Validate(Dictionary<string, string> options)
         RatingEngine.Load(
             FindDataFile(options, "rating-models", "RatingModels.json", required: true)!,
             FindDataFile(options, "overall-formulas", "OverallFormulas.json", required: true)!,
-            FindDataFile(options, "archetype-profiles", "ArchetypeProfiles.json", required: false)));
+            FindDataFile(options, "archetype-profiles", "ArchetypeProfiles.json", required: false)),
+        FindDataFile(options, "fbs-membership", "FbsMembership.json", required: false) is { } fbs
+            ? FbsMembership.Load(fbs)
+            : null);
 
     Console.WriteLine();
     Console.Write(report.ToText());
@@ -374,13 +473,36 @@ static int Generate(Dictionary<string, string> options)
         Console.WriteLine($"  roster CSV: {warning}");
     }
 
-    Console.WriteLine($"Historical roster: {result.Conversion.Source.Season} {result.Conversion.Source.School} " +
-                      $"— {result.Conversion.Entries.Count} players");
     var slotSummary = result.Filled > 0
         ? $"{result.Filled} slots filled as depth"
-        : $"{result.Conversion.LeftoverDonorSlots.Count} donor slots left";
-    Console.WriteLine($"Converted {result.Converted} players onto team {result.Conversion.TeamId} " +
-                      $"({result.Skipped} skipped, {slotSummary}).");
+        : $"{result.Teams.Sum(t => t.LeftoverDonorSlots.Count)} donor slots left";
+
+    if (result.Teams.Count == 1)
+    {
+        var only = result.Teams[0];
+        Console.WriteLine($"Historical roster: {only.Source.Season} {only.Source.School} " +
+                          $"— {only.Entries.Count} players");
+        Console.WriteLine($"Converted {result.Converted} players onto team {only.TeamId} " +
+                          $"({result.Skipped} skipped, {slotSummary}).");
+    }
+    else
+    {
+        // A whole season would print 119 near-identical lines here, so the
+        // teams are summarised and then spelled out one by one in the report.
+        var seasons = result.Teams.Select(t => t.Source.Season).Distinct().OrderBy(s => s).ToList();
+        var span = seasons.Count == 1 ? $"{seasons[0]}" : $"{seasons[0]}-{seasons[^1]}";
+        Console.WriteLine($"Historical roster: {span} — {result.Teams.Count} teams, " +
+                          $"{result.Teams.Sum(t => t.Entries.Count)} players supplied");
+        Console.WriteLine($"Converted {result.Converted} players across {result.Teams.Count} teams " +
+                          $"({result.Skipped} skipped, {slotSummary}).");
+    }
+
+    // Teams the dynasty does not carry are reported, never silently dropped.
+    foreach (var skipped in result.Teams[0].GlobalWarnings.Where(w => w.StartsWith("Skipped —")))
+    {
+        Console.WriteLine($"  {skipped}");
+    }
+
     Console.WriteLine($"Validation: 0 errors, {result.Export.Report.Warnings.Count()} warnings.");
     Console.WriteLine($"Generated roster: {result.OutputPath} " +
                       $"({result.Export.ChangedColumnsByRowKey.Count} rows modified)");

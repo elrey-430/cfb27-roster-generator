@@ -1,0 +1,37 @@
+{
+  "//": [
+    "How many roster slots each position gets when a blank template is written",
+    "for a whole season.",
+    "",
+    "MEASURED, NOT AUTHORED: the league mean across the 138 teams x 85 players",
+    "of a base save, apportioned to exactly 85 by largest remainder. A CFB27",
+    "team always carries exactly 85, so the skeleton has to as well.",
+    "",
+    "This only shapes the BLANK template. Nothing forces a filled roster to",
+    "match it -- put whoever you like at whatever position, and slots you do",
+    "not fill are still completed as end-of-roster depth."
+  ],
+  "rosterSize": 85,
+  "slotsByPosition": {
+    "WR": 9,
+    "CB": 8,
+    "DT": 6,
+    "HB": 6,
+    "TE": 6,
+    "FS": 4,
+    "LE": 4,
+    "LT": 4,
+    "MLB": 4,
+    "QB": 4,
+    "RE": 4,
+    "ROLB": 4,
+    "RT": 4,
+    "SS": 4,
+    "C": 3,
+    "LG": 3,
+    "RG": 3,
+    "K": 2,
+    "P": 2,
+    "LOLB": 1
+  }
+}

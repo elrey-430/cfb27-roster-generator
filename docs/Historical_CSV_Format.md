@@ -62,7 +62,9 @@ never required.
 
 ## Rules
 
-- One file describes **one team's roster for one season**.
+- One file describes **one team's roster for one season** — or, when the
+  `Team` column names more than one school, as many teams as you like. See
+  [Doing a whole season at once](#doing-a-whole-season-at-once).
 - The first line is the header. Column order does not matter, header names
   are case-insensitive, and spaces are ignored (`First Name` works).
   Columns the tool does not recognize are left alone.
@@ -228,6 +230,64 @@ and portraits are unchanged, and each one is listed in the report. Pass
 
 So there is no need to research a team's walk-ons: supply the players you
 know about and the rest of the roster is filled in for you.
+
+## Doing a whole season at once
+
+One file can carry as many teams as you like — just fill in `Team` per row.
+Every team converts into the **single** output table you import once,
+because each team's 85 slots are disjoint.
+
+Rather than type out 119 schools × 85 rows yourself, ask the tool for the
+blank file:
+
+```
+template --dynasty <your export> --season 2010 --output 2010_Season.csv
+```
+
+That writes one row per roster slot for every team that played that season,
+with `Team`, `Season` and `Position` already filled in and everything else
+blank for you (or a spreadsheet assistant) to research. Then:
+
+```
+validate --roster 2010_Season.csv --dynasty <your export>
+generate --roster 2010_Season.csv --dynasty <your export>
+```
+
+A full season is around 10,000 rows and generates in about twenty seconds.
+
+### Teams that were not in the FBS yet
+
+**This is the mistake the blank file exists to prevent.** CFB27 ships the
+138 teams as they stand today, so a 2010 season assembled from that list
+silently includes schools that were still in the FCS — Sacramento State,
+James Madison, Liberty, Coastal Carolina and a dozen more. Nothing in the
+save tells you; you find out after filling in 85 rows, if at all.
+
+`template` leaves those teams out and names each one on the way past:
+
+```
+Left out (19) — not FBS in 2010:
+  App St. did not field an FBS team until 2014.
+  ...
+  Sac State did not field an FBS team until 2026.
+```
+
+`validate` reports the same thing as a **note** if a filled file names one.
+
+It is advisory in both places, never a gate. The dates are this project's
+best reading of the record, they live in plain JSON at
+`data/FbsMembership.json`, and if you know better than the file, edit it —
+or ignore the note, because the roster is generated either way.
+
+### The position layout
+
+The 85 slots are laid out from the **league mean** of a base save's 138
+teams, apportioned to exactly 85: 9 WR, 8 CB, 6 each of DT / HB / TE, 4 each
+of FS / LE / LT / MLB / QB / RE / ROLB / RT / SS, 3 each of C / LG / RG, 2 K,
+2 P, 1 LOLB. It is a starting shape, not a rule — change a row's `Position`
+to whatever the real roster had, and any slot you leave unfilled is
+completed as depth exactly as it is for a single team. The layout is in
+`data/RosterSkeleton.json`.
 
 ## Equipment — the season picks the helmets
 

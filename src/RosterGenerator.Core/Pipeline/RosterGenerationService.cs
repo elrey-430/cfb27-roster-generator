@@ -85,7 +85,10 @@ public sealed record RosterGenerationRequest
 }
 
 /// <summary>What a generation run produced.</summary>
-/// <param name="Conversion">The per-player conversion report.</param>
+/// <param name="Conversion">
+/// The first team's conversion report. A roster file naming one team — still
+/// the common case — has only this one.
+/// </param>
 /// <param name="Export">Validation report plus the per-row changed columns.</param>
 /// <param name="OutputPath">Where the player table was written.</param>
 /// <param name="ReportPath">Where the report was written.</param>
@@ -95,6 +98,11 @@ public sealed record RosterGenerationRequest
 /// <param name="EquipmentOutputPath">Where the equipment table went, when one was written.</param>
 /// <param name="PackageOutputPath">Where the whole dynasty was written back, when asked for.</param>
 /// <param name="PackagedTables">Tables substituted inside that package.</param>
+/// <param name="Conversions">
+/// Every team the run converted, in file order. A whole-season file carries
+/// one per school; the tallies below are over all of them, so a caller that
+/// only reports totals needs no changes to handle a season.
+/// </param>
 public sealed record RosterGenerationResult(
     ConversionReport Conversion,
     ExportResult Export,
@@ -105,16 +113,21 @@ public sealed record RosterGenerationResult(
     EquipmentReport? Equipment = null,
     string? EquipmentOutputPath = null,
     string? PackageOutputPath = null,
-    IReadOnlyList<string>? PackagedTables = null)
+    IReadOnlyList<string>? PackagedTables = null,
+    IReadOnlyList<ConversionReport>? Conversions = null)
 {
-    /// <summary>Players written to the save.</summary>
-    public int Converted => Conversion.Converted.Count();
+    /// <summary>Every team converted, never empty.</summary>
+    public IReadOnlyList<ConversionReport> Teams =>
+        Conversions is { Count: > 0 } all ? all : new[] { Conversion };
 
-    /// <summary>Players that could not be placed.</summary>
-    public int Skipped => Conversion.Skipped.Count();
+    /// <summary>Players written to the save, across every team.</summary>
+    public int Converted => Teams.Sum(t => t.Converted.Count());
 
-    /// <summary>Slots filled as end-of-roster depth.</summary>
-    public int Filled => Conversion.FilledSlots.Count;
+    /// <summary>Players that could not be placed, across every team.</summary>
+    public int Skipped => Teams.Sum(t => t.Skipped.Count());
+
+    /// <summary>Slots filled as end-of-roster depth, across every team.</summary>
+    public int Filled => Teams.Sum(t => t.FilledSlots.Count);
 }
 
 /// <summary>
@@ -264,11 +277,44 @@ public sealed class RosterGenerationService
             ? export.LoadCharacterVisuals()
             : null;
 
-        var conversion = new HistoricalTeamConverter(
-                teamMappings, positionMappings, ratingEngine, archetypeSelector, filler, depth,
-                export.BuildPreviousSchoolMappings(teamAliases), request.ReplaceRealPersonFaces,
-                visuals)
-            .Convert(session, roster.Roster);
+        var converter = new HistoricalTeamConverter(
+            teamMappings, positionMappings, ratingEngine, archetypeSelector, filler, depth,
+            export.BuildPreviousSchoolMappings(teamAliases), request.ReplaceRealPersonFaces,
+            visuals);
+
+        // One file can carry a whole season. Each team's slots are disjoint, so
+        // they convert one after another into the same session and the single
+        // output table ends up holding all of them.
+        var teams = roster.Rosters.Count > 0
+            ? roster.Rosters
+            : new List<HistoricalRoster> { roster.Roster };
+        var conversions = new List<ConversionReport>();
+        var failures = new List<string>();
+        foreach (var team in teams)
+        {
+            try
+            {
+                conversions.Add(converter.Convert(session, team));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                // A whole season's file naming one school this dynasty does not
+                // carry must not cost the user the other 130 teams.
+                failures.Add($"{team.School}: {ex.Message}");
+            }
+        }
+
+        if (conversions.Count == 0)
+        {
+            throw new Csv.CsvSchemaException(
+                "No team in the roster file could be matched to this dynasty. " + string.Join(" ", failures));
+        }
+
+        var conversion = conversions[0];
+        foreach (var failure in failures)
+        {
+            conversion.GlobalWarnings.Add($"Skipped — {failure}");
+        }
 
         CreateParentDirectory(request.OutputPath);
         CreateParentDirectory(request.ReportPath);
@@ -279,12 +325,15 @@ public sealed class RosterGenerationService
         // Equipment is a second table, so it is applied after the player table
         // has validated and been written: a run that refuses to produce a
         // roster must not leave a stray equipment file beside it.
-        var (equipment, equipmentPath) = ApplyEquipment(request, export, donor, conversion, data, visuals);
+        var (equipment, equipmentPath) = ApplyEquipment(request, export, donor, conversions, data, visuals);
 
+        var markdown = Path.GetExtension(request.ReportPath)
+            .Equals(".md", StringComparison.OrdinalIgnoreCase);
+        var body = string.Join(
+            Environment.NewLine + Environment.NewLine,
+            conversions.Select(c => markdown ? c.ToMarkdown() : c.ToText()));
         File.WriteAllText(request.ReportPath,
-            Path.GetExtension(request.ReportPath).Equals(".md", StringComparison.OrdinalIgnoreCase)
-                ? conversion.ToMarkdown()
-                : conversion.ToText() + EquipmentSection(equipment, equipmentPath));
+            markdown ? body : body + EquipmentSection(equipment, equipmentPath));
 
         // Finally, if asked for, hand the whole dynasty back as one archive.
         // This happens last for the same reason equipment does: a run that
@@ -310,11 +359,12 @@ public sealed class RosterGenerationService
 
         return new RosterGenerationResult(
             conversion, result, request.OutputPath, request.ReportPath,
-            roster.Warnings, roster.Corrections, equipment, equipmentPath, packagePath, packaged);
+            roster.Warnings, roster.Corrections, equipment, equipmentPath, packagePath, packaged,
+            conversions);
     }
 
     /// <summary>
-    /// Puts period-correct helmets on the converted team and writes the
+    /// Puts period-correct helmets on every converted team and writes the
     /// equipment table beside the roster. Returns nulls — and writes nothing —
     /// when equipment was not requested, the export carries no
     /// CharacterVisuals table, the season is unknown, or no era covers it.
@@ -323,11 +373,12 @@ public sealed class RosterGenerationService
         RosterGenerationRequest request,
         DynastyExport export,
         PlayerRoster donor,
-        ConversionReport conversion,
+        IReadOnlyList<ConversionReport> conversions,
         string? data,
         Equipment.CharacterVisualsTable? visuals)
     {
-        if (!request.ApplyEquipment || visuals is null || conversion.Source.Season <= 0)
+        var dated = conversions.Where(c => c.Source.Season > 0).ToList();
+        if (!request.ApplyEquipment || visuals is null || dated.Count == 0)
         {
             return (null, null);
         }
@@ -338,8 +389,15 @@ public sealed class RosterGenerationService
             return (null, null);
         }
 
-        var report = new EquipmentApplier(EquipmentEraSet.Load(erasPath))
-            .Apply(donor, visuals, conversion.TeamId, conversion.Source.Season);
+        // Teams sharing a season share an era, so they are rehelmeted together
+        // in one pass. A file that mixes seasons gets a pass per season and the
+        // reports are folded into one summary.
+        var applier = new EquipmentApplier(EquipmentEraSet.Load(erasPath));
+        var report = EquipmentReport.Merge(dated
+            .GroupBy(c => c.Source.Season)
+            .Select(season => applier.Apply(
+                donor, visuals, season.Select(c => c.TeamId).Distinct().ToList(), season.Key))
+            .ToList());
 
         // Nothing changed means nothing to import; writing a 30 MB copy of the
         // user's own table would just be another file to explain.

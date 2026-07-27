@@ -23,6 +23,19 @@ public sealed record HistoricalCsvResult(
         : this(roster, warnings, Array.Empty<string>())
     {
     }
+
+    /// <summary>
+    /// Every team the file describes, in the order they first appear.
+    ///
+    /// <para>One file can carry a whole season: a blank template written by
+    /// <c>template --season</c> has 85 rows for each of that year's teams, and
+    /// a filled one comes back the same shape. A file naming one team gives a
+    /// list of one, so nothing that worked before behaves differently.</para>
+    /// </summary>
+    public IReadOnlyList<HistoricalRoster> Rosters { get; init; } = Array.Empty<HistoricalRoster>();
+
+    /// <summary>True when the file describes more than one team.</summary>
+    public bool IsMultiTeam => Rosters.Count > 1;
 }
 
 /// <summary>
@@ -101,6 +114,11 @@ public static class HistoricalCsv
         string Cell(int row, string key) =>
             columns.TryGetValue(key, out var index) ? document.GetCell(row, document.Header[index]).Trim() : "";
 
+        // Grouped by team so one file can carry a whole season. Insertion
+        // order is kept, so the report reads in the order the user typed.
+        var byTeam = new Dictionary<string, List<HistoricalPlayer>>(StringComparer.OrdinalIgnoreCase);
+        var teamOrder = new List<string>();
+        var seasonByTeam = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var players = new List<HistoricalPlayer>();
         string? fileSchool = null;
         var fileSeason = 0;
@@ -122,17 +140,9 @@ public static class HistoricalCsv
             }
 
             var teamValue = Cell(row, "team");
-            if (school is null && teamValue.Length > 0)
+            if (school is null && teamValue.Length > 0 && fileSchool is null)
             {
-                if (fileSchool is null)
-                {
-                    fileSchool = teamValue;
-                }
-                else if (Normalize(fileSchool) != Normalize(teamValue))
-                {
-                    warnings.Add($"{rowLabel}: Team '{teamValue}' differs from '{fileSchool}' used by earlier " +
-                                 "rows; one file describes one team's roster. The first value wins.");
-                }
+                fileSchool = teamValue;
             }
 
             var seasonValue = Cell(row, "season");
@@ -141,7 +151,7 @@ public static class HistoricalCsv
                 fileSeason = parsedSeason;
             }
 
-            players.Add(new HistoricalPlayer
+            var player = new HistoricalPlayer
             {
                 FirstName = firstName,
                 LastName = lastName,
@@ -155,7 +165,32 @@ public static class HistoricalCsv
                 Notes = NullIfEmpty(Cell(row, "notes")),
                 SkinTone = ReadSkinTone(Cell(row, "skintone"), rowLabel, warnings),
                 Evidence = ReadEvidence(Cell, row, rowLabel, warnings, corrections),
-            });
+            };
+            players.Add(player);
+
+            // A row's own Team wins; the override, then the file's first Team,
+            // stand in for a file that names the team once or not at all.
+            var owner = school ?? (teamValue.Length > 0 ? teamValue : fileSchool);
+            if (owner is null)
+            {
+                continue;
+            }
+
+            if (!byTeam.TryGetValue(owner, out var roster))
+            {
+                roster = new List<HistoricalPlayer>();
+                byTeam[owner] = roster;
+                teamOrder.Add(owner);
+            }
+
+            // An explicit override means the caller wants one team, so rows
+            // naming a different one are still theirs.
+            roster.Add(player);
+            if (int.TryParse(Cell(row, "season"), out var rowSeason) && rowSeason > 0 &&
+                !seasonByTeam.ContainsKey(owner))
+            {
+                seasonByTeam[owner] = rowSeason;
+            }
         }
 
         // Generating from an empty roster silently produces a team of 85
@@ -173,14 +208,32 @@ public static class HistoricalCsv
                 "No team was selected and the CSV has no Team column — add a Team column or pass the team " +
                 "explicitly.");
 
-        var roster = new HistoricalRoster
-        {
-            Season = season ?? fileSeason,
-            School = resolvedSchool,
-            Source = $"Simple historical CSV: {Path.GetFileName(path)}",
-            Players = players,
-        };
-        return new HistoricalCsvResult(roster, warnings, corrections);
+        var source = $"Simple historical CSV: {Path.GetFileName(path)}";
+        var rosters = teamOrder
+            .Select(team => new HistoricalRoster
+            {
+                Season = season ?? (seasonByTeam.TryGetValue(team, out var own) ? own : fileSeason),
+                School = team,
+                Source = source,
+                Players = byTeam[team],
+            })
+            .ToList();
+
+        // The single-roster view keeps every existing caller working. When the
+        // file names one team it is that team; when the caller asked for one it
+        // is theirs; only a multi-team file makes the distinction matter, and
+        // callers that care read Rosters instead.
+        var primary = rosters.FirstOrDefault(r => Normalize(r.School) == Normalize(resolvedSchool))
+            ?? rosters.FirstOrDefault()
+            ?? new HistoricalRoster
+            {
+                Season = season ?? fileSeason,
+                School = resolvedSchool,
+                Source = source,
+                Players = players,
+            };
+
+        return new HistoricalCsvResult(primary, warnings, corrections) { Rosters = rosters };
     }
 
     /// <summary>

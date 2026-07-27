@@ -12,11 +12,24 @@ public readonly record struct EquipmentChange(string PlayerName, HeadGear Before
 /// <summary>What applying an era to a team did.</summary>
 public sealed class EquipmentReport
 {
-    /// <summary>The era applied, or null when the season matched none.</summary>
+    /// <summary>
+    /// The era applied, or null when the season matched none — and also null on
+    /// a merged report whose teams fell in different eras, where
+    /// <see cref="EraNames"/> lists them instead.
+    /// </summary>
     public EquipmentEra? Era { get; init; }
+
+    /// <summary>
+    /// Names of every era applied. One entry for a single season; more only
+    /// when a merged report spans seasons that land in different eras.
+    /// </summary>
+    public IReadOnlyList<string> EraNames { get; init; } = Array.Empty<string>();
 
     /// <summary>The season that selected the era.</summary>
     public int Season { get; init; }
+
+    /// <summary>How many teams this report covers.</summary>
+    public int TeamCount { get; init; } = 1;
 
     /// <summary>Players whose head gear was changed.</summary>
     public List<EquipmentChange> Changed { get; init; } = new();
@@ -37,12 +50,46 @@ public sealed class EquipmentReport
     public List<string> Unresolved { get; init; } = new();
 
     /// <summary>True when an era matched and equipment was considered at all.</summary>
-    public bool Applied => Era is not null;
+    public bool Applied => Era is not null || EraNames.Count > 0;
+
+    /// <summary>
+    /// Folds the per-team reports of a whole-season run into one, so the
+    /// caller's summary counts every team rather than only the first.
+    /// </summary>
+    public static EquipmentReport Merge(IReadOnlyList<EquipmentReport> parts)
+    {
+        if (parts.Count == 1)
+        {
+            return parts[0];
+        }
+
+        var applied = parts.Where(p => p.Era is not null).ToList();
+        var names = applied.SelectMany(p => p.EraNames.Count > 0
+                ? p.EraNames
+                : new[] { p.Era!.Name })
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        return new EquipmentReport
+        {
+            // One era across the whole file is the ordinary case and keeps the
+            // rest of the summary — sleeves, pads — able to name what it did.
+            Era = names.Count == 1 ? applied[0].Era : null,
+            EraNames = names,
+            Season = parts[0].Season,
+            TeamCount = parts.Sum(p => p.TeamCount),
+            Changed = parts.SelectMany(p => p.Changed).ToList(),
+            AlreadyCorrect = parts.Sum(p => p.AlreadyCorrect),
+            SleevesChanged = parts.Sum(p => p.SleevesChanged),
+            ShoulderPadsChanged = parts.Sum(p => p.ShoulderPadsChanged),
+            Unresolved = parts.SelectMany(p => p.Unresolved).ToList(),
+        };
+    }
 
     /// <summary>Plain-English summary for the generation report.</summary>
     public string Describe()
     {
-        if (Era is null)
+        if (Era is null && EraNames.Count == 0)
         {
             return $"Equipment: left as it was — no era covers {Season}.";
         }
@@ -52,7 +99,9 @@ public sealed class EquipmentReport
             .OrderByDescending(g => g.Count())
             .Select(g => $"{g.Count()} x {g.Key}");
 
-        var text = $"Equipment: {Era.Name} — {Changed.Count} player(s) rehelmeted"
+        var era = Era?.Name ?? string.Join(" + ", EraNames);
+        var scope = TeamCount > 1 ? $" across {TeamCount} teams" : "";
+        var text = $"Equipment: {era}{scope} — {Changed.Count} player(s) rehelmeted"
                    + (Changed.Count > 0 ? $" ({string.Join(", ", byHelmet)})" : "");
         if (AlreadyCorrect > 0)
         {
@@ -66,16 +115,22 @@ public sealed class EquipmentReport
 
         text += ".";
 
+        // Named only when one era is in play; a merged report spanning eras has
+        // no single cut or pad size to name, so it just gives the count.
         if (SleevesChanged > 0)
         {
-            text += $" Jersey cut: {Era.Sleeves?.Replace("Gear_JerseyStyle_", "")}" +
-                    $" on {SleevesChanged} player(s).";
+            var cut = Era?.Sleeves?.Replace("Gear_JerseyStyle_", "");
+            text += cut is { Length: > 0 }
+                ? $" Jersey cut: {cut} on {SleevesChanged} player(s)."
+                : $" Jersey cut changed on {SleevesChanged} player(s).";
         }
 
         if (ShoulderPadsChanged > 0)
         {
-            text += $" Shoulder pads: {Era.ShoulderPads?.Replace("_Pads", "")}" +
-                    $" on {ShoulderPadsChanged} player(s).";
+            var pads = Era?.ShoulderPads?.Replace("_Pads", "");
+            text += pads is { Length: > 0 }
+                ? $" Shoulder pads: {pads} on {ShoulderPadsChanged} player(s)."
+                : $" Shoulder pads changed on {ShoulderPadsChanged} player(s).";
         }
 
         return text;
@@ -114,12 +169,25 @@ public sealed class EquipmentApplier
     /// written and the report says so.
     /// </summary>
     public EquipmentReport Apply(
-        PlayerRoster roster, CharacterVisualsTable visuals, int teamIndex, int season)
+        PlayerRoster roster, CharacterVisualsTable visuals, int teamIndex, int season) =>
+        Apply(roster, visuals, new[] { teamIndex }, season);
+
+    /// <summary>
+    /// Applies the era covering <paramref name="season"/> to every player on
+    /// any of <paramref name="teamIndexes"/> — a whole season's worth of teams
+    /// in one pass over the roster.
+    /// </summary>
+    public EquipmentReport Apply(
+        PlayerRoster roster,
+        CharacterVisualsTable visuals,
+        IReadOnlyCollection<int> teamIndexes,
+        int season)
     {
+        var teams = teamIndexes.ToHashSet();
         var era = _eras.ForSeason(season);
         if (era is null)
         {
-            return new EquipmentReport { Era = null, Season = season };
+            return new EquipmentReport { Era = null, Season = season, TeamCount = teams.Count };
         }
 
         var changed = new List<EquipmentChange>();
@@ -128,7 +196,7 @@ public sealed class EquipmentApplier
         var sleeves = 0;
         var pads = 0;
 
-        foreach (var player in roster.Players.Where(p => p.TeamIndex == teamIndex))
+        foreach (var player in roster.Players.Where(p => teams.Contains(p.TeamIndex)))
         {
             var rowId = CharacterVisualsReference.RowId(RawVisualsReference(player));
             if (rowId is null)
@@ -183,7 +251,9 @@ public sealed class EquipmentApplier
         return new EquipmentReport
         {
             Era = era,
+            EraNames = new[] { era.Name },
             Season = season,
+            TeamCount = teams.Count,
             Changed = changed,
             AlreadyCorrect = alreadyCorrect,
             Unresolved = unresolved,

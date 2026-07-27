@@ -1,8 +1,49 @@
 # Project Status
 
-_Last updated: 2026-07-27 — end of Milestone 12._
+_Last updated: 2026-07-27 — end of Milestone 13._
 
 ## Current status
+
+**Milestone 13 (A whole season at a time) is complete.**
+
+- **The tool now writes the blank file, not the user.** `template --season
+  2010` produces one row per roster slot for every team that played that year,
+  with `Team`, `Season` and `Position` filled in. Against a real base save:
+  **119 teams × 85 = 10,115 rows**. By hand that means knowing which schools
+  existed that year and typing 10,000 rows before a single player is
+  researched.
+- **The oversight it exists to close.** CFB27 ships the **138 teams of
+  today**, so a 2010 season assembled from that list silently includes schools
+  that were still in the FCS, and nothing in the save says so.
+  `data/FbsMembership.json` records when each of 31 schools reached the FBS
+  (plus UAB's 2015–16 gap), and the 2010 run correctly left out **19**:
+  Sacramento State, NDSU, Delaware, Missouri State, Kennesaw St., Sam Houston,
+  Jax State, James Madison, Liberty, Coastal Carolina, Charlotte, App St., Ga
+  Southern, Old Dominion, Georgia State, UMass, Texas State, UTSA and South
+  Alabama. (2010's FBS had 120 teams; the one CFB27 cannot supply is Idaho,
+  which left after 2017.)
+- **Advisory, never a gate.** `validate` reports the same thing as a note on a
+  filled file, and generation proceeds regardless. The dates are this project's
+  reading of the record in a plain JSON file the user can correct — refusing to
+  build somebody's roster over a date this project got wrong would be the worse
+  failure.
+- **One roster file can now carry any number of teams.** Each team's 85 slots
+  are disjoint, so they all convert into the single output table the user
+  imports once. Verified end to end on the full 2010 file: **10,115 players
+  across 119 teams in 21 seconds, 0 errors**, and a diff against the source
+  table shows exactly 10,115 changed rows, in exactly 119 teams, of exactly 85
+  — the other 21 team indexes, recruit pool included, untouched.
+- **The reporting was wrong before it was right.** The first working
+  multi-team run converted all three teams but reported only the first, and
+  rehelmeted only the first. The result now carries every conversion, the
+  tallies are over all of them, and equipment is applied per season across
+  every converted team.
+- **The 85-slot layout is measured, not invented.** `data/RosterSkeleton.json`
+  is the league mean across a base save's 138 teams, apportioned to exactly 85
+  by largest remainder: 9 WR, 8 CB, 6 each DT/HB/TE, 4 each
+  FS/LE/LT/MLB/QB/RE/ROLB/RT/SS, 3 each C/LG/RG, 2 K, 2 P, 1 LOLB. A starting
+  shape, not a rule.
+- Tests: 335/335.
 
 **Milestone 12 (One file in, one file out; and appearance) is complete.**
 
@@ -400,6 +441,29 @@ brief).
 
 ## Completed features
 
+### Milestone 13 — a whole season at a time
+
+- **`SeasonTemplateWriter`** (`Core/Historical/`) — writes the blank
+  whole-season roster CSV. The header is copied from the shipped template
+  rather than restated, so the blank file and the documented format cannot
+  drift apart.
+- **`FbsMembership`** (`data/FbsMembership.json`) — per-school first FBS
+  season plus skipped-season ranges. `Check` returns a problem or null;
+  `EligibleIn` filters a season's teams. Advisory everywhere it is consulted.
+- **`data/RosterSkeleton.json`** — the measured league-mean position layout of
+  a team's 85 slots, apportioned by largest remainder.
+- **Multi-team reading and conversion** — `HistoricalCsv` groups rows by team
+  and exposes `Rosters` / `IsMultiTeam`; `RosterGenerationService.Run` converts
+  every team into one session and one output table, and reports a team the
+  dynasty does not carry rather than failing the other 130.
+- **`EquipmentApplier.Apply(…, IReadOnlyCollection<int> teamIndexes, …)`** and
+  `EquipmentReport.Merge` — a season's teams are rehelmeted per season in one
+  pass over the roster, and the summary counts all of them.
+- **`CsvDocument.FromRows`** — files this project writes are quoted and
+  escaped by exactly the code that reads one back.
+- **CLI `template`**, and `validate` extended to check every team in a season
+  file and to note a school that had not reached the FBS.
+
 ### Milestone 7 — shipping
 
 - **`RosterGenerationService`** (`Core/Pipeline/`) — the whole pipeline in one
@@ -613,10 +677,12 @@ guessed at (details in `docs/Schema.md`):
 
 ## Next recommended milestone
 
-**Milestone 12 — Roster CSV round-trip.**
+**Milestone 14 — Roster CSV round-trip.**
 
 The generator can read a roster file; it cannot write one. That asymmetry is
-now the biggest thing standing between a user and a good result.
+now the biggest thing standing between a user and a good result — and a
+season's worth of teams has just made it larger, because a user who dislikes
+one player in 10,115 still has no way to correct them and regenerate.
 
 Every rating defect reported so far arrived the same way: a user generated a
 roster, looked at one player, and disagreed. The answer to that is not another
@@ -636,6 +702,13 @@ to this tool and lost on the next run.
   every player and the tool had to pick one (1980), which then put the whole
   squad in Riddell TKs. All-time rosters are clearly a thing users want; per
   player equipment eras would serve them properly.
+- **FBS membership only records arrivals.** `data/FbsMembership.json` covers
+  the 31 schools that joined since 1978 and knows nothing about schools that
+  *left*: Idaho played the 2010 season and dropped to the FCS after 2017, so
+  CFB27 does not carry it and a 2010 template writes 119 teams where the real
+  FBS had 120. The tool cannot supply a team the save does not have, but it
+  should say so rather than leave the user to count. Seasons before 1978 are
+  also outside what the file describes.
 - **Archetype rules deserve a second pass.** Two questionable calls surfaced
   in verification: a Groza-winning kicker classified `KP_Power` off a 53-yard
   long, and a 278 lb Anthony Munoz classified `OT_PassProtector` by a weight
@@ -656,9 +729,6 @@ to this tool and lost on the next run.
   *which* generated head is cosmetic.
 - **Create-A-Face import.** Confirmed Road To Glory exclusive; the conversion
   path through a Dynasty save is unverified.
-- **Multi-team and multi-season generation.** Recreating a whole historical
-  season means 138 teams' rosters — a data-gathering problem far larger than
-  the tool.
 - **Jersey numbers.** About 25 remain unverified in the FSU dataset and the
   two rosters disagree on roughly 40%. This needs sources, not engineering.
 

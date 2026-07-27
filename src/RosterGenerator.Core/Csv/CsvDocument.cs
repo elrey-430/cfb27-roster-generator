@@ -32,6 +32,29 @@ public sealed class CsvDocument
     /// <summary>Column names in file order.</summary>
     public IReadOnlyList<string> Header => _header;
 
+    /// <summary>
+    /// Builds a document from a header and rows, so a file this project writes
+    /// is quoted and escaped by exactly the code that reads one back.
+    /// </summary>
+    /// <exception cref="ArgumentException">A row's width does not match the header's.</exception>
+    public static CsvDocument FromRows(IReadOnlyList<string> header, IEnumerable<IReadOnlyList<string>> rows)
+    {
+        var materialised = new List<string[]>();
+        foreach (var row in rows)
+        {
+            if (row.Count != header.Count)
+            {
+                throw new ArgumentException(
+                    $"Row {materialised.Count + 1} has {row.Count} fields but the header has {header.Count}.",
+                    nameof(rows));
+            }
+
+            materialised.Add(row.ToArray());
+        }
+
+        return new CsvDocument(header.ToList(), materialised);
+    }
+
     /// <summary>Number of data rows (excluding the header).</summary>
     public int RowCount => _rows.Count;
 

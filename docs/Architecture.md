@@ -104,7 +104,10 @@ cfb27-roster-generator/
 │   │                                59 archetypes, per attribute, per overall
 │   ├── ArchetypeRules.json          which archetype a player's profile implies
 │   ├── RosterDepth.json             roster shape and program standing
-│   └── EquipmentEras.json           period-correct helmets, masks, sleeves, pads
+│   ├── EquipmentEras.json           period-correct helmets, masks, sleeves, pads
+│   ├── FbsMembership.json           when each school reached the FBS (advisory)
+│   └── RosterSkeleton.json          MEASURED: the league-mean layout of a
+│                                    team's 85 slots, by position
 ├── Ratings/                     ← rating model documentation + test results
 ├── tools/                       ← measurement scripts that generate data/ files
 │   └── build_archetype_profiles.py  fits every archetype's every attribute
@@ -122,15 +125,18 @@ cfb27-roster-generator/
 │   │   ├── Editing/             ← intent-recording mutations (rename/replace/transfer)
 │   │   ├── Validation/          ← 9 named rules (State vs ChangeDriven)
 │   │   ├── Export/              ← validate-then-write with per-row change proof
-│   │   ├── Historical/          ← HistoricalPlayer/Roster model + simple-CSV reader
+│   │   ├── Historical/          ← HistoricalPlayer/Roster model + simple-CSV reader,
+│   │   │                          RosterCsvValidator, FbsMembership,
+│   │   │                          SeasonTemplateWriter (blank whole-season file)
 │   │   ├── Mapping/             ← TeamMappingSet / PositionMappingSet (external files)
 │   │   ├── Dynasty/             ← DynastyExport: discover tables/teams in any export
 │   │   ├── Conversion/          ← HistoricalTeamConverter + ConversionReport (+ClassYear)
 │   │   └── Comparison/          ← RosterComparer (generated vs benchmark)
-│   ├── RosterGenerator.Cli/     ← end-user commands: generate / list-teams / compare
+│   ├── RosterGenerator.Cli/     ← end-user commands: generate / template /
+│   │                              validate / list-teams / compare
 │   └── RosterGenerator.Poc/     ← Milestone 1 proof-of-concept (rename + jersey)
 └── tests/
-    └── RosterGenerator.Core.Tests/  65 xunit tests + real-data fixtures
+    └── RosterGenerator.Core.Tests/  335 xunit tests + real-data fixtures
 ```
 
 Parsing (`Csv/`), business logic (`Editing/`), validation (`Validation/`)
@@ -259,8 +265,10 @@ fails.
 
 ## Verification status (what was actually proven)
 
-- 25 xunit tests pass, covering round-trip fidelity, every validation rule,
-  both multi-field dependency rules, and the full PoC pipeline.
+- 335 xunit tests pass, covering round-trip fidelity, every validation rule,
+  both multi-field dependency rules, the archetype floors, the equipment and
+  appearance passes, whole-season templating and conversion, and the full
+  PoC pipeline.
 - The PoC ran against the real 16,500-row `DYNASTY-JUL24-BASE` export:
   renamed `_row=5098` (Bray Hubbard → Charlie Ward) and set jersey 18→17.
   An independent `diff`/`cmp` of input vs output confirmed **exactly one

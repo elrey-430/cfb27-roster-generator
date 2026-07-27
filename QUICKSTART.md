@@ -99,6 +99,22 @@ RosterGenerator.Cli.exe list-teams --dynasty C:\path\to\exported-csvs
 `validate` checks your file and writes nothing. It exits non-zero only when
 something would stop generation.
 
+### Doing a whole season
+
+```
+RosterGenerator.Cli.exe template --dynasty C:\path\to\exported-csvs --season 2010 --output 2010_Season.csv
+```
+
+That writes a blank roster file for the *whole year* — one row per roster
+slot for every team that played, with `Team`, `Season` and `Position` already
+filled in (about 10,000 rows). Fill it in, then `validate` and `generate` it
+exactly as you would for one team; they all end up in the single file you
+import.
+
+Teams that had not reached the FBS that season are left out and named, so a
+2010 file does not quietly include Sacramento State. The dates are in
+`data\FbsMembership.json` if you disagree with any of them.
+
 Useful options for `generate`:
 
 | Option | Meaning |

@@ -33,24 +33,39 @@ public sealed record RosterCsvFinding(RosterCsvSeverity Severity, string Message
 public sealed class RosterCsvReport
 {
     /// <summary>Creates a report.</summary>
-    public RosterCsvReport(string path, HistoricalRoster? roster, IReadOnlyList<RosterCsvFinding> findings)
+    public RosterCsvReport(
+        string path,
+        HistoricalRoster? roster,
+        IReadOnlyList<RosterCsvFinding> findings,
+        IReadOnlyList<HistoricalRoster>? rosters = null)
     {
         Path = path;
         Roster = roster;
         Findings = findings;
+        Rosters = rosters is { Count: > 0 }
+            ? rosters
+            : roster is null
+                ? Array.Empty<HistoricalRoster>()
+                : new[] { roster };
     }
 
     /// <summary>The file that was checked.</summary>
     public string Path { get; }
 
-    /// <summary>The parsed roster, or null when the file could not be read at all.</summary>
+    /// <summary>
+    /// The first team in the file, or null when it could not be read at all.
+    /// A single-team file — still the common case — has only this one.
+    /// </summary>
     public HistoricalRoster? Roster { get; }
+
+    /// <summary>Every team the file carries, in file order.</summary>
+    public IReadOnlyList<HistoricalRoster> Rosters { get; }
 
     /// <summary>Everything worth reporting, most severe first.</summary>
     public IReadOnlyList<RosterCsvFinding> Findings { get; }
 
-    /// <summary>Players that would be written to the save.</summary>
-    public int UsablePlayers => Roster?.Players.Count ?? 0;
+    /// <summary>Players that would be written to the save, across every team.</summary>
+    public int UsablePlayers => Rosters.Sum(r => r.Players.Count);
 
     /// <summary>True when generation can run.</summary>
     public bool CanGenerate =>
@@ -79,8 +94,19 @@ public sealed class RosterCsvReport
         }
 
         text.AppendLine($"Players usable:  {UsablePlayers}");
-        text.AppendLine($"Team:            {Roster.School}");
-        text.AppendLine($"Season:          {(Roster.Season == 0 ? "not given" : Roster.Season.ToString())}");
+        if (Rosters.Count > 1)
+        {
+            // Naming 119 schools here would bury the findings; the teams are
+            // the point of a season file, the count is what needs checking.
+            text.AppendLine($"Teams:           {Rosters.Count}");
+        }
+        else
+        {
+            text.AppendLine($"Team:            {Roster.School}");
+        }
+
+        var seasons = Rosters.Select(r => r.Season).Distinct().OrderBy(s => s).ToList();
+        text.AppendLine($"Season:          {(seasons is [0] ? "not given" : string.Join(", ", seasons))}");
         text.AppendLine();
 
         foreach (var (severity, heading) in new[]
@@ -147,13 +173,19 @@ public static class RosterCsvValidator
     /// too. Without it, roles are not checked at all rather than checked
     /// against a second, drifting copy of the vocabulary.
     /// </param>
+    /// <param name="membership">
+    /// When each school reached the FBS. Supplied, a team that had not got
+    /// there yet in the season being recreated is reported. Omitted, the
+    /// question is not asked at all.
+    /// </param>
     public static RosterCsvReport Check(
         string path,
         PositionMappingSet? positions = null,
         DynastyExport? dynasty = null,
         string? school = null,
         int? season = null,
-        Rating.RatingEngine? ratings = null)
+        Rating.RatingEngine? ratings = null,
+        FbsMembership? membership = null)
     {
         var findings = new List<RosterCsvFinding>();
 
@@ -187,17 +219,62 @@ public static class RosterCsvValidator
             findings.Add(new RosterCsvFinding(RosterCsvSeverity.Note, correction));
         }
 
-        var roster = result.Roster;
-        CheckRoles(roster, ratings, findings);
-        CheckPositions(roster, positions, findings);
-        CheckValueRanges(roster, findings);
-        CheckDuplicates(roster, findings);
-        CheckTeamAndSeason(roster, dynasty, school, findings);
+        // One file can carry a whole season, and every team in it gets the same
+        // checks — a season file is exactly where a bad row is easiest to miss.
+        var rosters = result.Rosters.Count > 0 ? result.Rosters : new[] { result.Roster };
+        var facts = DynastyFacts.For(dynasty);
+        foreach (var roster in rosters)
+        {
+            var team = new List<RosterCsvFinding>();
+            CheckRoles(roster, ratings, team);
+            CheckPositions(roster, positions, team);
+            CheckValueRanges(roster, team);
+            CheckDuplicates(roster, team);
+            CheckTeamAndSeason(roster, facts, school, team);
+            CheckFbsMembership(roster, membership, team);
+
+            // In a season file "appears twice" is useless without a school —
+            // two teams may each legitimately carry a number 12.
+            findings.AddRange(rosters.Count == 1
+                ? team
+                : team.Select(f => f with { Player = Qualify(roster.School, f.Player) }));
+        }
 
         var ordered = findings
             .OrderBy(f => f.Severity)
             .ToList();
-        return new RosterCsvReport(path, roster, ordered);
+        return new RosterCsvReport(path, result.Roster, ordered, rosters);
+    }
+
+    private static string Qualify(string school, string? player) =>
+        player is { Length: > 0 } && player != school ? $"{school} — {player}" : school;
+
+    /// <summary>
+    /// Reports a team that had not reached the FBS in the season being
+    /// recreated — a 2010 file naming Sacramento State, say.
+    ///
+    /// <para>It is a note, not a blocker. The dates are the tool's best
+    /// reading of the record and are a plain JSON file the user can correct,
+    /// so a user who knows better than the data must not be stopped by it.
+    /// The point is to say so out loud, because CFB27 carries today's 138
+    /// teams and a season assembled from that list gives no other sign.</para>
+    /// </summary>
+    private static void CheckFbsMembership(
+        HistoricalRoster roster, FbsMembership? membership, List<RosterCsvFinding> findings)
+    {
+        if (membership is null || roster.Season <= 0)
+        {
+            return;
+        }
+
+        if (membership.Check(roster.School, roster.Season) is { } problem)
+        {
+            findings.Add(new RosterCsvFinding(
+                RosterCsvSeverity.Note,
+                $"{problem.Detail}. The roster is still generated — correct " +
+                "data/FbsMembership.json if you know better.",
+                roster.School));
+        }
     }
 
     /// <summary>
@@ -300,8 +377,31 @@ public static class RosterCsvValidator
         }
     }
 
+    /// <summary>
+    /// The dynasty's team names and each team's slot count, read once.
+    ///
+    /// A season file asks the same two questions of 119 teams, and the answers
+    /// come from a 27 MB table — so the table is loaded once here rather than
+    /// once per team.
+    /// </summary>
+    private sealed record DynastyFacts(TeamMappingSet Teams, IReadOnlyDictionary<int, int> SlotsByTeam)
+    {
+        public static DynastyFacts? For(DynastyExport? dynasty)
+        {
+            if (dynasty is null || dynasty.Teams.Count == 0)
+            {
+                return null;
+            }
+
+            var slots = dynasty.LoadPlayerRoster().Players
+                .GroupBy(p => p.TeamIndex)
+                .ToDictionary(g => g.Key, g => g.Count());
+            return new DynastyFacts(dynasty.BuildTeamMappings(), slots);
+        }
+    }
+
     private static void CheckTeamAndSeason(
-        HistoricalRoster roster, DynastyExport? dynasty, string? school, List<RosterCsvFinding> findings)
+        HistoricalRoster roster, DynastyFacts? dynasty, string? school, List<RosterCsvFinding> findings)
     {
         if (roster.Season == 0)
         {
@@ -310,13 +410,12 @@ public static class RosterCsvValidator
                 "no Season was given. It is only used for labelling the report."));
         }
 
-        if (dynasty is null || dynasty.Teams.Count == 0)
+        if (dynasty is null)
         {
             return;
         }
 
-        var teams = dynasty.BuildTeamMappings();
-        if (!teams.TryResolve(roster.School, out var teamId))
+        if (!dynasty.Teams.TryResolve(roster.School, out var teamId))
         {
             findings.Add(new RosterCsvFinding(
                 RosterCsvSeverity.Blocking,
@@ -325,8 +424,7 @@ public static class RosterCsvValidator
             return;
         }
 
-        var slots = dynasty.LoadPlayerRoster().Players.Count(p => p.TeamIndex == teamId);
-        if (slots == 0)
+        if (!dynasty.SlotsByTeam.TryGetValue(teamId, out var slots) || slots == 0)
         {
             return;
         }

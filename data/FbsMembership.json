@@ -1,0 +1,124 @@
+{
+  "//": [
+    "Which seasons each school actually fielded an FBS (Division I-A) team.",
+    "",
+    "The point is to stop a recreation asking for a team that did not exist:",
+    "Sacramento State is in CFB27's 138 but was not FBS in 2010, and a 2010",
+    "roster that includes them is a mistake nobody wants to find later.",
+    "",
+    "ADVISORY, NOT A GATE. A school outside its seasons is reported and still",
+    "generated -- this is a convenience, not a referee, and the file is yours",
+    "to edit. Anything not listed here is treated as FBS for every season the",
+    "tool is asked about.",
+    "",
+    "'firstSeason' is a school's first season in the top division. Only schools",
+    "that joined in 1996 or later are listed; every other school in CFB27 has",
+    "been Division I-A since at least the 1978 split, which is earlier than any",
+    "roster this tool has been used for.",
+    "",
+    "Names are CFB27's own spellings, so they match what list-teams prints."
+  ],
+  "defaultFirstSeason": 1978,
+  "schools": {
+    "Boise State": {
+      "firstSeason": 1996
+    },
+    "UAB": {
+      "firstSeason": 1996,
+      "skippedSeasons": [
+        [
+          2015,
+          2016
+        ]
+      ],
+      "note": "Football suspended; the program did not play these seasons."
+    },
+    "UCF": {
+      "firstSeason": 1996
+    },
+    "Marshall": {
+      "firstSeason": 1997
+    },
+    "Buffalo": {
+      "firstSeason": 1999
+    },
+    "Middle Tenn": {
+      "firstSeason": 1999
+    },
+    "UConn": {
+      "firstSeason": 2000
+    },
+    "USF": {
+      "firstSeason": 2001
+    },
+    "Troy": {
+      "firstSeason": 2002
+    },
+    "FIU": {
+      "firstSeason": 2005
+    },
+    "FLA Atlantic": {
+      "firstSeason": 2005
+    },
+    "W. Kentucky": {
+      "firstSeason": 2009
+    },
+    "South Alabama": {
+      "firstSeason": 2012
+    },
+    "Texas State": {
+      "firstSeason": 2012
+    },
+    "UMass": {
+      "firstSeason": 2012
+    },
+    "UTSA": {
+      "firstSeason": 2012
+    },
+    "Georgia State": {
+      "firstSeason": 2013
+    },
+    "App St.": {
+      "firstSeason": 2014
+    },
+    "Ga Southern": {
+      "firstSeason": 2014
+    },
+    "Old Dominion": {
+      "firstSeason": 2014
+    },
+    "Charlotte": {
+      "firstSeason": 2015
+    },
+    "C. Carolina": {
+      "firstSeason": 2017
+    },
+    "Liberty": {
+      "firstSeason": 2018
+    },
+    "James Madison": {
+      "firstSeason": 2022
+    },
+    "Jax State": {
+      "firstSeason": 2023
+    },
+    "Sam Houston": {
+      "firstSeason": 2023
+    },
+    "Kennesaw St.": {
+      "firstSeason": 2024
+    },
+    "Delaware": {
+      "firstSeason": 2025
+    },
+    "Missouri State": {
+      "firstSeason": 2025
+    },
+    "NDSU": {
+      "firstSeason": 2026
+    },
+    "Sac State": {
+      "firstSeason": 2026
+    }
+  }
+}

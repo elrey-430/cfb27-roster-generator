@@ -389,6 +389,11 @@ public sealed class MainWindow : Window
     private static string Describe(RosterGenerationResult result)
     {
         var text = new System.Text.StringBuilder();
+        if (result.Teams.Count > 1)
+        {
+            text.AppendLine($"Teams converted:   {result.Teams.Count}");
+        }
+
         text.AppendLine($"Players written:   {result.Converted}");
         text.AppendLine($"Players skipped:   {result.Skipped}");
         text.AppendLine($"Slots filled:      {result.Filled}");

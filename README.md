@@ -91,10 +91,36 @@ Position names are normalized via the editable
 `data/PositionMappings.json`; extra school aliases (e.g. "FSU") can be
 added to `data/TeamMappings.json`.
 
+## Recreating a whole season
+
+One roster CSV can carry any number of teams — just fill in `Team` per row —
+and they all convert into the single output table you import once. Ask the
+tool for the blank file rather than typing 10,000 rows by hand:
+
+```
+RosterGenerator.Cli template --dynasty MyExportedCsvs/ --season 2010 --output 2010_Season.csv
+```
+
+That writes one row per roster slot for every team that played in 2010, with
+`Team`, `Season` and `Position` already filled in, ready to hand to a
+spreadsheet. Fill in the players, then `validate` and `generate` it exactly
+as you would a single team. A full season is around 10,000 rows and
+generates in about twenty seconds.
+
+**Teams that were not in the FBS yet are left out, and named on the way
+past.** CFB27 ships today's 138 teams, so a 2010 season built from that list
+would silently include Sacramento State, James Madison, Liberty and a dozen
+more schools that were still in the FCS — with nothing in the save to tell
+you. The dates live in `data/FbsMembership.json`, and `validate` reports the
+same thing as a note if a filled file names one. It is advisory in both
+places, never a gate: correct the file if you know better, or ignore the
+note, because the roster generates either way.
+
 ## Example
 
 ```
 RosterGenerator.Cli list-teams --dynasty MyExportedCsvs/
+RosterGenerator.Cli template  --dynasty MyExportedCsvs/ --season 2013 --output 2013_Season.csv
 RosterGenerator.Cli generate --dynasty MyExportedCsvs/ --roster 2013_FSU.csv --team "Florida State" --season 2013
 RosterGenerator.Cli compare --left Output/Generated_Roster.csv --right OtherExport/Player.csv --team "Florida State" --dynasty MyExportedCsvs/
 ```
