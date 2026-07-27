@@ -1,8 +1,45 @@
 # Project Status
 
-_Last updated: 2026-07-27 — end of Milestone 13._
+_Last updated: 2026-07-27 — end of Milestone 14._
 
 ## Current status
+
+**Milestone 14 (Native dynasty saves) is complete.**
+
+- **A dynasty goes in as a save and comes back as a save.**
+  `generate --dynasty DYNASTY-BASE1 --roster 2023_FSU.csv --save-out DYNASTY-2023FSU`
+  is the whole workflow. No PocketScout export, no third-party importer — the
+  two worst steps of the user's process are gone. Confirmed by the user: the
+  written save loads in the game with the edit intact.
+- **Nothing between the two ends had to change.** `extract.mjs` writes CSVs
+  that are **byte-identical to PocketScout's own export** — verified on the
+  Player, Team and CharacterVisuals tables — so the entire pipeline from
+  Milestone 3 onward reads a save without knowing one was involved, and the
+  2023 FSU regression test pins the same bytes either way.
+- **Only differing cells are written.** The real 2023 FSU roster into a real
+  save wrote **5,461 fields**, left **243 empty roster slots untouched**,
+  changed **85 rows on team 27 and 0 rows anywhere else**, and produced a
+  Player table matching the generated CSV exactly. The empty-record rule
+  matters: a save pre-allocates slots holding no player, and writing the
+  export's blanks back into them would be writing a blank name over a slot the
+  game expects to find in a particular state.
+- **The save that came in is never modified.** The output is always a new
+  file, writing over the source is refused, and the originals' hashes were
+  checked unchanged after every run.
+- **The format work is borrowed, not rebuilt.** `madden-franchise` (MIT) ships
+  the C27 schema and the zstd dictionaries. A C# reimplementation would mean
+  owning a bit-packer and a 3,498-entry schema table, re-verified against every
+  game patch, in exchange for nothing a user can see. `NativeSave` is the whole
+  boundary: two process calls and a magic-byte check.
+- **The cost, stated plainly:** this route needs **Node.js 22.19+** on the
+  user's machine. The library is vendored into the release so nobody runs a
+  package manager, but Node itself is theirs to install. Without it the tool
+  says exactly that and the CSV workflow is untouched.
+- **The guard that matters.** The schema is pinned at `C27_468_2`; a mismatch
+  refuses to write rather than guessing, because a field written at the wrong
+  offset corrupts a dynasty silently.
+- Tests: 351/351. The end-to-end save test runs when `CFB27_TEST_SAVE` points
+  at a real save; a green suite says nothing about that path unless it was set.
 
 **Milestone 13 (A whole season at a time) is complete.**
 
@@ -73,7 +110,8 @@ stream, so packed-byte equality is the wrong test); and a **single edit stays
 single** (one jersey number: 1 byte changed in 30 MB, 1 cell in the Player
 table). The unknown that matters is whether the game loads a repacked save,
 which needs the game and cannot be tested here. Details and the harness are in
-`tools/native-save/`. See also the next milestone below.
+`tools/native-save/`. **Since confirmed by the user — the game loads it — and
+built out as Milestone 14 above.**
 
 **Milestone 12 (One file in, one file out; and appearance) is complete.**
 
@@ -707,26 +745,6 @@ guessed at (details in `docs/Schema.md`):
 
 ## Next recommended milestone
 
-**Milestone 14 — Native saves: drop a dynasty in, get a dynasty back.**
-
-The research above moved this from "a data-gathering problem far larger than
-the tool" to a wiring job. Reading a save is proven exact against 4.5 million
-field comparisons; the round trip is proven byte-identical on five saves; a
-one-field edit is proven to change one field. What is left is a Node sidecar
-doing `save -> CSVs` and `CSVs + save -> save`, which is precisely the shape
-the pipeline already works in — `DynastyPackage` would gain a third input kind
-beside "folder" and "zip", and nothing above it would change.
-
-That would delete the two worst steps of the user's workflow: no PocketScout
-export, no third-party importer. It is also the honest answer to the question
-asked in Milestone 12 — upload a dynasty, receive one back — which was a no at
-the time.
-
-**One gate first, and it is not ours.** Nobody has confirmed the game loads a
-repacked save. That needs the game. Until it is confirmed, this must not ship,
-and no user's dynasty should be written by it. The schema is also pinned at
-`C27_468_2`; an unrecognised version must refuse to write rather than guess.
-
 **Milestone 15 — Roster CSV round-trip.**
 
 The generator can read a roster file; it cannot write one. That asymmetry is
@@ -765,6 +783,13 @@ to this tool and lost on the next run.
   threshold, costing him run blocking. Both are one-line data edits; neither is
   obviously wrong; both are worth a deliberate review rather than a reaction.
 - **Sign the executables.** SmartScreen still warns on every download.
+- **Bundle Node, or drop the dependency.** Reading a save needs Node.js 22.19+,
+  which is the only thing a user must install. Options, none yet judged worth
+  it: ship a Node single-executable build of the two sidecars (~50 MB added to
+  the release), or reimplement the format in C# (owns a bit-packer and a
+  3,498-entry schema table forever). The current answer — name the missing
+  dependency and keep the CSV route working — is honest and cheap, but it is a
+  step between a user and the good workflow.
 
 ### Deliberately *not* next
 

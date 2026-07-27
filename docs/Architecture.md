@@ -16,6 +16,10 @@ The system is built in three layers, delivered across three milestones:
    complete attribute set, with the overall computed by EA's own formulas
    (solved backwards to hit an intended overall), confidence scores, and
    sanity guardrails. See `Ratings/`.
+5. **Native dynasty saves (Milestone 14)** — the save file itself goes in and
+   a new save comes back, with no export step and no separate importer. A Node
+   sidecar turns the save into the CSVs this pipeline already reads, and writes
+   generated tables back into a copy of it. See "Where a dynasty save fits".
 
 ## The three pipelines (Milestone 3 view)
 
@@ -85,7 +89,7 @@ can add it without reworking this layer.
 | Decision | Rationale |
 |---|---|
 | C# / .NET 8 | Requested target; first-class Windows 10/11 support |
-| Self-contained single-file publish | End users need no Python/Node/Docker/WSL/.NET install — `dotnet publish -r win-x64 --self-contained -p:PublishSingleFile=true` produces one `.exe` (verified working, ~67 MB) |
+| Self-contained single-file publish | `dotnet publish -r win-x64 --self-contained -p:PublishSingleFile=true` produces one `.exe` (~67 MB) needing no .NET, Python, Docker or WSL. **Reading a dynasty save directly is the one exception**: it needs Node.js 22.19+, because the save format lives in an MIT Node library rather than being reimplemented. The CSV workflow stays install-free, and the app names the missing dependency rather than failing obscurely |
 | **Zero external dependencies** in `RosterGenerator.Core` | The CSV dialect is trivial (no quoting, CRLF) but the *round-trip guarantee* is critical; a third-party CSV library that normalizes quoting/line endings would silently break byte-fidelity. Test projects use xunit (dev-time only) |
 | No GUI in this milestone | Core is a class library; the PoC is a console app. A future GUI (or the existing Electron suite) sits on top of the same library |
 
@@ -110,8 +114,13 @@ cfb27-roster-generator/
 │                                    team's 85 slots, by position
 ├── Ratings/                     ← rating model documentation + test results
 ├── tools/                       ← measurement scripts that generate data/ files
-│   └── build_archetype_profiles.py  fits every archetype's every attribute
-│                                    against overall across a real export
+│   ├── build_archetype_profiles.py  fits every archetype's every attribute
+│   │                                against overall across a real export
+│   └── native-save/             ← Node sidecar: reads and writes the dynasty
+│       ├── extract.mjs              save -> the CSVs the pipeline reads
+│       ├── apply.mjs                generated CSVs + save -> a NEW save
+│       ├── save.mjs / csv.mjs       shared plumbing; CSV matching CsvFormat
+│       └── README.md                the save format, and what was measured
 ├── templates/
 │   └── HistoricalRosterTemplate.csv ← the user-facing input template
 ├── HistoricalData/2023/FloridaState.json  ← curated example dataset (JSON form)
@@ -129,7 +138,9 @@ cfb27-roster-generator/
 │   │   │                          RosterCsvValidator, FbsMembership,
 │   │   │                          SeasonTemplateWriter (blank whole-season file)
 │   │   ├── Mapping/             ← TeamMappingSet / PositionMappingSet (external files)
-│   │   ├── Dynasty/             ← DynastyExport: discover tables/teams in any export
+│   │   ├── Dynasty/             ← DynastyExport: discover tables/teams in any export;
+│   │   │                          DynastyPackage (folder / .zip / save file);
+│   │   │                          NativeSave (the sidecar boundary)
 │   │   ├── Conversion/          ← HistoricalTeamConverter + ConversionReport (+ClassYear)
 │   │   └── Comparison/          ← RosterComparer (generated vs benchmark)
 │   ├── RosterGenerator.Cli/     ← end-user commands: generate / template /
@@ -143,6 +154,33 @@ Parsing (`Csv/`), business logic (`Editing/`), validation (`Validation/`)
 and export (`Export/`) are independent components, as required: each folder
 depends only on the layers above it in the data flow below, and none of
 them knows about a UI.
+
+### Where a dynasty save fits
+
+```
+DYNASTY-BASE1 (FBCHUNKS, zstd, 30 MB of bit-packed tables)
+      │  NativeSave.Extract  →  node extract.mjs
+      ▼
+CSVs byte-identical to the community export tool's output
+      │  ... the entire existing pipeline, unchanged ...
+      ▼
+Output/Generated_Roster.csv
+      │  NativeSave.Apply  →  node apply.mjs   (writes only differing cells)
+      ▼
+DYNASTY-RECREATED  (a NEW save; the original is never modified)
+```
+
+The load-bearing property is the second line. Because the extracted CSVs are
+byte-identical to what the export tool writes, nothing between those two points
+had to change to support saves — including the 2023 FSU regression test, which
+pins the same bytes either way.
+
+The format work lives in Node because `madden-franchise` already solves it
+under an MIT licence, shipping the College Football 27 schema and the zstd
+dictionaries. Reimplementing a bit-packer and a 3,498-entry schema table in C#
+would buy nothing a user can see, and would have to be re-verified against
+every game patch. `NativeSave` is the whole boundary: two process calls, a
+magic-byte check, and a clear message when Node is absent.
 
 ## Data flow
 

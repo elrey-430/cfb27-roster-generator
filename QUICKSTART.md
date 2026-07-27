@@ -2,18 +2,25 @@
 
 Recreate a historical college football roster inside your CFB27 dynasty.
 
-This tool works on **CSV files, not save files.** You export your dynasty to
-CSVs with the community export tool, this program reads those and writes a new
-CSV, and the community roster editor imports it back. Your save is never
-opened or changed here.
+**Point it at your dynasty save and get a dynasty save back.**
+
+```
+your dynasty save  →  [this tool]  →  new dynasty save
+```
+
+Your save is never changed: the result is always a new file. This route needs
+Node.js 22.19+ (https://nodejs.org) — it is the one thing not included here.
+
+Without Node, or if you prefer it, the original route still works in full: you
+export your dynasty to CSVs with the community export tool, this program writes
+a new CSV, and the community roster editor imports it back.
 
 ```
 your dynasty  →  [export tool]  →  CSV files  →  [this tool]  →  new CSV  →  [roster editor]
 ```
 
-Nothing to install. Both programs in this folder are self-contained: they run
-on a clean Windows 10 or 11 machine with no .NET runtime, no Python, and no
-setup.
+Both programs in this folder are self-contained: they run on a clean Windows 10
+or 11 machine with no .NET runtime, no Python, and no setup.
 
 ```
 RosterGenerator.Gui.exe    the app — start here
@@ -26,15 +33,19 @@ Keep the `data` and `templates` folders next to the executables.
 
 ---
 
-## 1. Export your dynasty to CSVs
+## 1. Point at your dynasty
 
-Run the community export tool on your dynasty. It writes a **folder of CSV
-files, one per table** — `Player`, `Team`, and dozens more.
+**The easy way:** your save file itself, in
+`Documents\EA SPORTS College Football 27\saves\` — a file with no extension,
+named for your dynasty. Nothing to export.
 
-That folder is what you point this tool at. You do not need to know which file
-is which: the Player and Team tables are found for you, and the rest are
-ignored. (If you only have the Player CSV, that works too — you just have to
-name the team yourself.)
+**Or:** run the community export tool on your dynasty. It writes a **folder of
+CSV files, one per table** — `Player`, `Team`, and dozens more. That folder is
+what you point this tool at.
+
+Either way you do not need to know which file is which: the Player and Team
+tables are found for you, and the rest are ignored. (If you only have the
+Player CSV, that works too — you just have to name the team yourself.)
 
 ## 2. Fill in a roster
 
@@ -70,7 +81,8 @@ end-of-roster depth.
 
 Open `RosterGenerator.Gui.exe`:
 
-1. **Browse** to the folder of exported CSVs from step 1.
+1. **Browse** to your dynasty save, or the folder of exported CSVs, from
+   step 1.
 2. **Browse** to your roster CSV. It is checked immediately and tells you
    about anything wrong — before anything is written.
 3. Confirm the **team** and **season**.
@@ -88,7 +100,27 @@ You get two files in `Output\`:
 
 Same engine, same results.
 
-`--dynasty` takes the folder of exported CSVs (or the Player CSV itself).
+`--dynasty` takes your dynasty save file, the folder of exported CSVs, or the
+Player CSV itself.
+
+### The short way: save in, save out
+
+```
+RosterGenerator.Cli.exe generate --roster MyRoster.csv ^
+    --dynasty "%USERPROFILE%\Documents\EA SPORTS College Football 27\saves\DYNASTY-BASE1" ^
+    --save-out "%USERPROFILE%\Documents\EA SPORTS College Football 27\saves\DYNASTY-RECREATED"
+```
+
+Then load it in the game. No export step and no separate roster importer.
+
+Only the fields that actually change are written, and the empty roster slots
+the game keeps in reserve are left exactly as they were. **Your original save
+is never modified** — the output is always a new file, and writing over the
+one you supplied is refused.
+
+This route needs **Node.js 22.19 or newer** installed (https://nodejs.org).
+Without it you get a message saying so, and the export route below still
+works.
 
 ```
 RosterGenerator.Cli.exe validate --roster MyRoster.csv --dynasty C:\path\to\exported-csvs
@@ -136,8 +168,12 @@ executable. Unzip the whole folder, not just the .exe.
 
 **"No Player table found under …"** — the folder you chose is not the one the
 export tool wrote. It should contain many CSV files, one of which is the
-Player table. If you picked a save file or the folder your save lives in,
-export it to CSVs first.
+Player table. If you meant to use your save file, pick the save itself, not
+the folder it lives in.
+
+**"Node.js 22.19 or newer is needed …"** — reading a save directly needs Node
+installed (https://nodejs.org). Install it, or export your dynasty to CSVs and
+point `--dynasty` at that folder instead.
 
 **"… is missing the required 'firstname' column"** — the first line of your
 CSV must be the header. Check you did not delete it.

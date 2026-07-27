@@ -82,6 +82,16 @@ public sealed record RosterGenerationRequest
     /// archive, so a user who dislikes the result still has their original.
     /// </summary>
     public string? PackageOutputPath { get; init; }
+
+    /// <summary>
+    /// Write the dynasty back out as a <b>save file</b> at this path, ready to
+    /// drop straight into the game's saves folder — no export, no separate
+    /// importer. Requires <see cref="DynastyPath"/> to be a save rather than
+    /// an export folder, because a save is what gets written into.
+    ///
+    /// The save that came in is never modified: this is always a new file.
+    /// </summary>
+    public string? SaveOutputPath { get; init; }
 }
 
 /// <summary>What a generation run produced.</summary>
@@ -103,6 +113,7 @@ public sealed record RosterGenerationRequest
 /// one per school; the tallies below are over all of them, so a caller that
 /// only reports totals needs no changes to handle a season.
 /// </param>
+/// <param name="SaveOutput">What was written when a dynasty save was asked for.</param>
 public sealed record RosterGenerationResult(
     ConversionReport Conversion,
     ExportResult Export,
@@ -114,7 +125,8 @@ public sealed record RosterGenerationResult(
     string? EquipmentOutputPath = null,
     string? PackageOutputPath = null,
     IReadOnlyList<string>? PackagedTables = null,
-    IReadOnlyList<ConversionReport>? Conversions = null)
+    IReadOnlyList<ConversionReport>? Conversions = null,
+    Dynasty.NativeSaveWriteReport? SaveOutput = null)
 {
     /// <summary>Every team converted, never empty.</summary>
     public IReadOnlyList<ConversionReport> Teams =>
@@ -357,10 +369,34 @@ public sealed class RosterGenerationService
             packagePath = destination;
         }
 
+        // And the shortest path of all: the dynasty goes back out as a save,
+        // which is what the user actually has and what the game actually
+        // loads. Last, for the same reason as the two above — a run that
+        // refused to produce a roster must not leave a save behind implying
+        // it succeeded.
+        NativeSaveWriteReport? saveOutput = null;
+        if (request.SaveOutputPath is { Length: > 0 } saveDestination)
+        {
+            if (!package.IsNativeSave)
+            {
+                throw new NativeSaveException(
+                    "Writing a dynasty save needs a dynasty save to write into. Point --dynasty at your " +
+                    "save file rather than at an export folder.");
+            }
+
+            var tables = new List<string> { request.OutputPath };
+            if (equipmentPath is not null)
+            {
+                tables.Add(equipmentPath);
+            }
+
+            saveOutput = package.WriteSave(saveDestination, tables);
+        }
+
         return new RosterGenerationResult(
             conversion, result, request.OutputPath, request.ReportPath,
             roster.Warnings, roster.Corrections, equipment, equipmentPath, packagePath, packaged,
-            conversions);
+            conversions, saveOutput);
     }
 
     /// <summary>

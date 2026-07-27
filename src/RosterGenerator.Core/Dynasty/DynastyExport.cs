@@ -176,9 +176,9 @@ public sealed class DynastyExport
         if (playerPath is null)
         {
             throw new CsvSchemaException(
-                $"No Player table found under '{path}'. Point at the folder of CSV files the community " +
-                "export tool wrote out of your dynasty — one CSV per table, including the Player table " +
-                "— or at that Player CSV itself. A save file cannot be read directly; export it first.");
+                $"No Player table found under '{path}'. Point at your dynasty save file itself, at the " +
+                "folder of CSV files the community export tool wrote out of it — one CSV per table, " +
+                "including the Player table — or at that Player CSV.");
         }
 
         // The main Team table is the one listing the most teams; the export

@@ -2,11 +2,18 @@
 
 Recreate real historical college football rosters inside a CFB27 dynasty.
 
-The tool works on **CSV files, not save files**: you export your dynasty to
-CSVs with the community export tool, point this at that folder along with a
-simple spreadsheet-style roster CSV you fill in yourself, and it writes an
-import-ready player table plus a plain-English report of everything it did.
-No programming knowledge, CFB27 schema knowledge, or database ids required.
+Point it at your dynasty and a simple spreadsheet-style roster CSV you fill in
+yourself, and it writes the roster into the save, plus a plain-English report
+of everything it did. No programming knowledge, CFB27 schema knowledge, or
+database ids required.
+
+```
+your dynasty save → [this tool] → new dynasty save
+```
+
+It also reads the community export tool's CSVs and writes an import-ready
+player table, which is how it worked before it could open a save, and still
+the route to take when Node.js is not installed:
 
 ```
 your dynasty → [export tool] → CSV files → [this tool] → new CSV → [roster editor]
@@ -28,13 +35,30 @@ your dynasty → [export tool] → CSV files → [this tool] → new CSV → [ro
   `Player_Test_Results.csv` (generated ratings for known historical
   players).
 
+## The short version
+
+Point it at your dynasty save, hand it a roster, get a dynasty save back:
+
+```
+RosterGenerator.Cli generate --dynasty DYNASTY-BASE1 --roster 2023_FSU.csv --save-out DYNASTY-2023FSU
+```
+
+Copy the result into `Documents\EA SPORTS College Football 27\saves\` and load
+it. No export step, no separate roster importer. Your original save is never
+modified — the output is always a new file.
+
+This needs **Node.js 22.19+** on your machine ([nodejs.org](https://nodejs.org));
+everything else is self-contained. Without it, the export-based workflow below
+still works exactly as it always has, and the tool tells you so rather than
+failing obscurely.
+
 ## End-user workflow
 
-1. **Export your dynasty to CSVs** with the community export tool. It writes
-   a folder of CSV files, one per table; that folder is what you point the
-   generator at. The Player and Team tables are discovered inside it, so you
-   never have to identify a particular file (the Player CSV on its own also
-   works, with the team named explicitly).
+1. **Point at your dynasty.** Either the **save file itself** (recommended —
+   see above), or a folder of CSVs from the community export tool. The Player
+   and Team tables are discovered inside either, so you never have to identify
+   a particular file (the Player CSV on its own also works, with the team named
+   explicitly).
 2. **Fill in a roster CSV** — copy
    `templates/HistoricalRosterTemplate_Basics.csv`, one row per player:
 
@@ -68,9 +92,12 @@ your dynasty → [export tool] → CSV files → [this tool] → new CSV → [ro
    steps, or from a command prompt:
 
    ```
-   RosterGenerator.Cli validate --roster MyRoster.csv --dynasty <folder of exported CSVs>
-   RosterGenerator.Cli generate --roster MyRoster.csv --dynasty <folder of exported CSVs>
+   RosterGenerator.Cli validate --roster MyRoster.csv --dynasty DYNASTY-BASE1
+   RosterGenerator.Cli generate --roster MyRoster.csv --dynasty DYNASTY-BASE1 --save-out DYNASTY-NEW
    ```
+
+   `--dynasty` takes your save file or an export folder; `--save-out` writes a
+   save you can drop straight into the game.
 
    `validate` checks your roster file and writes nothing, so a mistake shows
    up in a few lines instead of inside a 27 MB file's report. The desktop app
@@ -83,7 +110,8 @@ your dynasty → [export tool] → CSV files → [this tool] → new CSV → [ro
    **EA's own overall formulas**, so the overall the tool writes is exactly
    what the game will show. Pass `--ratings inherit` to keep the ratings of
    the players being replaced instead.
-4. **Collect the output** from `Output/`:
+4. **Collect the output.** With `--save-out` there is one file and you are
+   done: copy it into your saves folder. Otherwise, from `Output/`:
    - `Generated_Roster.csv` — **this is the file you import.** It is the
      full 286-column player table with your team replaced. (Your own roster
      CSV from step 2 is an input and is *not* importable; if the editor

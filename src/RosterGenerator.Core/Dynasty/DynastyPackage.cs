@@ -20,7 +20,8 @@ public sealed class DynastyPackage : IDisposable
     private readonly string? _entryPrefix;
 
     private DynastyPackage(
-        DynastyExport export, string root, string name, bool fromArchive, string? scratch, string? entryPrefix)
+        DynastyExport export, string root, string name, bool fromArchive, string? scratch, string? entryPrefix,
+        string? sourceSave = null)
     {
         Export = export;
         RootDirectory = root;
@@ -28,7 +29,18 @@ public sealed class DynastyPackage : IDisposable
         IsArchive = fromArchive;
         _scratch = scratch;
         _entryPrefix = entryPrefix;
+        SourceSavePath = sourceSave;
     }
+
+    /// <summary>
+    /// The dynasty save this package was read out of, when the user supplied
+    /// one rather than an export. Non-null means the result can be handed back
+    /// as a save rather than as loose CSVs.
+    /// </summary>
+    public string? SourceSavePath { get; }
+
+    /// <summary>True when the user supplied a dynasty save file itself.</summary>
+    public bool IsNativeSave => SourceSavePath is not null;
 
     /// <summary>The discovered tables inside this package.</summary>
     public DynastyExport Export { get; }
@@ -60,6 +72,13 @@ public sealed class DynastyPackage : IDisposable
     /// <exception cref="FileNotFoundException">The path does not exist.</exception>
     public static DynastyPackage Open(string path)
     {
+        // A save is recognised by its own header, not its name — it has no
+        // extension — so this has to come before the folder and archive cases.
+        if (NativeSave.LooksLikeSave(path))
+        {
+            return OpenSave(path);
+        }
+
         if (!LooksLikeArchive(path))
         {
             var directory = File.Exists(path)
@@ -99,6 +118,56 @@ public sealed class DynastyPackage : IDisposable
             TryDelete(scratch);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Opens a dynasty save directly, by extracting the tables the generator
+    /// needs into a scratch folder that reads exactly like an export.
+    /// </summary>
+    private static DynastyPackage OpenSave(string path)
+    {
+        var scratch = Path.Combine(
+            Path.GetTempPath(), "cfb27-save-" + Guid.NewGuid().ToString("N")[..12]);
+        try
+        {
+            Directory.CreateDirectory(scratch);
+            NativeSave.Extract(path, scratch);
+            var name = Path.GetFileNameWithoutExtension(path);
+            return new DynastyPackage(
+                DynastyExport.Open(scratch), scratch,
+                name.Length > 0 ? name : "DYNASTY",
+                fromArchive: false, scratch, entryPrefix: name,
+                sourceSave: Path.GetFullPath(path));
+        }
+        catch
+        {
+            TryDelete(scratch);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Writes the dynasty back out as a save, with the generated tables
+    /// written into it.
+    ///
+    /// The user's own save is opened, the generated tables are written in, and
+    /// a NEW save is produced — only the fields that actually differ are
+    /// touched, and the pre-allocated empty slots the game keeps are left
+    /// exactly as they were.
+    /// </summary>
+    /// <param name="destinationSave">The save to create.</param>
+    /// <param name="tableCsvPaths">Generated table CSVs to write into it.</param>
+    /// <exception cref="InvalidOperationException">This package did not come from a save.</exception>
+    public NativeSaveWriteReport WriteSave(string destinationSave, IReadOnlyList<string> tableCsvPaths)
+    {
+        if (SourceSavePath is null)
+        {
+            throw new InvalidOperationException(
+                "This dynasty was opened from an export, not a save file, so there is no save to write " +
+                "back. Point --dynasty at the save itself to get one out.");
+        }
+
+        return NativeSave.Apply(SourceSavePath, destinationSave, tableCsvPaths);
     }
 
     /// <summary>

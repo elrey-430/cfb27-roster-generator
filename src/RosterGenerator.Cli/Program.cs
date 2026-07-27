@@ -41,7 +41,8 @@ try
     };
 }
 catch (Exception ex) when (ex is ArgumentException or FileNotFoundException or KeyNotFoundException
-    or InvalidDataException or RosterGenerator.Core.Csv.CsvSchemaException)
+    or InvalidDataException or RosterGenerator.Core.Csv.CsvSchemaException
+    or RosterGenerator.Core.Dynasty.NativeSaveException)
 {
     Console.Error.WriteLine($"Error: {ex.Message}");
     return 1;
@@ -57,7 +58,7 @@ static int Usage()
                      [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
                      [--ratings generate|inherit] [--archetypes select|inherit]
                      [--fill fill|leave] [--equipment era|leave] [--faces replace|inherit]
-                     [--equipment-output <csv>] [--package <out.zip>]
+                     [--equipment-output <csv>] [--package <out.zip>] [--save-out <save>]
                      [--team-mappings <json>] [--position-mappings <json>]
           template   --dynasty <exported CSVs: folder or .zip> --season <year>
                      [--output <csv>] [--from-template <csv>]
@@ -89,6 +90,20 @@ static int Usage()
         that folder or archive, and it finds the Player and Team tables itself.
         The Player CSV on its own also works, though team names then have to be
         given with --team. Nothing you point it at is ever modified.
+
+        --dynasty also takes your DYNASTY SAVE FILE itself, straight out of
+        Documents\EA SPORTS College Football 27\saves. Paired with --save-out
+        you get a save back, so there is no export step and no separate
+        importer:
+
+          generate --dynasty DYNASTY-BASE1 --roster 2014_FSU.csv
+                   --save-out DYNASTY-2014FSU
+
+        Only the fields that actually differ are written, and the empty roster
+        slots the game pre-allocates are left exactly as they were. The save
+        you supplied is never modified — --save-out is always a new file, and
+        writing over the original is refused. This needs Node.js 22.19+ on your
+        machine; without it the export-to-CSV route still works.
 
         --package writes your whole dynasty back out as a single .zip with the
         generated tables inside it and every other file copied through byte for
@@ -435,6 +450,7 @@ static int Generate(Dictionary<string, string> options)
             ? equipmentOutput
             : Path.Combine("Output", "Generated_Equipment.csv"),
         PackageOutputPath = options.GetValueOrDefault("package"),
+        SaveOutputPath = options.GetValueOrDefault("save-out"),
     };
 
     if (generateRatings)
@@ -515,6 +531,16 @@ static int Generate(Dictionary<string, string> options)
         {
             Console.WriteLine($"Equipment table:  {equipmentPath} — import this as well as the roster.");
         }
+    }
+
+    if (result.SaveOutput is { } save)
+    {
+        Console.WriteLine(
+            $"Dynasty save:     {save.Destination} ({save.Bytes:N0} bytes) — " +
+            $"{save.CellsChanged:N0} field(s) written across {save.Tables.Count} table(s); " +
+            $"{save.EmptyRecordsSkipped:N0} empty roster slot(s) left untouched.");
+        Console.WriteLine(
+            "                  Copy it into your CFB27 saves folder. Your original is unchanged.");
     }
 
     if (result.PackageOutputPath is { } packagePath)

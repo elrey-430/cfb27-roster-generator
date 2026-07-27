@@ -42,6 +42,22 @@ dotnet publish "${ROOT}/src/RosterGenerator.Cli" "${COMMON[@]}" -o "${OUT}"
 # the first is deliberate: one folder, one copy of each file.
 cp "${ROOT}/QUICKSTART.md" "${OUT}/README.txt"
 
+# The save reader. Its dependencies are vendored into the release rather than
+# left to an npm install on the user's machine: somebody downloading a roster
+# tool should not have to run a package manager to open their own dynasty.
+# Node itself is still required, and the app says so plainly when it is absent.
+mkdir -p "${OUT}/tools/native-save"
+cp "${ROOT}"/tools/native-save/*.mjs \
+   "${ROOT}/tools/native-save/package.json" \
+   "${ROOT}/tools/native-save/README.md" "${OUT}/tools/native-save/"
+if [ -d "${ROOT}/tools/native-save/node_modules" ]; then
+  cp -R "${ROOT}/tools/native-save/node_modules" "${OUT}/tools/native-save/"
+else
+  echo "WARNING: tools/native-save/node_modules is missing, so this build cannot"
+  echo "         read dynasty saves directly. Run 'npm install' in"
+  echo "         tools/native-save and build again."
+fi
+
 ( cd "${ROOT}/dist" && zip -qr "${NAME}.zip" "${NAME}" )
 
 echo
