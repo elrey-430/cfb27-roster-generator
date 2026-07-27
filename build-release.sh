@@ -45,9 +45,15 @@ cp "${ROOT}/QUICKSTART.md" "${OUT}/README.txt"
 # The save reader. Its dependencies are vendored into the release rather than
 # left to an npm install on the user's machine: somebody downloading a roster
 # tool should not have to run a package manager to open their own dynasty.
-# Node itself is still required, and the app says so plainly when it is absent.
+#
+# Only the four scripts the application calls are shipped. The rest of that
+# folder is the measurement rig the save format was worked out with — useful in
+# the repository, just confusing sat next to a game tool.
 mkdir -p "${OUT}/tools/native-save"
-cp "${ROOT}"/tools/native-save/*.mjs \
+cp "${ROOT}/tools/native-save/extract.mjs" \
+   "${ROOT}/tools/native-save/apply.mjs" \
+   "${ROOT}/tools/native-save/save.mjs" \
+   "${ROOT}/tools/native-save/csv.mjs" \
    "${ROOT}/tools/native-save/package.json" \
    "${ROOT}/tools/native-save/README.md" "${OUT}/tools/native-save/"
 if [ -d "${ROOT}/tools/native-save/node_modules" ]; then
@@ -71,12 +77,14 @@ NODE_VERSION="v22.23.1"          # LTS "Jod"; the library needs >= 22.19
 NODE_CACHE="${ROOT}/.node-cache/${NODE_VERSION}"
 mkdir -p "${NODE_CACHE}"
 
-if [ ! -f "${NODE_CACHE}/node.exe" ]; then
-  echo "Fetching Node ${NODE_VERSION} (win-x64) …"
+# Each file is checked for individually: a half-populated cache must not
+# silently skip the rest of the download.
+[ -f "${NODE_CACHE}/SHASUMS256.txt" ] || \
   curl -fsS -o "${NODE_CACHE}/SHASUMS256.txt" "https://nodejs.org/dist/${NODE_VERSION}/SHASUMS256.txt"
+[ -f "${NODE_CACHE}/node.exe" ] || \
   curl -fsS -o "${NODE_CACHE}/node.exe"       "https://nodejs.org/dist/${NODE_VERSION}/win-x64/node.exe"
+[ -f "${NODE_CACHE}/LICENSE" ] || \
   curl -fsS -o "${NODE_CACHE}/LICENSE"        "https://raw.githubusercontent.com/nodejs/node/${NODE_VERSION}/LICENSE"
-fi
 
 # Verified every build, not just on download: a corrupted cache must not become
 # a corrupted release.
@@ -95,6 +103,10 @@ cp "${NODE_CACHE}/node.exe" "${OUT}/tools/native-save/runtime/"
 cp "${NODE_CACHE}/LICENSE"  "${OUT}/tools/native-save/runtime/LICENSE-nodejs.txt"
 echo "Node ${NODE_VERSION} bundled (sha256 ${ACTUAL:0:16}…)"
 
+# Removed first: zip UPDATES an existing archive rather than replacing it, so
+# without this a file dropped from the build stays in the release forever, and
+# an old executable can outlive the one that replaced it.
+rm -f "${ROOT}/dist/${NAME}.zip"
 ( cd "${ROOT}/dist" && zip -qr "${NAME}.zip" "${NAME}" )
 
 echo

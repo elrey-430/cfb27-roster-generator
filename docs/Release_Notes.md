@@ -27,7 +27,9 @@ The bundled copy is also *private* to this application — whatever Node version
 anything else on your machine wants, it cannot break this one, and this one
 cannot break it.
 
-That adds about 33 MB to the download. What it buys:
+The download grows from 68 MB to **122 MB** as a result — 33 MB for the
+runtime and 21 MB for the save-format library, which carries the schema that
+makes any of this possible. What it buys:
 
 | Without it | With it |
 |---|---|

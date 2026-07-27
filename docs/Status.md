@@ -32,8 +32,8 @@ _Last updated: 2026-07-27 — end of Milestone 14._
   game patch, in exchange for nothing a user can see. `NativeSave` is the whole
   boundary: two process calls and a magic-byte check.
 - **Nothing to install.** The release bundles the Node runtime itself
-  (v22.23.1 LTS, MIT, checksum-verified against nodejs.org at build time,
-  +33 MB zipped) alongside the vendored library, so the user installs nothing
+  (v22.23.1 LTS, MIT, checksum-verified against nodejs.org at build time)
+  alongside the vendored library — 68 MB to 122 MB zipped — so the user installs nothing
   and runs no package manager. The bundled copy is private to the app and
   cannot be broken by another Node version on the machine. `NativeSave`
   prefers it and falls back to PATH for source checkouts. Without either, the
