@@ -12,10 +12,10 @@ using RosterGenerator.Core.Validation;
 
 // End-user front end for the historical roster pipeline.
 //
-// --dynasty is the folder of CSV files the community export tool wrote out of
-// a dynasty, not a save file: this program never opens a save. The Player and
-// Team tables are discovered inside that folder, so the Player CSV on its own
-// is also accepted.
+// --dynasty is the dynasty save itself, the folder of CSV files the community
+// export tool wrote out of one, or a .zip of that folder. The Player and Team
+// tables are discovered inside, so the Player CSV on its own is also accepted.
+// Paired with --save-out, a save goes in and a new save comes back.
 //
 //   generate   --dynasty <folder of exported CSVs> --roster <simple .csv or .json>
 //              [--team <name>] [--season <year>] [--output <csv>] [--report <txt|md>]
@@ -86,10 +86,9 @@ static int Usage()
         --dynasty is the folder of CSV files the community export tool writes
         out of a dynasty — one CSV per table — or a .zip of that folder, which
         is what you get if you moved it off the machine that made it. Either
-        works. This program never opens a save file: export first, point it at
-        that folder or archive, and it finds the Player and Team tables itself.
-        The Player CSV on its own also works, though team names then have to be
-        given with --team. Nothing you point it at is ever modified.
+        works, and it finds the Player and Team tables itself. The Player CSV on
+        its own also works, though team names then have to be given with
+        --team. Nothing you point it at is ever modified.
 
         --dynasty also takes your DYNASTY SAVE FILE itself, straight out of
         Documents\EA SPORTS College Football 27\saves. Paired with --save-out
@@ -211,7 +210,7 @@ static string? FindDataFile(Dictionary<string, string> options, string option, s
         : null;
 }
 
-static DynastyExport OpenDynasty(Dictionary<string, string> options)
+static DynastyPackage OpenDynastyPackage(Dictionary<string, string> options)
 {
     // --base is the pre-Milestone-3 spelling; accept both.
     var path = options.TryGetValue("dynasty", out var dynasty)
@@ -221,18 +220,19 @@ static DynastyExport OpenDynasty(Dictionary<string, string> options)
             : throw new ArgumentException(
                 "Missing required option --dynasty (the folder of CSV files exported from your " +
                 "dynasty, or the Player table CSV itself).");
-    // A .zip of the export folder is accepted wherever the folder is. The
-    // scratch copy is deliberately not cleaned up here: the caller goes on
-    // reading the tables through the returned export.
-    var export = DynastyPackage.Open(path).Export;
-    Console.WriteLine($"Player table: {export.PlayerTablePath}");
-    Console.WriteLine($"  {export.Teams.Count} teams discovered");
-    return export;
+    // A .zip of the export folder, or the dynasty save itself, is accepted
+    // wherever the folder is. The caller owns the package: both of those are
+    // expanded into a scratch folder that disposing deletes.
+    var package = DynastyPackage.Open(path);
+    Console.WriteLine($"Player table: {package.Export.PlayerTablePath}");
+    Console.WriteLine($"  {package.Export.Teams.Count} teams discovered");
+    return package;
 }
 
 static int ListTeams(Dictionary<string, string> options)
 {
-    var export = OpenDynasty(options);
+    using var package = OpenDynastyPackage(options);
+    var export = package.Export;
     Console.WriteLine();
     Console.WriteLine("Available teams:");
     foreach (var team in export.Teams)
@@ -253,7 +253,8 @@ static int Template(Dictionary<string, string> options)
         throw new ArgumentException($"--season '{seasonText}' is not a year.");
     }
 
-    var export = OpenDynasty(options);
+    using var package = OpenDynastyPackage(options);
+    var export = package.Export;
     var teams = export.Teams.Select(t => t.DisplayName).ToList();
 
     var membershipPath = FindDataFile(options, "fbs-membership", "FbsMembership.json", required: false);
@@ -331,9 +332,10 @@ static int Validate(Dictionary<string, string> options)
     // The dynasty is optional: a user can check their file before they have
     // exported a save. With one, the team name and the roster size are checked
     // against the real thing too.
-    var export = options.ContainsKey("dynasty") || options.ContainsKey("base")
-        ? OpenDynasty(options)
+    using var dynastyPackage = options.ContainsKey("dynasty") || options.ContainsKey("base")
+        ? OpenDynastyPackage(options)
         : null;
+    var export = dynastyPackage?.Export;
 
     var report = RosterCsvValidator.Check(
         rosterPath,
@@ -359,8 +361,6 @@ static int Validate(Dictionary<string, string> options)
 
 static int Generate(Dictionary<string, string> options)
 {
-    var export = OpenDynasty(options);
-
     // --historical is the pre-Milestone-3 spelling; accept both.
     var rosterPath = options.TryGetValue("roster", out var roster)
         ? roster
@@ -378,7 +378,11 @@ static int Generate(Dictionary<string, string> options)
     {
         if (teamOption is null && !CsvHasTeam(rosterPath))
         {
-            teamOption = SelectTeamInteractively(export);
+            // Opened only to ask the question. The pipeline opens the dynasty
+            // itself, and opening a save is expensive enough that doing it
+            // twice for nothing is worth avoiding.
+            using var package = OpenDynastyPackage(options);
+            teamOption = SelectTeamInteractively(package.Export);
         }
 
         if (seasonOption is null && teamOption is not null && !Console.IsInputRedirected)
@@ -626,7 +630,7 @@ static int Compare(Dictionary<string, string> options)
     if (!int.TryParse(teamOption, out teamId))
     {
         var mappings = options.ContainsKey("dynasty") || options.ContainsKey("base")
-            ? OpenDynasty(options).BuildTeamMappings(FindDataFile(options, "team-mappings", "TeamMappings.json", required: false))
+            ? OpenDynastyPackage(options).Export.BuildTeamMappings(FindDataFile(options, "team-mappings", "TeamMappings.json", required: false))
             : TeamMappingSet.Load(FindDataFile(options, "team-mappings", "TeamMappings.json", required: true)!);
         teamId = mappings.Resolve(teamOption);
     }

@@ -6,3 +6,6 @@ dist/
 # The generated player table is a build output: 26 MB, regenerable in
 # seconds, and it contains the whole base-save player table.
 Output/*.csv
+
+# The bundled Node runtime, fetched and checksum-verified by build-release.sh.
+.node-cache/

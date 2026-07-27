@@ -27,7 +27,7 @@ public sealed class MainWindow : Window
 {
     private readonly TextBox _dynastyBox = new()
     {
-        Watermark = "Folder of CSV files exported from your dynasty",
+        Watermark = "Your dynasty save, or a folder of exported CSVs",
         IsReadOnly = true,
     };
     private readonly TextBox _rosterBox = new() { Watermark = "Your roster CSV", IsReadOnly = true };
@@ -46,6 +46,18 @@ public sealed class MainWindow : Window
         Content = "Use period-correct helmets for the season",
         IsChecked = true,
     };
+    private readonly CheckBox _saveOutBox = new()
+    {
+        Content = "Write a new dynasty save (drop straight into the game)",
+        IsChecked = true,
+        IsVisible = false,
+    };
+    private readonly TextBlock _saveOutNote = new()
+    {
+        TextWrapping = TextWrapping.Wrap,
+        Opacity = 0.75,
+        IsVisible = false,
+    };
     private readonly Button _checkButton = new() { Content = "Check roster file", IsEnabled = false };
     private readonly Button _generateButton = new() { Content = "Generate", IsEnabled = false };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
@@ -56,6 +68,13 @@ public sealed class MainWindow : Window
     };
 
     private DynastyExport? _dynasty;
+
+    // Held so the scratch folder an archive or a save is expanded into is
+    // deleted when another dynasty is chosen, rather than left behind.
+    private DynastyPackage? _package;
+
+    /// <summary>True when the chosen dynasty is a save file rather than an export.</summary>
+    private bool DynastyIsSave => _package?.IsNativeSave == true;
 
     /// <summary>Builds the window.</summary>
     public MainWindow()
@@ -87,6 +106,9 @@ public sealed class MainWindow : Window
         var browseDynastyZip = new Button { Content = ".zip…" };
         browseDynastyZip.Click += async (_, _) => await PickDynastyArchiveAsync();
 
+        var browseDynastySave = new Button { Content = "Save file…" };
+        browseDynastySave.Click += async (_, _) => await PickDynastySaveAsync();
+
         var browseRoster = new Button { Content = "Browse…" };
         browseRoster.Click += async (_, _) => await PickRosterAsync();
 
@@ -103,21 +125,23 @@ public sealed class MainWindow : Window
         });
         panel.Children.Add(new TextBlock
         {
-            Text = "Works on the CSV files the community tool exports from your dynasty, and writes a " +
-                   "new CSV for you to import with the roster editor — your save is never opened or " +
-                   "changed. Only a name and a position are required per player; anything you leave " +
-                   "out is filled in for you and listed in the report.",
+            Text = "Point it at your dynasty save and get a new save back, or work from exported " +
+                   "CSVs if you prefer. Either way the dynasty you choose is never modified — what " +
+                   "you get is always a new file. Only a name and a position are required per " +
+                   "player; anything you leave out is filled in for you and listed in the report.",
             TextWrapping = TextWrapping.Wrap,
             Opacity = 0.75,
         });
 
         panel.Children.Add(Labelled(
-            "1.  Exported dynasty CSVs",
-            Row(_dynastyBox, browseDynasty, browseDynastyZip),
-            "This tool does not read your save file. Export your dynasty with the community " +
-            "export tool first — it writes a folder of CSV files, one per table — and choose that " +
-            "folder here, or the .zip of it if that is what you have. The Player and Team tables " +
-            "are found for you, and nothing you choose here is ever modified."));
+            "1.  Your dynasty",
+            Row(_dynastyBox, browseDynastySave, browseDynasty, browseDynastyZip),
+            "Choose your dynasty save — \"Save file…\", from Documents\\EA SPORTS College " +
+            "Football 27\\saves — and you can get a new save back at the end, with no exporting " +
+            "and no separate importer. Everything needed to read one is included; there is " +
+            "nothing to install. If you would rather work from exported CSVs, \"Browse…\" takes " +
+            "that folder and \".zip…\" takes an archive of it. Nothing you choose here is ever " +
+            "modified."));
         panel.Children.Add(Labelled(
             "2.  Roster CSV",
             Row(_rosterBox, browseRoster, openTemplates),
@@ -134,7 +158,8 @@ public sealed class MainWindow : Window
         var options = new StackPanel
         {
             Spacing = 4,
-            Children = { _ratingsBox, _archetypesBox, _fillBox, _equipmentBox, _facesBox },
+            Children = { _ratingsBox, _archetypesBox, _fillBox, _equipmentBox, _facesBox,
+                         _saveOutBox, _saveOutNote },
         };
         panel.Children.Add(Labelled("4.  Options", options));
 
@@ -235,28 +260,115 @@ public sealed class MainWindow : Window
         LoadDynasty();
     }
 
+    private async Task PickDynastySaveAsync()
+    {
+        // A dynasty save has no extension, so there is no pattern to filter on
+        // — offering one would hide the very file the user came to choose.
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Select your dynasty save (Documents\\EA SPORTS College Football 27\\saves)",
+            AllowMultiple = false,
+            SuggestedStartLocation = await SavesFolderAsync(),
+        });
+
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        _dynastyBox.Text = files[0].Path.LocalPath;
+        LoadDynasty();
+    }
+
+    /// <summary>
+    /// The game's own saves folder, so the picker opens where the file is
+    /// rather than wherever it was last. Null when it cannot be found, which
+    /// simply leaves the picker's default.
+    /// </summary>
+    private async Task<IStorageFolder?> SavesFolderAsync()
+    {
+        try
+        {
+            var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            if (documents.Length == 0)
+            {
+                return null;
+            }
+
+            var saves = Path.Combine(documents, "EA SPORTS College Football 27", "saves");
+            return Directory.Exists(saves)
+                ? await StorageProvider.TryGetFolderFromPathAsync(saves)
+                : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
+        {
+            return null;
+        }
+    }
+
     private void LoadDynasty()
     {
         _teamBox.ItemsSource = null;
         _dynasty = null;
 
+        // An archive or a save was expanded into a scratch folder; disposing
+        // the previous package is what deletes it. Without this, every
+        // reselect leaks a copy of the dynasty's tables into the temp folder.
+        _package?.Dispose();
+        _package = null;
+
         try
         {
-            _dynasty = RosterGenerationService.OpenDynasty(_dynastyBox.Text ?? "");
+            _package = DynastyPackage.Open(_dynastyBox.Text ?? "");
+            _dynasty = _package.Export;
             _teamBox.ItemsSource = _dynasty.Teams.Select(t => t.DisplayName).ToList();
             SetStatus(
-                $"Read {_dynasty.Teams.Count} teams from {Path.GetFileName(_dynasty.PlayerTablePath)}.",
+                $"Read {_dynasty.Teams.Count} teams from {Path.GetFileName(_dynasty.PlayerTablePath)}." +
+                (DynastyIsSave ? "  This is a dynasty save, so a new save can be written." : ""),
                 ok: true);
+        }
+        catch (NativeSaveException ex)
+        {
+            SetStatus(ex.Message, ok: false);
         }
         catch (Exception ex)
         {
             SetStatus(
-                "No player table was found there. Choose the folder the dynasty export tool wrote " +
-                $"its CSV files into, or a .zip of that folder. ({ex.Message})",
+                "No player table was found there. Choose your dynasty save, the folder the export " +
+                $"tool wrote its CSV files into, or a .zip of that folder. ({ex.Message})",
                 ok: false);
         }
 
+        UpdateSaveOption();
         UpdateButtons();
+    }
+
+    /// <summary>
+    /// Shows the "write a new save" option only when there is a save to write
+    /// into, and says why when the machine cannot do it.
+    /// </summary>
+    private void UpdateSaveOption()
+    {
+        _saveOutBox.IsVisible = DynastyIsSave;
+        _saveOutNote.IsVisible = DynastyIsSave;
+        if (!DynastyIsSave)
+        {
+            return;
+        }
+
+        if (NativeSave.IsAvailable(out var reason))
+        {
+            _saveOutBox.IsEnabled = true;
+            _saveOutNote.Text =
+                "The new save is written beside your original with \"-Recreated\" added to the name. " +
+                "Your own save is never modified.";
+        }
+        else
+        {
+            _saveOutBox.IsEnabled = false;
+            _saveOutBox.IsChecked = false;
+            _saveOutNote.Text = reason;
+        }
     }
 
     private async Task PickRosterAsync()
@@ -347,6 +459,19 @@ public sealed class MainWindow : Window
         UpdateButtons();
     }
 
+    /// <summary>
+    /// Where a written save goes: beside the user's own, with "-Recreated"
+    /// added. Never over the original — the point of the whole feature is that
+    /// the dynasty they gave us survives whatever they think of the result.
+    /// </summary>
+    private string RecreatedSavePath()
+    {
+        var source = _package?.SourceSavePath ?? _dynastyBox.Text ?? "";
+        var folder = Path.GetDirectoryName(Path.GetFullPath(source)) ?? ".";
+        var name = Path.GetFileName(source);
+        return Path.Combine(folder, $"{name}-Recreated");
+    }
+
     private async Task GenerateAsync()
     {
         var request = new RosterGenerationRequest
@@ -360,6 +485,7 @@ public sealed class MainWindow : Window
             FillRoster = _ratingsBox.IsChecked == true && _fillBox.IsChecked == true,
             ApplyEquipment = _equipmentBox.IsChecked == true,
             ReplaceRealPersonFaces = _facesBox.IsChecked == true,
+            SaveOutputPath = DynastyIsSave && _saveOutBox.IsChecked == true ? RecreatedSavePath() : null,
         };
 
         _generateButton.IsEnabled = false;
@@ -371,8 +497,11 @@ public sealed class MainWindow : Window
             var result = await Task.Run(() => new RosterGenerationService().Run(request));
             _output.Text = Describe(result);
             SetStatus(
-                $"Done — {result.Converted} players written, {result.Filled} slots filled. " +
-                $"Import {Path.GetFileName(result.OutputPath)} with your roster editor.",
+                result.SaveOutput is { } written
+                    ? $"Done — {result.Converted} players written, {result.Filled} slots filled. " +
+                      $"Load {Path.GetFileName(written.Destination)} in the game."
+                    : $"Done — {result.Converted} players written, {result.Filled} slots filled. " +
+                      $"Import {Path.GetFileName(result.OutputPath)} with your roster editor.",
                 ok: true);
         }
         catch (Exception ex)
@@ -399,6 +528,16 @@ public sealed class MainWindow : Window
         text.AppendLine($"Slots filled:      {result.Filled}");
         text.AppendLine($"Validation:        0 errors, {result.Export.Report.Warnings.Count()} warnings");
         text.AppendLine();
+        if (result.SaveOutput is { } save)
+        {
+            text.AppendLine();
+            text.AppendLine($"Dynasty save:      {Path.GetFullPath(save.Destination)}");
+            text.AppendLine($"                   {save.CellsChanged:N0} field(s) written; " +
+                            $"{save.EmptyRecordsSkipped:N0} empty roster slot(s) left untouched.");
+            text.AppendLine("                   Copy it into your saves folder. Your original is unchanged.");
+            text.AppendLine();
+        }
+
         text.AppendLine($"Roster written to: {Path.GetFullPath(result.OutputPath)}");
         text.AppendLine($"Report written to: {Path.GetFullPath(result.ReportPath)}");
         text.AppendLine();

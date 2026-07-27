@@ -169,6 +169,34 @@ public static class NativeSave
     }
 
     /// <summary>
+    /// The JavaScript runtime that reads saves: the copy shipped beside the
+    /// application if there is one, otherwise whatever <c>node</c> is on PATH.
+    ///
+    /// <para>A bundled copy is strongly preferred, and the release ships one.
+    /// Somebody who downloaded a roster tool should not have to install a
+    /// programming language to open their own dynasty, and a private copy also
+    /// cannot be broken by whatever else on the machine wants a different
+    /// Node version.</para>
+    /// </summary>
+    public static string ResolveRuntime()
+    {
+        if (FindToolsDirectory() is { } tools)
+        {
+            var name = OperatingSystem.IsWindows() ? "node.exe" : "node";
+            var bundled = Path.Combine(tools, "runtime", name);
+            if (File.Exists(bundled))
+            {
+                return bundled;
+            }
+        }
+
+        return "node";
+    }
+
+    /// <summary>True when the runtime in use is the one shipped with the app.</summary>
+    public static bool UsesBundledRuntime => ResolveRuntime() != "node";
+
+    /// <summary>
     /// Whether reading and writing saves directly is available, and if not,
     /// what the user would have to do about it.
     /// </summary>
@@ -198,11 +226,22 @@ public static class NativeSave
         return true;
     }
 
+    /// <summary>
+    /// One line describing how saves are read, for the app to show. Says
+    /// nothing about installing anything when nothing needs installing.
+    /// </summary>
+    public static string DescribeRuntime() =>
+        IsAvailable(out var reason)
+            ? UsesBundledRuntime
+                ? "Dynasty saves can be read and written directly (using the included runtime)."
+                : "Dynasty saves can be read and written directly (using the Node.js on this machine)."
+            : reason;
+
     private static bool NodeWorks(out string reason)
     {
         try
         {
-            using var process = Process.Start(new ProcessStartInfo("node", "--version")
+            using var process = Process.Start(new ProcessStartInfo(ResolveRuntime(), "--version")
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -242,9 +281,10 @@ public static class NativeSave
     }
 
     private const string NodeMissing =
-        "Node.js 22.19 or newer is needed to read a dynasty save directly, and was not found on PATH. " +
-        "Install it from https://nodejs.org, or export your dynasty to CSVs and point --dynasty at that " +
-        "folder instead.";
+        "The runtime that reads dynasty saves could not be started. The release ships its own copy in " +
+        "'tools/native-save/runtime' — if that folder is missing, unzip the download again, keeping it " +
+        "whole. Failing that, install Node.js 22.19 or newer from https://nodejs.org, or export your " +
+        "dynasty to CSVs and point --dynasty at that folder instead.";
 
     private static string Run(string script, IReadOnlyList<string> arguments)
     {
@@ -254,7 +294,7 @@ public static class NativeSave
         }
 
         var tools = FindToolsDirectory()!;
-        var info = new ProcessStartInfo("node")
+        var info = new ProcessStartInfo(ResolveRuntime())
         {
             WorkingDirectory = tools,
             RedirectStandardOutput = true,

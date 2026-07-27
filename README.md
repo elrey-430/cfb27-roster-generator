@@ -12,8 +12,8 @@ your dynasty save → [this tool] → new dynasty save
 ```
 
 It also reads the community export tool's CSVs and writes an import-ready
-player table, which is how it worked before it could open a save, and still
-the route to take when Node.js is not installed:
+player table, which is how it worked before it could open a save and remains a
+first-class route:
 
 ```
 your dynasty → [export tool] → CSV files → [this tool] → new CSV → [roster editor]
@@ -27,6 +27,7 @@ your dynasty → [export tool] → CSV files → [this tool] → new CSV → [ro
   table (what is confirmed safe to write and why).
 - **`QUICKSTART.md`** — the page that ships with the release: install-free
   setup, the four steps, and what to do when something goes wrong.
+- **`docs/Release_Notes.md`** — what changed in each release, and why.
 - **`docs/Status.md`** — current status, known unknowns, next milestone.
 - **`Ratings/`** — how ratings are generated: `Rating_Model.md` (the
   pipeline and its verification), `Position_Formulas.md` (every position's
@@ -47,10 +48,16 @@ Copy the result into `Documents\EA SPORTS College Football 27\saves\` and load
 it. No export step, no separate roster importer. Your original save is never
 modified — the output is always a new file.
 
-This needs **Node.js 22.19+** on your machine ([nodejs.org](https://nodejs.org));
-everything else is self-contained. Without it, the export-based workflow below
-still works exactly as it always has, and the tool tells you so rather than
-failing obscurely.
+**Nothing to install.** The release bundles everything it needs to read a save,
+including its own copy of the Node.js runtime (v22 LTS, MIT, checksum-verified
+at build time). You do not install Node, you do not run a package manager, and
+the bundled copy cannot be broken by any other version already on the machine.
+
+If you are running from a source checkout rather than the release zip, that
+copy is not there — install [Node.js](https://nodejs.org) 22.19+ or run
+`build-release.sh`, which fetches it. Either way the export-based workflow below
+needs none of this, and the tool names what is missing rather than failing
+obscurely.
 
 ## End-user workflow
 

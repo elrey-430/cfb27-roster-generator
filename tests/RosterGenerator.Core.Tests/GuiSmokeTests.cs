@@ -43,24 +43,29 @@ public sealed class GuiSmokeTests
                 Assert.False(generate!.IsEnabled);
 
                 // The single most confusable thing about this tool is what
-                // step 1 wants. It is a folder of CSVs the community export
-                // tool produced, not a save file, and the window has to say
-                // so — a user who points it at a save gets an error with no
-                // idea what to do instead.
+                // step 1 wants. It now takes the dynasty save itself *or* a
+                // folder of exported CSVs, and the window has to offer both —
+                // a user who has only ever used the export tool must not think
+                // the save route replaced it, and a user who has never
+                // exported anything must not think they have to.
                 var lines = window.GetVisualDescendants().OfType<TextBlock>()
                     .Select(t => t.Text ?? "")
                     .ToList();
-
-                // The step-1 heading has to name CSVs; "Dynasty export" alone
-                // reads as "your save" to someone who has not used the export
-                // tool yet.
-                Assert.Contains(lines, l => l.StartsWith("1.", StringComparison.Ordinal)
-                    && l.Contains("CSV", StringComparison.OrdinalIgnoreCase));
-
-                // And somewhere it has to say the save itself is not the input.
+                var buttonLabels = buttons.Select(b => b.Content as string ?? "").ToList();
                 var text = string.Join(" ", lines);
+
+                // Both routes have to be reachable, and the save one has to be
+                // a button rather than something you can only type.
+                Assert.Contains(buttonLabels, b => b.Contains("Save file", StringComparison.OrdinalIgnoreCase));
+                Assert.Contains(buttonLabels, b => b.Contains(".zip", StringComparison.OrdinalIgnoreCase));
                 Assert.Contains("save", text, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains("export tool", text, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("CSV", text, StringComparison.OrdinalIgnoreCase);
+
+                // And the promise that makes the save route safe to try.
+                Assert.Contains("never modified", text, StringComparison.OrdinalIgnoreCase);
+
+                // The window must not still claim it cannot read a save.
+                Assert.DoesNotContain("does not read your save", text, StringComparison.OrdinalIgnoreCase);
 
                 window.Close();
             }

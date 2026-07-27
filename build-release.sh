@@ -58,6 +58,43 @@ else
   echo "         tools/native-save and build again."
 fi
 
+# The JavaScript runtime itself, shipped with the app. 87 MB raw, ~33 MB in the
+# zip, and it buys the thing that matters most about this release: a user drops
+# their dynasty save in and gets one back having installed nothing at all. A
+# private copy also cannot be broken by whatever else on the machine wants a
+# different Node version.
+#
+# Node.js is MIT licensed and its LICENSE ships beside it. The download is
+# checksum-verified against nodejs.org's own SHASUMS256.txt, and cached between
+# builds because it is 87 MB.
+NODE_VERSION="v22.23.1"          # LTS "Jod"; the library needs >= 22.19
+NODE_CACHE="${ROOT}/.node-cache/${NODE_VERSION}"
+mkdir -p "${NODE_CACHE}"
+
+if [ ! -f "${NODE_CACHE}/node.exe" ]; then
+  echo "Fetching Node ${NODE_VERSION} (win-x64) …"
+  curl -fsS -o "${NODE_CACHE}/SHASUMS256.txt" "https://nodejs.org/dist/${NODE_VERSION}/SHASUMS256.txt"
+  curl -fsS -o "${NODE_CACHE}/node.exe"       "https://nodejs.org/dist/${NODE_VERSION}/win-x64/node.exe"
+  curl -fsS -o "${NODE_CACHE}/LICENSE"        "https://raw.githubusercontent.com/nodejs/node/${NODE_VERSION}/LICENSE"
+fi
+
+# Verified every build, not just on download: a corrupted cache must not become
+# a corrupted release.
+EXPECTED="$(grep 'win-x64/node.exe' "${NODE_CACHE}/SHASUMS256.txt" | awk '{print $1}')"
+ACTUAL="$(sha256sum "${NODE_CACHE}/node.exe" | awk '{print $1}')"
+if [ -z "${EXPECTED}" ] || [ "${EXPECTED}" != "${ACTUAL}" ]; then
+  echo "ERROR: node.exe failed checksum verification." >&2
+  echo "  expected ${EXPECTED:-<none found>}" >&2
+  echo "  actual   ${ACTUAL}" >&2
+  echo "  Delete ${NODE_CACHE} and build again." >&2
+  exit 1
+fi
+
+mkdir -p "${OUT}/tools/native-save/runtime"
+cp "${NODE_CACHE}/node.exe" "${OUT}/tools/native-save/runtime/"
+cp "${NODE_CACHE}/LICENSE"  "${OUT}/tools/native-save/runtime/LICENSE-nodejs.txt"
+echo "Node ${NODE_VERSION} bundled (sha256 ${ACTUAL:0:16}…)"
+
 ( cd "${ROOT}/dist" && zip -qr "${NAME}.zip" "${NAME}" )
 
 echo

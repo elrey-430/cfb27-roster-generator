@@ -133,6 +133,44 @@ public sealed class NativeSaveTests
         }
     }
 
+    [Fact]
+    public void TheBundledRuntimeIsPreferredOverWhateverIsOnThePath()
+    {
+        // The release ships its own Node so the user installs nothing, and so
+        // that whatever else on the machine wants a different version cannot
+        // break this. When that copy is present it must win.
+        var tools = NativeSave.FindToolsDirectory();
+        Assert.NotNull(tools);
+        var bundled = Path.Combine(
+            tools!, "runtime", OperatingSystem.IsWindows() ? "node.exe" : "node");
+
+        if (File.Exists(bundled))
+        {
+            Assert.Equal(bundled, NativeSave.ResolveRuntime());
+            Assert.True(NativeSave.UsesBundledRuntime);
+        }
+        else
+        {
+            // A source checkout has no bundled copy; PATH is the fallback.
+            Assert.Equal("node", NativeSave.ResolveRuntime());
+            Assert.False(NativeSave.UsesBundledRuntime);
+        }
+    }
+
+    [Fact]
+    public void HowSavesAreReadIsDescribedInOneLine()
+    {
+        // Shown in the desktop app. When nothing needs installing it must not
+        // tell the user to install anything.
+        var description = NativeSave.DescribeRuntime();
+        Assert.NotEqual("", description);
+        if (NativeSave.IsAvailable(out _))
+        {
+            Assert.Contains("directly", description);
+            Assert.DoesNotContain("nodejs.org", description);
+        }
+    }
+
     // ---- The whole way through, when a real save is available -------------
 
     /// <summary>

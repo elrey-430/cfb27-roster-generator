@@ -31,14 +31,28 @@ _Last updated: 2026-07-27 — end of Milestone 14._
   owning a bit-packer and a 3,498-entry schema table, re-verified against every
   game patch, in exchange for nothing a user can see. `NativeSave` is the whole
   boundary: two process calls and a magic-byte check.
-- **The cost, stated plainly:** this route needs **Node.js 22.19+** on the
-  user's machine. The library is vendored into the release so nobody runs a
-  package manager, but Node itself is theirs to install. Without it the tool
-  says exactly that and the CSV workflow is untouched.
+- **Nothing to install.** The release bundles the Node runtime itself
+  (v22.23.1 LTS, MIT, checksum-verified against nodejs.org at build time,
+  +33 MB zipped) alongside the vendored library, so the user installs nothing
+  and runs no package manager. The bundled copy is private to the app and
+  cannot be broken by another Node version on the machine. `NativeSave`
+  prefers it and falls back to PATH for source checkouts. Without either, the
+  tool names what is missing and the CSV workflow is untouched.
+- **The desktop app does this too.** A "Save file…" browse button opening at
+  the game's saves folder, a "write a new dynasty save" option that appears
+  only when the input is a save, and the runtime problem reported inline
+  rather than at Generate. Its step-1 copy used to say "This tool does not
+  read your save file", which the smoke test pinned — both are now inverted.
+- **Two leaks closed on the way.** `OpenDynasty` returned an export while
+  dropping the package that owned its scratch folder, so every archive or save
+  selection left a copy of the dynasty's tables in the temp folder; it now
+  returns the package and callers dispose it. And `generate` opened the
+  dynasty eagerly for a team prompt it usually never showed, extracting a save
+  twice per run.
 - **The guard that matters.** The schema is pinned at `C27_468_2`; a mismatch
   refuses to write rather than guessing, because a field written at the wrong
   offset corrupts a dynasty silently.
-- Tests: 351/351. The end-to-end save test runs when `CFB27_TEST_SAVE` points
+- Tests: 353/353. The end-to-end save test runs when `CFB27_TEST_SAVE` points
   at a real save; a green suite says nothing about that path unless it was set.
 
 **Milestone 13 (A whole season at a time) is complete.**

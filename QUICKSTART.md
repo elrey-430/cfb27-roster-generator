@@ -8,19 +8,21 @@ Recreate a historical college football roster inside your CFB27 dynasty.
 your dynasty save  →  [this tool]  →  new dynasty save
 ```
 
-Your save is never changed: the result is always a new file. This route needs
-Node.js 22.19+ (https://nodejs.org) — it is the one thing not included here.
+Your save is never changed: the result is always a new file.
 
-Without Node, or if you prefer it, the original route still works in full: you
-export your dynasty to CSVs with the community export tool, this program writes
-a new CSV, and the community roster editor imports it back.
+**Nothing to install.** Everything needed to read a save is in this folder,
+including its own copy of the Node.js runtime. Unzip and run.
+
+If you prefer, the original route still works in full: you export your dynasty
+to CSVs with the community export tool, this program writes a new CSV, and the
+community roster editor imports it back.
 
 ```
 your dynasty  →  [export tool]  →  CSV files  →  [this tool]  →  new CSV  →  [roster editor]
 ```
 
 Both programs in this folder are self-contained: they run on a clean Windows 10
-or 11 machine with no .NET runtime, no Python, and no setup.
+or 11 machine with no .NET runtime, no Python, no Node install, and no setup.
 
 ```
 RosterGenerator.Gui.exe    the app — start here
@@ -118,9 +120,8 @@ the game keeps in reserve are left exactly as they were. **Your original save
 is never modified** — the output is always a new file, and writing over the
 one you supplied is refused.
 
-This route needs **Node.js 22.19 or newer** installed (https://nodejs.org).
-Without it you get a message saying so, and the export route below still
-works.
+The runtime that reads saves ships in `tools\native-save\runtime` — keep the
+folder intact when you unzip and there is nothing to install.
 
 ```
 RosterGenerator.Cli.exe validate --roster MyRoster.csv --dynasty C:\path\to\exported-csvs
@@ -171,9 +172,10 @@ export tool wrote. It should contain many CSV files, one of which is the
 Player table. If you meant to use your save file, pick the save itself, not
 the folder it lives in.
 
-**"Node.js 22.19 or newer is needed …"** — reading a save directly needs Node
-installed (https://nodejs.org). Install it, or export your dynasty to CSVs and
-point `--dynasty` at that folder instead.
+**"The runtime that reads dynasty saves could not be started"** — the
+`tools\native-save` folder did not come along. Unzip the whole download again,
+keeping it intact. Failing that, install Node.js 22.19+ (https://nodejs.org),
+or export your dynasty to CSVs and point `--dynasty` at that folder instead.
 
 **"… is missing the required 'firstname' column"** — the first line of your
 CSV must be the header. Check you did not delete it.

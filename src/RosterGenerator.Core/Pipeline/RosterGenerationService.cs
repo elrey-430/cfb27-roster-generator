@@ -156,12 +156,16 @@ public sealed record RosterGenerationResult(
 public sealed class RosterGenerationService
 {
     /// <summary>
-    /// Opens a dynasty export for listing teams before generating. Accepts the
-    /// folder of exported CSVs, the Player CSV alone, or a <c>.zip</c> of the
-    /// folder — which is what a user has after moving an export between
-    /// machines.
+    /// Opens a dynasty for listing teams before generating. Accepts a dynasty
+    /// save, the folder of exported CSVs, the Player CSV alone, or a
+    /// <c>.zip</c> of the folder.
+    ///
+    /// <para><b>The caller owns the returned package and must dispose it.</b>
+    /// An archive and a save are both expanded into a scratch folder that
+    /// disposal deletes; dropping the package on the floor leaves a copy of
+    /// the dynasty's tables in the temp folder every time one is opened.</para>
     /// </summary>
-    public static DynastyExport OpenDynasty(string path) => DynastyPackage.Open(path).Export;
+    public static DynastyPackage OpenDynasty(string path) => DynastyPackage.Open(path);
 
     /// <summary>
     /// Resolves a data file: an explicit folder if given, otherwise
