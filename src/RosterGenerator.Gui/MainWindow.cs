@@ -81,6 +81,12 @@ public sealed class MainWindow : Window
         var browseDynasty = new Button { Content = "Browse…" };
         browseDynasty.Click += async (_, _) => await PickDynastyAsync();
 
+        // A user who moved their export between machines has a .zip, not the
+        // folder that was inside it. Making them unpack it first is a step
+        // that only ever existed because the tool could not read an archive.
+        var browseDynastyZip = new Button { Content = ".zip…" };
+        browseDynastyZip.Click += async (_, _) => await PickDynastyArchiveAsync();
+
         var browseRoster = new Button { Content = "Browse…" };
         browseRoster.Click += async (_, _) => await PickRosterAsync();
 
@@ -107,10 +113,11 @@ public sealed class MainWindow : Window
 
         panel.Children.Add(Labelled(
             "1.  Exported dynasty CSVs",
-            Row(_dynastyBox, browseDynasty),
+            Row(_dynastyBox, browseDynasty, browseDynastyZip),
             "This tool does not read your save file. Export your dynasty with the community " +
             "export tool first — it writes a folder of CSV files, one per table — and choose that " +
-            "folder here. The Player and Team tables are found for you."));
+            "folder here, or the .zip of it if that is what you have. The Player and Team tables " +
+            "are found for you, and nothing you choose here is ever modified."));
         panel.Children.Add(Labelled(
             "2.  Roster CSV",
             Row(_rosterBox, browseRoster, openTemplates),
@@ -207,6 +214,27 @@ public sealed class MainWindow : Window
         LoadDynasty();
     }
 
+    private async Task PickDynastyArchiveAsync()
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Select the .zip of the CSV files exported from your dynasty",
+            AllowMultiple = false,
+            FileTypeFilter = new[]
+            {
+                new FilePickerFileType("Zipped dynasty export") { Patterns = new[] { "*.zip" } },
+            },
+        });
+
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        _dynastyBox.Text = files[0].Path.LocalPath;
+        LoadDynasty();
+    }
+
     private void LoadDynasty()
     {
         _teamBox.ItemsSource = null;
@@ -223,8 +251,8 @@ public sealed class MainWindow : Window
         catch (Exception ex)
         {
             SetStatus(
-                $"No player table was found in that folder. Choose the folder the dynasty export " +
-                $"tool wrote its CSV files into. ({ex.Message})",
+                "No player table was found there. Choose the folder the dynasty export tool wrote " +
+                $"its CSV files into, or a .zip of that folder. ({ex.Message})",
                 ok: false);
         }
 

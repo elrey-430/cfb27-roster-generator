@@ -131,7 +131,13 @@ public sealed record RosterGenerationResult(
 public sealed class RosterGenerationService
 {
     /// <summary>Opens a dynasty export, for listing teams before generating.</summary>
-    public static DynastyExport OpenDynasty(string path) => DynastyExport.Open(path);
+    /// <summary>
+    /// Opens a dynasty export for listing teams before generating. Accepts the
+    /// folder of exported CSVs, the Player CSV alone, or a <c>.zip</c> of the
+    /// folder — which is what a user has after moving an export between
+    /// machines.
+    /// </summary>
+    public static DynastyExport OpenDynasty(string path) => DynastyPackage.Open(path).Export;
 
     /// <summary>
     /// Resolves a data file: an explicit folder if given, otherwise
