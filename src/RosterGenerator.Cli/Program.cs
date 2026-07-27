@@ -103,6 +103,12 @@ static int Usage()
         default) gives those players a generated face taken from elsewhere in
         your own export; --faces inherit keeps the slot's head as it was.
 
+        A replacement keeps the skin tone the slot already had, so swapping a
+        face does not also change how a player looks. The roster CSV's optional
+        SkinTone column (EA's 1 lightest to 8 darkest) overrides that per
+        player. A tone is never inferred from a name or a hometown -- if you
+        leave the column blank the slot's own appearance is kept.
+
         Equipment is period-correct by default. Helmets live in the save's
         CharacterVisuals table, so when --season falls inside a known era the
         team's head gear is rewritten to match and the changed table is written

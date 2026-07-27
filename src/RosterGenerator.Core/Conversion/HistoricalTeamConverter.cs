@@ -31,6 +31,7 @@ public sealed class HistoricalTeamConverter
     private readonly ArchetypeSelector? _archetypeSelector;
     private readonly RosterFiller? _rosterFiller;
     private readonly bool _replaceRealPersonFaces;
+    private readonly Equipment.CharacterVisualsTable? _characterVisuals;
     private Appearance.HeadAssetPool? _faces;
     private readonly RosterDepthModel? _depth;
     private readonly TeamMappingSet? _previousSchools;
@@ -67,6 +68,12 @@ public sealed class HistoricalTeamConverter
     /// generated face instead, so a recreated player never wears the likeness
     /// of somebody who is not them.
     /// </param>
+    /// <param name="characterVisuals">
+    /// The export's CharacterVisuals table, read only, so a face swap can keep
+    /// the skin tone the roster slot already had. A real person's scan does
+    /// not spell its tone out in its name the way a generated head does, and
+    /// this is the only place to read it. Null simply means no preference.
+    /// </param>
     public HistoricalTeamConverter(
         TeamMappingSet teamMappings,
         PositionMappingSet positionMappings,
@@ -75,9 +82,11 @@ public sealed class HistoricalTeamConverter
         RosterFiller? rosterFiller = null,
         RosterDepthModel? rosterDepth = null,
         TeamMappingSet? previousSchoolMappings = null,
-        bool replaceRealPersonFaces = true)
+        bool replaceRealPersonFaces = true,
+        Equipment.CharacterVisualsTable? characterVisuals = null)
     {
         _replaceRealPersonFaces = replaceRealPersonFaces;
+        _characterVisuals = characterVisuals;
         _teamMappings = teamMappings;
         _positionMappings = positionMappings;
         _ratingEngine = ratingEngine;
@@ -106,10 +115,13 @@ public sealed class HistoricalTeamConverter
             "Weight is written using the confirmed encoding (stored value = pounds − 160, representable " +
             "range 160–400 lb); weights outside that range or missing from the dataset inherit the donor " +
             "slot's weight.");
-        report.GlobalAssumptions.Add(
-            "Identity asset fields (PLYR_ASSETNAME, GenericHeadAssetName, PLYR_PORTRAIT) keep the donor " +
-            "slot's values, so in-game portraits/head models belong to the replaced fictional players. " +
-            "Face mapping is a later milestone.");
+        report.GlobalAssumptions.Add(_replaceRealPersonFaces
+            ? "A roster slot carrying a real person's head scan is given a generated face taken from this " +
+              "same export, so no recreated player wears a living player's likeness under another name. " +
+              "The replacement keeps the slot's own skin tone unless the roster CSV's optional SkinTone " +
+              "column asked for a different one; a tone is never inferred from a name or a hometown."
+            : "Identity asset fields (PLYR_ASSETNAME, GenericHeadAssetName, PLYR_PORTRAIT) keep the donor " +
+              "slot's values, so recreated players wear the faces of the players they replaced.");
         report.GlobalAssumptions.Add(
             "Hometown is written: PLYR_HOME_TOWN takes the town as free text and PLYR_HOME_STATE the " +
             "matching state from the save's 51-value enum (NonUS for anything not a US state).");
@@ -361,23 +373,60 @@ public sealed class HistoricalTeamConverter
     /// on all 9,011 scanned players and blank on 4,100 generated ones, so
     /// clearing it is both attested and the thing that severs the last link to
     /// the real person.</para>
+    ///
+    /// <para><b>Skin tone rides along with the face.</b> A generated head is
+    /// only ever used at one tone, so picking the face picks the tone and
+    /// nothing in the visuals table has to be written. Which tone is wanted
+    /// comes from two places, in this order: the optional <c>SkinTone</c>
+    /// column, when the user supplied one; otherwise the tone the roster slot
+    /// already had, so swapping a real person's scan for a generated face does
+    /// not also change how the player looks. The tone is never inferred from a
+    /// name, a hometown or a position.</para>
     /// </summary>
     private (string AssetName, string HeadAssetName, string Portrait) ChooseFace(
-        RosterEditSession session, Player slot, PlayerConversionEntry entry)
+        RosterEditSession session, Player slot, HistoricalPlayer historicalPlayer,
+        PlayerConversionEntry entry)
     {
         var inherited = (
             AssetName: slot.GetRaw(PlayerColumns.AssetName),
             HeadAssetName: slot.GetRaw(PlayerColumns.GenericHeadAssetName),
             Portrait: slot.GetRaw(PlayerColumns.Portrait));
 
-        if (!_replaceRealPersonFaces
-            || !Appearance.HeadAsset.Parse(inherited.HeadAssetName).IsRealPerson)
+        var slotHead = Appearance.HeadAsset.Parse(inherited.HeadAssetName);
+        var requested = historicalPlayer.SkinTone;
+
+        // Nothing to do when the slot's face is already acceptable and the
+        // user did not ask for a particular appearance.
+        if (requested is null && (!_replaceRealPersonFaces || !slotHead.IsRealPerson))
         {
             return inherited;
         }
 
+        // A slot the user asked to leave alone stays alone, even with a tone
+        // requested: --faces inherit means inherit.
+        if (!_replaceRealPersonFaces)
+        {
+            if (requested is int ignored)
+            {
+                entry.Warnings.Add(
+                    $"SkinTone {ignored} was not applied because faces are being inherited " +
+                    "(--faces inherit).");
+            }
+
+            return inherited;
+        }
+
+        // Already the right tone: changing the face would be churn.
+        if (requested is int want && slotHead.Kind == Appearance.HeadAssetKind.Generic &&
+            slotHead.SkinTone == want)
+        {
+            return inherited;
+        }
+
+        var wanted = requested ?? SlotSkinTone(slot, slotHead);
+
         _faces ??= Appearance.HeadAssetPool.Build(session.Roster);
-        var replacement = _faces.Draw(slot.RowKey);
+        var replacement = _faces.Draw(slot.RowKey, wanted);
         if (replacement is null)
         {
             entry.Warnings.Add(
@@ -386,11 +435,56 @@ public sealed class HistoricalTeamConverter
             return inherited;
         }
 
-        entry.DefaultsUsed.Add(
-            $"face: the slot carried a real player's likeness ({inherited.HeadAssetName}), " +
-            $"replaced with a generated one ({replacement.Value.AssetName}).");
+        var got = replacement.Value.SkinTone;
+        var toneNote = requested is int asked
+            ? asked == got
+                ? $", at the skin tone {asked} you asked for"
+                : $", at skin tone {got} — this export carries no generated face at the {asked} " +
+                  "you asked for, so the nearest available was used"
+            : wanted is int kept && kept == got
+                ? $", keeping the slot's own skin tone ({kept})"
+                : "";
+
+        if (slotHead.IsRealPerson)
+        {
+            entry.DefaultsUsed.Add(
+                $"face: the slot carried a real player's likeness ({inherited.HeadAssetName}), " +
+                $"replaced with a generated one ({replacement.Value.AssetName}){toneNote}.");
+        }
+        else
+        {
+            entry.DefaultsUsed.Add(
+                $"face: changed to {replacement.Value.AssetName}{toneNote}.");
+        }
 
         return ("", replacement.Value.AssetName, replacement.Value.Portrait.ToString());
+    }
+
+    /// <summary>
+    /// The skin tone the roster slot already has, so a face swap does not
+    /// change a player's appearance as a side effect.
+    ///
+    /// <para>A generated head spells its tone out in its own name. A real
+    /// person's scan does not, so the tone is read from the slot's
+    /// CharacterVisuals row when the export carries one. Null means "no
+    /// preference", and the face is then drawn from the whole pool exactly as
+    /// it was before tones were understood.</para>
+    /// </summary>
+    private int? SlotSkinTone(Player slot, Appearance.HeadAsset slotHead)
+    {
+        if (slotHead.HasSkinTone)
+        {
+            return slotHead.SkinTone;
+        }
+
+        if (_characterVisuals is null || !slot.HasColumn(PlayerColumns.CharacterVisuals))
+        {
+            return null;
+        }
+
+        var rowId = Equipment.CharacterVisualsReference.RowId(
+            slot.GetRaw(PlayerColumns.CharacterVisuals));
+        return rowId is int row ? _characterVisuals.GetSkinTone(row) : null;
     }
 
     private static int? Usable(
@@ -424,7 +518,7 @@ public sealed class HistoricalTeamConverter
         // Identity: replace-with-real-player semantics. The donor slot's
         // asset values are passed back unchanged unless the slot carried a
         // real person's head scan — see ChooseFace.
-        var face = ChooseFace(session, slot, entry);
+        var face = ChooseFace(session, slot, historicalPlayer, entry);
         session.ReplacePlayerIdentity(
             slot,
             historicalPlayer.FirstName,

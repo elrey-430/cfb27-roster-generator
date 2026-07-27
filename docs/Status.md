@@ -1,8 +1,45 @@
 # Project Status
 
-_Last updated: 2026-07-26 — end of Milestone 11._
+_Last updated: 2026-07-27 — end of Milestone 12._
 
 ## Current status
+
+**Milestone 12 (One file in, one file out; and appearance) is complete.**
+
+- **A dynasty goes in as one file and comes back as one file.** `--dynasty`
+  takes a `.zip` wherever it took a folder, and `--package` writes the whole
+  dynasty back out as a single archive. The property that matters is not that
+  it round-trips — it is that **everything the tool did not generate comes back
+  byte for byte**. Verified on five fresh saves: 2,271 of 2,273 files identical
+  (2,273 of 2,275 for the two with a custom coach), the two that moved equal to
+  the generated tables, and the result re-opens as a dynasty.
+- **Five fresh saves settled what varies between dynasties.** Two independently
+  created saves with the same team, coach and roster are **byte-identical on
+  all 139 real teams**; the only differing rows are the 4,100 in `TeamIndex
+  255`, the randomly generated recruit pool. The coach touches **no** player
+  row. The live roster is not byte-stable between downloads, but only in
+  flavour fields — hometown, ability bitfield, pipeline, 35 jersey numbers —
+  and never a name, position, class, height, weight or rating.
+- **A custom coach renumbers the database.** 245 of 1,299 shared tables shift
+  `_tableIndex`, including the real `Team` table (2225 → 2227). `Player` and
+  `CharacterVisuals` happen to stay put, but there are **nine tables named
+  `Team`** in every save, so discovery by content rather than by number is what
+  keeps this working — and is why a canonical Player table can never be shipped.
+- **Skin tone is decoded, and it rides along with the face.** The
+  `CharacterVisuals` blob carries a bare `skinTone` (1 lightest, 8 darkest),
+  and the sixth segment of a generated head's own name is the same value —
+  3,144 agreements, zero disagreements. A given generated head is only ever
+  used at one tone (1,607 heads, none at two), so choosing the face chooses the
+  tone and the visuals table never has to be written.
+- **Faces now keep the slot's tone, and an optional `SkinTone` column
+  overrides it.** On the 2014 Florida State roster: 6 of 6 requested tones
+  honoured exactly, and **79 of 79 other players kept their tone through the
+  face swap, none moved**. Out-of-range values are refused and reported rather
+  than clamped.
+- **The tone is supplied, never inferred.** The generator will not guess what a
+  real person looked like from their name, hometown or position. A blank cell
+  means "keep what the roster slot had".
+- Tests: 317/317.
 
 **Milestone 11 (Attributes that match the archetype) is complete.**
 

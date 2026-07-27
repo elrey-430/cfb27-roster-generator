@@ -279,10 +279,29 @@ Two companion columns move with it:
   attested for a generated face.
 
 The generated name decomposes as
-`Generic_<portrait>_P_T<tone>_<family>_<a>_<b>`, where the `T` segment has 59
-distinct values, the family letter is one of `D`/`H`/`T`/`M`, and the trailing
-digits run 1–8 and 1–4. **What those segments control is not confirmed** and
-nothing depends on them.
+`Generic_<portrait>_P_T<texture>_<family>_<skinTone>_<variant>`.
+
+**The sixth segment is EA's skin tone — confirmed.** The `CharacterVisuals`
+blob carries a bare `skinTone` integer beside the gear, and decoding every
+player's visuals reference in a base save gives 3,144 generic-headed players
+where both the segment and the field are readable. The two **agree 3,144 times
+and disagree zero times.**
+
+Stronger still: **a given generated head is only ever used at one tone.** 1,607
+distinct heads appear in a base save and not one of them is used at two
+different tones. Head and tone are a single choice, not two — which is why the
+tool can set a player's appearance by choosing their face and never has to
+write the visuals table. `CharacterVisualsTable` exposes `GetSkinTone` and
+deliberately has no setter.
+
+Tone is `1` (lightest) to `8` (darkest), distributed across a base save as
+1,939 / 1,612 / 518 / 760 / 1,068 / 1,966 / 2,006 / 2,287. Generated faces
+cover tones 1–7 with 349 / 294 / 77 / 104 / 246 / 272 / 265 distinct heads.
+
+The remaining segments are **not** confirmed. The family letter
+(`D`/`H`/`M`/`T`) is not the tone and does not track height, weight, position
+or `bodyType`; the `T` segment has 59 distinct values; the trailing digit runs
+1–4 and is not `bodyType` either. Nothing depends on any of them.
 
 **Tool policy.** A replaced player used to inherit the slot's head, and 71 of
 the 85 slots on a typical team carry a scan — so most of a recreated roster
@@ -291,6 +310,12 @@ Those slots are now given a generated face **taken from the same export**, so
 no asset name is ever invented, and `PLYR_ASSETNAME` is cleared with it. Slots
 already carrying a generated face are left alone, as are slots no historical
 player took over: a leftover player is still themselves.
+
+Because the head carries the tone, the replacement is chosen **at the tone the
+slot already had**, so swapping a scan for a generated face does not silently
+change how a player looks. The roster CSV's optional `SkinTone` column
+overrides that per player. A tone is never inferred from a name, a hometown or
+a position — a blank cell means "keep what the slot had", not "work it out".
 
 The create-a-face path carries semantic, human-readable slots inside
 `CharacterVisuals` — `Head_hair_ShortCurly`, `Head_FacialHair_Animal`,

@@ -66,6 +66,18 @@ public sealed class CharacterVisualsTable
     private static readonly Regex JerseyStylePattern =
         new("\"itemAssetName\":\"(Gear_JerseyStyle_[^\"]*)\"", RegexOptions.Compiled);
 
+    // EA's skin tone, 1 (lightest) to 8 (darkest), a bare number beside the
+    // gear rather than an asset name. Present on 12,156 of the 12,586
+    // occupied rows in a base save.
+    //
+    // Read only, and deliberately so: a generated head is only ever used at
+    // one tone — 1,607 distinct heads in a base save, none used at two — so
+    // choosing a player's face already sets their tone, and writing this
+    // would be a second way to say the same thing that could disagree with
+    // the first.
+    private static readonly Regex SkinTonePattern =
+        new("\"skinTone\":(\\d+)", RegexOptions.Compiled);
+
     private readonly CsvDocument _document;
     private readonly Dictionary<int, int> _rowIndexByRowId;
 
@@ -165,6 +177,16 @@ public sealed class CharacterVisualsTable
 
     /// <summary>Reads the jersey cut worn in a row, or null.</summary>
     public string? GetJerseyStyle(int rowId) => Read(rowId, JerseyStylePattern);
+
+    /// <summary>
+    /// Reads EA's skin tone for a row — 1 (lightest) to 8 (darkest) — or null
+    /// when the row carries none. There is deliberately no setter; see the
+    /// note on <c>SkinTonePattern</c>.
+    /// </summary>
+    public int? GetSkinTone(int rowId) =>
+        Read(rowId, SkinTonePattern) is string value && int.TryParse(value, out var tone)
+            ? tone
+            : null;
 
     /// <summary>Replaces the shoulder pad size. False when the row has none.</summary>
     public bool SetShoulderPads(int rowId, string assetName) =>

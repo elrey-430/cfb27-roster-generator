@@ -23,10 +23,15 @@ namespace RosterGenerator.Core.Appearance;
 public sealed class HeadAssetPool
 {
     private readonly IReadOnlyList<HeadAsset> _faces;
+    private readonly Dictionary<int, IReadOnlyList<HeadAsset>> _byTone;
 
     private HeadAssetPool(IReadOnlyList<HeadAsset> faces)
     {
         _faces = faces;
+        _byTone = faces
+            .Where(f => f.HasSkinTone)
+            .GroupBy(f => f.SkinTone)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<HeadAsset>)g.ToList());
     }
 
     /// <summary>How many distinct generated faces are available.</summary>
@@ -34,6 +39,13 @@ public sealed class HeadAssetPool
 
     /// <summary>True when there is nothing to draw from.</summary>
     public bool IsEmpty => _faces.Count == 0;
+
+    /// <summary>Skin tones this export actually carries generated faces for.</summary>
+    public IReadOnlyCollection<int> AvailableSkinTones => _byTone.Keys;
+
+    /// <summary>How many distinct faces this export has at one skin tone.</summary>
+    public int CountAtSkinTone(int tone) =>
+        _byTone.TryGetValue(tone, out var faces) ? faces.Count : 0;
 
     /// <summary>
     /// Collects every distinct generated face in the roster, in a stable
@@ -70,8 +82,47 @@ public sealed class HeadAssetPool
     /// the same roster always produces the same faces, and two players on one
     /// team rarely share one.
     /// </summary>
-    public HeadAsset? Draw(int seed) =>
-        _faces.Count == 0 ? null : _faces[(int)((uint)Mix(seed) % (uint)_faces.Count)];
+    public HeadAsset? Draw(int seed) => Draw(seed, preferredSkinTone: null);
+
+    /// <summary>
+    /// A face at a particular skin tone, falling back sensibly when the user's
+    /// export cannot supply one.
+    ///
+    /// <para>Because a generated head is only ever used at one tone, choosing
+    /// the face IS choosing the tone — nothing in the visuals table has to be
+    /// written for this to take effect.</para>
+    ///
+    /// <para>The fallback ladder is deliberate. An exact tone is used when the
+    /// export has faces at it. Otherwise the <b>nearest</b> tone is used, since
+    /// EA numbers them lightest (1) to darkest (8) and an adjacent tone is the
+    /// smallest possible miss; ties go to the darker of the two only because a
+    /// tie has to break somewhere, and the report says what happened either
+    /// way. If the export has no tone information at all, the whole pool is
+    /// drawn from, which is exactly the behaviour before tones were understood.
+    /// </para>
+    /// </summary>
+    /// <param name="seed">The player's row key, for a reproducible choice.</param>
+    /// <param name="preferredSkinTone">
+    /// EA's 1–8, or null to draw from the whole pool.
+    /// </param>
+    public HeadAsset? Draw(int seed, int? preferredSkinTone)
+    {
+        if (_faces.Count == 0)
+        {
+            return null;
+        }
+
+        if (preferredSkinTone is not int wanted || _byTone.Count == 0)
+        {
+            return _faces[(int)((uint)Mix(seed) % (uint)_faces.Count)];
+        }
+
+        var tone = _byTone.ContainsKey(wanted)
+            ? wanted
+            : _byTone.Keys.OrderBy(t => Math.Abs(t - wanted)).ThenByDescending(t => t).First();
+        var candidates = _byTone[tone];
+        return candidates[(int)((uint)Mix(seed) % (uint)candidates.Count)];
+    }
 
     // A row key is a small ascending integer, so using it directly would hand
     // adjacent slots adjacent faces. Mixing spreads them across the pool

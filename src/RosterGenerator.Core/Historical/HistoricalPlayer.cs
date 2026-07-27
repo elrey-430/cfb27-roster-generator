@@ -51,6 +51,21 @@ public sealed record HistoricalPlayer
     public string? Notes { get; init; }
 
     /// <summary>
+    /// EA's skin tone, 1 (lightest) to 8 (darkest), or null to leave the
+    /// player's appearance alone. Optional, and blank is the normal case.
+    ///
+    /// <para>This is supplied by the user and never inferred. The generator
+    /// will not guess what a real person looked like from their name,
+    /// hometown or position — a blank cell means "keep what the roster slot
+    /// already had", not "work it out".</para>
+    ///
+    /// <para>It takes effect by choosing the player's generated face rather
+    /// than by writing the visuals table: a generated head is only ever used
+    /// at one tone, so the face and the tone are a single choice.</para>
+    /// </summary>
+    public int? SkinTone { get; init; }
+
+    /// <summary>
     /// Performance evidence used to generate ratings (stats, awards, draft
     /// slot, combine numbers, depth-chart role). Empty when the user
     /// supplied none — the rating engine then falls back to position and

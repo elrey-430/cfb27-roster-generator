@@ -154,6 +154,34 @@ have — percentages and per-carry averages are derived automatically.
 | `Hometown` | `"Tampa, FL"` | **Written to the generated roster.** Accepts `FL`, `Florida` or `West Virginia`; anything that is not a US state (e.g. `Melbourne, Australia`) is stored as `NonUS` and reported |
 | `PreviousSchool` | `Oregon` | **Written to the generated roster.** A school your dynasty does not carry (an FCS school such as `Albany`) is recorded the way real FCS transfers are, and reported. Leave blank for a player who never transferred |
 | `Notes` | `Team captain` | Free text for your own bookkeeping; appears in reports |
+| `SkinTone` | `4` | **Written to the generated roster.** EA's skin tone, **1 (lightest) to 8 (darkest)**. Blank is the normal case and keeps the appearance the roster slot already had. See below |
+
+### `SkinTone` — you say it, the tool never guesses
+
+The generator will **not** infer what a real person looked like from their
+name, hometown or position. That is why the column exists: you know who these
+players are, and the tool does not.
+
+Leaving it blank is not a worse answer — it means "keep whatever the roster
+slot had", and the tool now *does* keep it. Before, swapping a real player's
+head scan for a generated face could change a player's appearance as a side
+effect; it no longer does.
+
+A value outside 1–8 is ignored and reported, rather than rounded into range:
+turning a typed `10` into the darkest tone in the game would hand you a player
+you did not ask for with nothing on screen to say so.
+
+How it works is worth knowing, because it explains the one case where you
+might not get exactly what you asked for. A generated head **carries its own
+tone in its name** — `Generic_0877_P_T0042_H_6_3` is tone 6 — and a given head
+is only ever used at one tone. So setting a tone means *choosing a different
+face*, not editing an appearance slider. If your dynasty export happens to
+carry no generated face at the tone you asked for, the nearest available tone
+is used and the report says so. Nothing is ever invented: every face written
+already exists in your own export.
+
+`--faces inherit` turns face replacement off entirely, and `SkinTone` is then
+ignored — with a warning, so it cannot fail silently.
 
 ## Example
 
@@ -179,9 +207,9 @@ Ryan,Fitzgerald,K,88,6-1,190,RS Junior,Florida State,2023,"Colquitt, GA",,
 | Hometown | `PLYR_HOME_TOWN` (town) + `PLYR_HOME_STATE` (state enum) |
 | Position, weight, height and stats | The player's **archetype** (`PlayerType`), e.g. a 225 lb back becomes `HB_PowerBack`. The overall is then recomputed with that archetype's formula |
 | PreviousSchool | `PLYR_PREVTEAMID` (the school's id in your dynasty) |
+| SkinTone | The player's **generated face** (`GenericHeadAssetName` + `PLYR_PORTRAIT`), chosen at that tone |
 
-Portraits and equipment are inherited from the players being replaced; every inherited default is listed in
-`Generation_Report.txt`. Rating generation can be turned off with
+Every default and substitution is listed in `Generation_Report.txt`. Rating generation can be turned off with
 `--ratings inherit`. See `Ratings/Rating_Model.md` for how ratings are
 derived and `Ratings/Default_Assumptions.md` for the guardrails.
 

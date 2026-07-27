@@ -130,7 +130,6 @@ public sealed record RosterGenerationResult(
 /// </summary>
 public sealed class RosterGenerationService
 {
-    /// <summary>Opens a dynasty export, for listing teams before generating.</summary>
     /// <summary>
     /// Opens a dynasty export for listing teams before generating. Accepts the
     /// folder of exported CSVs, the Player CSV alone, or a <c>.zip</c> of the
@@ -256,9 +255,19 @@ public sealed class RosterGenerationService
 
         var donor = export.LoadPlayerRoster();
         var session = new RosterEditSession(donor);
+
+        // Loaded before conversion, not just for equipment afterwards: a real
+        // person's head scan does not spell its skin tone out the way a
+        // generated head does, so this is the only place to read the tone a
+        // roster slot already has and keep it through a face swap.
+        var visuals = request.ReplaceRealPersonFaces || request.ApplyEquipment
+            ? export.LoadCharacterVisuals()
+            : null;
+
         var conversion = new HistoricalTeamConverter(
                 teamMappings, positionMappings, ratingEngine, archetypeSelector, filler, depth,
-                export.BuildPreviousSchoolMappings(teamAliases), request.ReplaceRealPersonFaces)
+                export.BuildPreviousSchoolMappings(teamAliases), request.ReplaceRealPersonFaces,
+                visuals)
             .Convert(session, roster.Roster);
 
         CreateParentDirectory(request.OutputPath);
@@ -270,7 +279,7 @@ public sealed class RosterGenerationService
         // Equipment is a second table, so it is applied after the player table
         // has validated and been written: a run that refuses to produce a
         // roster must not leave a stray equipment file beside it.
-        var (equipment, equipmentPath) = ApplyEquipment(request, export, donor, conversion, data);
+        var (equipment, equipmentPath) = ApplyEquipment(request, export, donor, conversion, data, visuals);
 
         File.WriteAllText(request.ReportPath,
             Path.GetExtension(request.ReportPath).Equals(".md", StringComparison.OrdinalIgnoreCase)
@@ -315,21 +324,16 @@ public sealed class RosterGenerationService
         DynastyExport export,
         PlayerRoster donor,
         ConversionReport conversion,
-        string? data)
+        string? data,
+        Equipment.CharacterVisualsTable? visuals)
     {
-        if (!request.ApplyEquipment || export.CharacterVisualsPath is null || conversion.Source.Season <= 0)
+        if (!request.ApplyEquipment || visuals is null || conversion.Source.Season <= 0)
         {
             return (null, null);
         }
 
         var erasPath = TryFindDataFile(data, "EquipmentEras.json");
         if (erasPath is null)
-        {
-            return (null, null);
-        }
-
-        var visuals = export.LoadCharacterVisuals();
-        if (visuals is null)
         {
             return (null, null);
         }

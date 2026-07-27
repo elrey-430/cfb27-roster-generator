@@ -153,6 +153,7 @@ public static class HistoricalCsv
                 Hometown = NullIfEmpty(Cell(row, "hometown")),
                 PreviousSchool = NullIfEmpty(Cell(row, "previousschool")),
                 Notes = NullIfEmpty(Cell(row, "notes")),
+                SkinTone = ReadSkinTone(Cell(row, "skintone"), rowLabel, warnings),
                 Evidence = ReadEvidence(Cell, row, rowLabel, warnings, corrections),
             });
         }
@@ -341,6 +342,33 @@ public static class HistoricalCsv
 
         warnings.Add($"{rowLabel}: Height '{value}' is not recognized (use inches like 74, or feet-inches " +
                      "like 6-2) — ignored.");
+        return null;
+    }
+
+    /// <summary>
+    /// Reads the optional SkinTone cell: EA's 1 (lightest) to 8 (darkest).
+    ///
+    /// A value outside that range is refused rather than clamped. Clamping
+    /// would quietly turn a typed "10" into the darkest tone in the game and
+    /// give the user a player they did not ask for, with nothing on screen to
+    /// say so; ignoring it leaves the slot alone and says why.
+    /// </summary>
+    private static int? ReadSkinTone(string value, string rowLabel, List<string> warnings)
+    {
+        if (value.Length == 0)
+        {
+            return null;
+        }
+
+        if (int.TryParse(value.Trim(), out var tone) && Appearance.HeadAsset.IsValidSkinTone(tone))
+        {
+            return tone;
+        }
+
+        warnings.Add(
+            $"{rowLabel}: SkinTone '{value}' is not one of {Appearance.HeadAsset.MinimumSkinTone}–" +
+            $"{Appearance.HeadAsset.MaximumSkinTone} (lightest to darkest) — ignored, and this player " +
+            "keeps the appearance of the roster slot they took over.");
         return null;
     }
 
