@@ -101,6 +101,17 @@ public static class HistoricalCsv
 
         var columns = byKey.ToDictionary(g => g.Key, g => g.First().Index, StringComparer.Ordinal);
 
+        // Column names the template used to use. Renaming a column in the
+        // template must never break a file somebody has already filled in, so
+        // the old name keeps reading the same cell for good.
+        foreach (var (current, legacy) in new[] { ("heightinches", "height") })
+        {
+            if (!columns.ContainsKey(current) && columns.TryGetValue(legacy, out var index))
+            {
+                columns[current] = index;
+            }
+        }
+
         foreach (var required in new[] { "firstname", "lastname", "position" })
         {
             if (!columns.ContainsKey(required))
@@ -157,7 +168,7 @@ public static class HistoricalCsv
                 LastName = lastName,
                 Position = position,
                 JerseyNumber = ParseInt(Cell(row, "number"), rowLabel, "Number", warnings, corrections),
-                HeightInches = ParseHeight(Cell(row, "height"), rowLabel, warnings),
+                HeightInches = ParseHeight(Cell(row, "heightinches"), rowLabel, warnings, corrections),
                 WeightPounds = ParseInt(Cell(row, "weight"), rowLabel, "Weight", warnings, corrections),
                 ClassYear = NullIfEmpty(Cell(row, "class")),
                 Hometown = NullIfEmpty(Cell(row, "hometown")),
@@ -358,11 +369,34 @@ public static class HistoricalCsv
     }
 
     /// <summary>
-    /// Parses a height value: plain inches ("74") or feet-inches notation
-    /// ("6-2", "6'2", "6 2", "6ft2"). Returns null (with a warning) when
-    /// the value is present but unparseable.
+    /// Anything a spreadsheet turns a height into once it has decided the cell
+    /// is a date: <c>2-Jun</c>, <c>Jun-02</c>, <c>6/2/2026</c>, <c>2026-06-02</c>.
     /// </summary>
-    internal static int? ParseHeight(string value, string rowLabel, List<string> warnings)
+    private static readonly System.Text.RegularExpressions.Regex DateShapedHeight = new(
+        @"^\s*(?:\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}"
+        + @"|\d{1,2}[-/ ](?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*"
+        + @"|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[-/ ]\d{1,2})\s*$",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase
+        | System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Parses the <c>HeightInches</c> cell.
+    ///
+    /// <para><b>The column is inches, and its name says so.</b> A bare number
+    /// is the only thing anyone — a person, a spreadsheet assistant — should
+    /// ever have to put here, because feet-inches is what makes the cell
+    /// ambiguous and it is ambiguous to software long before it is ambiguous
+    /// to a reader. Excel decides <c>6-2</c> is the 2nd of June the moment it
+    /// opens the file, and writes back <c>2-Jun</c> or the serial number
+    /// behind that date; the height is gone and nothing says why.</para>
+    ///
+    /// <para>Feet-inches is still <b>read</b>, because refusing a value the
+    /// tool plainly understands would cost the user data to make a point. It
+    /// is converted and reported as a correction, so the file can be fixed at
+    /// the source.</para>
+    /// </summary>
+    internal static int? ParseHeight(
+        string value, string rowLabel, List<string> warnings, List<string> corrections)
     {
         if (value.Length == 0)
         {
@@ -376,7 +410,28 @@ public static class HistoricalCsv
                 return inches;
             }
 
-            warnings.Add($"{rowLabel}: Height '{value}' is not a plausible height in inches — ignored.");
+            // A spreadsheet date serial. Naming the cause matters more than
+            // the number does: a user told "not plausible" checks the height,
+            // and the height was right when they typed it.
+            if (inches is >= 20000 and <= 80000)
+            {
+                warnings.Add(
+                    $"{rowLabel}: HeightInches '{value}' is a spreadsheet date serial, not a height — " +
+                    "ignored. A cell like 6-2 becomes a date the moment Excel opens the file. Write the " +
+                    "height in inches (6-2 is 74), or format the column as Text first.");
+                return null;
+            }
+
+            warnings.Add($"{rowLabel}: HeightInches '{value}' is not a plausible height in inches — ignored.");
+            return null;
+        }
+
+        if (DateShapedHeight.IsMatch(value))
+        {
+            warnings.Add(
+                $"{rowLabel}: HeightInches '{value}' is a date, not a height — ignored. A cell like 6-2 " +
+                "becomes a date the moment Excel opens the file. Write the height in inches (6-2 is 74), " +
+                "or format the column as Text first.");
             return null;
         }
 
@@ -389,12 +444,16 @@ public static class HistoricalCsv
             var remainder = int.Parse(match.Groups[2].Value);
             if (feet is >= 4 and <= 7 && remainder < 12)
             {
-                return feet * 12 + remainder;
+                var total = feet * 12 + remainder;
+                corrections.Add(
+                    $"{rowLabel}: HeightInches '{value}' read as {total}. The column is inches — writing " +
+                    $"{total} keeps a spreadsheet from turning it into a date.");
+                return total;
             }
         }
 
-        warnings.Add($"{rowLabel}: Height '{value}' is not recognized (use inches like 74, or feet-inches " +
-                     "like 6-2) — ignored.");
+        warnings.Add($"{rowLabel}: HeightInches '{value}' is not recognized — ignored. The column is " +
+                     "inches: write 74, not 6-2.");
         return null;
     }
 

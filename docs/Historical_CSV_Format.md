@@ -97,6 +97,7 @@ Every correction and every substitution is listed in
 | Misspelled a role (`Startr`) | Reported, with the list of roles that work |
 | Used a position it does not know | Only that player is skipped, and it names the file to add the alias to |
 | Wrote a hometown that is not a US state | Stored as `NonUS` and reported |
+| Let Excel turn a height into a date (`2-Jun`) | Named as a date, not "implausible", so you look at the right thing |
 | Listed more players than the team has slots | The first 85 are used and the rest are named |
 | Supplied a header with no player rows | Refused outright, rather than replacing the team with 85 strangers |
 
@@ -113,7 +114,7 @@ Every correction and every substitution is listed in
 | Column | Example | Notes |
 |---|---|---|
 | `Number` | `13` | Jersey number 0–99. Blank = keeps the replaced player's number |
-| `Height` | `6-2`, `6'2"`, or `74` | Feet-inches or plain inches |
+| `HeightInches` | `74` | **Inches, always** — see [below](#heightinches-is-inches-and-only-inches). `6-2` is still read and converted, but it is reported, because it does not survive a spreadsheet |
 | `Weight` | `212` | Pounds (160–400). Blank = keeps the replaced player's weight |
 | `Class` | `Freshman`, `RS Junior`, `Redshirt Senior`, `Graduate` | "RS"/"Redshirt" prefixes set the in-game redshirt flag; Graduate becomes Senior |
 | `Team` | `Florida State` | The school this roster belongs to. May instead be chosen when running the generator; must match a team in **your** dynasty (see `list-teams`) |
@@ -185,14 +186,47 @@ already exists in your own export.
 `--faces inherit` turns face replacement off entirely, and `SkinTone` is then
 ignored — with a warning, so it cannot fail silently.
 
+## HeightInches is inches, and only inches
+
+The column is called `HeightInches` because a bare number is the only thing
+that survives a spreadsheet. **Write `74`, not `6-2`.**
+
+Feet-inches is ambiguous to software long before it is ambiguous to a
+reader. Excel decides `6-2` is the 2nd of June the moment it opens the file,
+and writes it back as `2-Jun` or as the serial number behind that date. The
+height is gone, and nothing in the file says why — which is exactly what
+makes it worth a column name rather than a footnote. It bites hardest when
+something else is filling the column for you: a spreadsheet assistant asked
+to research heights will happily produce `6-2`, and every one of them is
+destroyed on save.
+
+Handy conversions: 5-10 = `70`, 6-0 = `72`, 6-2 = `74`, 6-4 = `76`,
+6-6 = `78`. In general, feet × 12 + inches. The game accepts 60–90.
+
+The tool still **reads** `6-2`, `6'2"`, `6ft2` and `6 2`, and converts them —
+refusing a value it plainly understands would cost you data to make a point.
+But it reports each one as a correction, because that cell is one save away
+from becoming a date.
+
+If a spreadsheet has already got to your file, you will see:
+
+```
+row 41: HeightInches '2-Jun' is a date, not a height — ignored.
+```
+
+Two ways to stop it happening again: put inches in the column (the fix), or
+format the column as **Text** before pasting anything into it. Those players
+keep the height of the roster slot they took over in the meantime — one bad
+cell never costs you the file.
+
 ## Example
 
 ```csv
-FirstName,LastName,Position,Number,Height,Weight,Class,Team,Season,Hometown,PreviousSchool,Notes
-Jordan,Travis,QB,13,6-1,212,RS Senior,Florida State,2023,"West Palm Beach, FL",Louisville,Starter
-Trey,Benson,Tailback,3,6-1,216,RS Junior,Florida State,2023,"Greenville, MS",Oregon,
-Jared,Verse,Defensive End,5,6-4,260,RS Senior,Florida State,2023,"Dade City, FL",Albany,
-Ryan,Fitzgerald,K,88,6-1,190,RS Junior,Florida State,2023,"Colquitt, GA",,
+FirstName,LastName,Position,Number,HeightInches,Weight,Class,Team,Season,Hometown,PreviousSchool,Notes
+Jordan,Travis,QB,13,73,212,RS Senior,Florida State,2023,"West Palm Beach, FL",Louisville,Starter
+Trey,Benson,Tailback,3,73,216,RS Junior,Florida State,2023,"Greenville, MS",Oregon,
+Jared,Verse,Defensive End,5,76,260,RS Senior,Florida State,2023,"Dade City, FL",Albany,
+Ryan,Fitzgerald,K,88,73,190,RS Junior,Florida State,2023,"Colquitt, GA",,
 ```
 
 ## What happens to your data
@@ -202,7 +236,7 @@ Ryan,Fitzgerald,K,88,6-1,190,RS Junior,Florida State,2023,"Colquitt, GA",,
 | Names | `FirstName` / `LastName` (replace-identity edit) |
 | Position | Normalized CFB27 position; players are placed into matching roster slots where possible (a generic DE may take an LE or RE slot) |
 | Number | `JerseyNum` |
-| Height | `Height` (inches) |
+| HeightInches | `Height` (the game stores raw inches too) |
 | Weight | `Weight` using the confirmed encoding (stored = pounds − 160) |
 | Class | `SchoolYear` + `RedshirtStatus` |
 | Role / stats / awards / draft / combine | Generated ratings — all 56 attributes plus the overall, computed with EA's own overall formula |

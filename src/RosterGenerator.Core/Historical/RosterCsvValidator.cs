@@ -345,7 +345,8 @@ public static class RosterCsvValidator
             }
 
             Range(player.JerseyNumber, PlayerSchema.JerseyNumMin, PlayerSchema.JerseyNumMax, "jersey number");
-            Range(player.HeightInches, PlayerSchema.HeightInchesMin, PlayerSchema.HeightInchesMax, "height", "\"");
+            Range(player.HeightInches, PlayerSchema.HeightInchesMin, PlayerSchema.HeightInchesMax,
+                "height", " inches");
             Range(player.WeightPounds, PlayerSchema.WeightPoundsMin, PlayerSchema.WeightPoundsMax, "weight", " lb");
 
             if (player.ClassYear is { Length: > 0 } classYear &&

@@ -45,6 +45,19 @@ _Last updated: 2026-07-27 — end of Milestone 13._
   shape, not a rule.
 - Tests: 335/335.
 
+**Follow-up: the height column is inches, and its name says so.** Filling the
+template with a spreadsheet assistant failed consistently on `Height`, and the
+cause was not the tool: Excel decides `6-2` is the 2nd of June the moment it
+opens the file and writes back `2-Jun` or the serial behind it, so the height
+was destroyed before the generator ever saw it. The column is now
+**`HeightInches`** — a bare number is the only thing that survives a
+spreadsheet, and the column name is the instruction. Feet-inches is still read
+and converted (refusing a value the tool understands would cost the user data
+to make a point) but reported as a correction; a date or a date serial is
+named as such rather than reported as an implausible height, so the user looks
+at the right thing. `Height` keeps reading the same cell for good, so files
+already filled in under the old name are unaffected. Tests: 343/343.
+
 **Milestone 12 (One file in, one file out; and appearance) is complete.**
 
 - **A dynasty goes in as one file and comes back as one file.** `--dynasty`

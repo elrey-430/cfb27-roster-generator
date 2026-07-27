@@ -143,9 +143,27 @@ public sealed class HistoricalPipelineTests
     public void HeightParserAcceptsInchesAndFeetInches(string value, int expected)
     {
         var warnings = new List<string>();
+        var corrections = new List<string>();
 
-        Assert.Equal(expected, HistoricalCsv.ParseHeight(value, "row 2", warnings));
+        // Feet-inches is still read — refusing a value the tool plainly
+        // understands would cost the user data to make a point.
+        Assert.Equal(expected, HistoricalCsv.ParseHeight(value, "row 2", warnings, corrections));
         Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void FeetInchesIsConvertedAndSaidOutLoud()
+    {
+        var warnings = new List<string>();
+        var corrections = new List<string>();
+
+        Assert.Equal(74, HistoricalCsv.ParseHeight("6-2", "row 2", warnings, corrections));
+
+        // The column is inches, and a file that keeps feet-inches in it will
+        // be broken by the next spreadsheet that opens it — so the conversion
+        // is reported rather than done quietly.
+        var correction = Assert.Single(corrections);
+        Assert.Contains("74", correction);
     }
 
     [Theory]
@@ -155,9 +173,73 @@ public sealed class HistoricalPipelineTests
     public void HeightParserRejectsNonsenseWithWarning(string value)
     {
         var warnings = new List<string>();
+        var corrections = new List<string>();
 
-        Assert.Null(HistoricalCsv.ParseHeight(value, "row 2", warnings));
+        Assert.Null(HistoricalCsv.ParseHeight(value, "row 2", warnings, corrections));
         Assert.Single(warnings);
+    }
+
+    [Theory]
+    [InlineData("2-Jun")]
+    [InlineData("Jun-02")]
+    [InlineData("6/2/2026")]
+    [InlineData("2026-06-02")]
+    [InlineData("46175")]
+    public void AHeightASpreadsheetTurnedIntoADateIsNamedAsSuch(string value)
+    {
+        // This is the actual failure users hit: Excel decides 6-2 is the 2nd
+        // of June the moment it opens the file. "Not a plausible height" sends
+        // them to check a height that was right when they typed it, so the
+        // message has to name the cause.
+        var warnings = new List<string>();
+        var corrections = new List<string>();
+
+        Assert.Null(HistoricalCsv.ParseHeight(value, "row 2", warnings, corrections));
+        var warning = Assert.Single(warnings);
+        Assert.Contains("date", warning, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("inches", warning);
+    }
+
+    [Fact]
+    public void TheOldHeightColumnStillReadsTheSameCell()
+    {
+        // The template's column is HeightInches now. A file somebody already
+        // filled in under the old name must keep working for good.
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".csv");
+        File.WriteAllText(path, string.Join("\r\n",
+            "FirstName,LastName,Position,Height,Team",
+            "Jameis,Winston,QB,76,Florida State",
+            ""));
+
+        try
+        {
+            var result = HistoricalCsv.Read(path);
+            Assert.Equal(76, Assert.Single(result.Roster.Players).HeightInches);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void TheHeightInchesColumnIsRead()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".csv");
+        File.WriteAllText(path, string.Join("\r\n",
+            "FirstName,LastName,Position,HeightInches,Team",
+            "Jameis,Winston,QB,76,Florida State",
+            ""));
+
+        try
+        {
+            var result = HistoricalCsv.Read(path);
+            Assert.Equal(76, Assert.Single(result.Roster.Players).HeightInches);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]

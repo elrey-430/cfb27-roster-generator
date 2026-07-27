@@ -51,10 +51,17 @@ your dynasty → [export tool] → CSV files → [this tool] → new CSV → [ro
 
    Old rosters are badly documented and you are **not** expected to find a
    full record for every player. Only the name and position are required;
-   real-world values like `Tailback`, `6-2` and `RS Junior` are what the
-   tool expects. Anything you leave out is filled in for you and listed in
-   the report, and a mistake in one cell never costs you the file. Use the
-   fuller `templates/HistoricalRosterTemplate.csv` when you *do* have
+   real-world values like `Tailback` and `RS Junior` are what the tool
+   expects. Anything you leave out is filled in for you and listed in the
+   report, and a mistake in one cell never costs you the file.
+
+   One column is strict on purpose: **`HeightInches` is inches** — write
+   `74`, not `6-2`. Excel turns `6-2` into the 2nd of June the moment it
+   opens the file, which quietly destroys the height, so the column name is
+   the instruction. Feet-inches is still read and converted, and reported so
+   you can fix it at the source.
+
+   Use the fuller `templates/HistoricalRosterTemplate.csv` when you *do* have
    statistics, draft positions or awards — more detail buys better ratings,
    but it is never required.
 3. **Run the generator.** Open `RosterGenerator.Gui.exe` and follow the four
