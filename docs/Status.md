@@ -55,6 +55,26 @@ _Last updated: 2026-07-27 — end of Milestone 14._
 - Tests: 353/353. The end-to-end save test runs when `CFB27_TEST_SAVE` points
   at a real save; a green suite says nothing about that path unless it was set.
 
+**Bug: a greyed-out Generate button that would not say why.** Reported against
+the v0.6.0 build — the status line read "Ready — 75 players, nothing to fix"
+and Generate stayed dead. The status was telling the truth about the roster and
+nothing at all about the dynasty: `CheckAsync` reads only the roster file, and
+its message overwrote whatever the dynasty had failed with. Whatever had gone
+wrong in step 1 was erased by step 2, leaving a reassuring sentence above a
+button that would not work.
+
+Two changes. The window now carries a **persistent line naming what is
+missing** — the step that has not been done, or the dynasty's own error
+message, kept in a field so a later roster check cannot overwrite it. And the
+roster check no longer says "Ready", which was a claim about the whole run it
+had no way to make; it says "Roster is fine", which is all it actually knows.
+
+Four headless tests pin it, including the exact sequence reported: fail the
+dynasty, then choose a roster, and the explanation must survive. Setting them
+up exposed that Avalonia's `SetupWithoutStarting` is process-global, so the GUI
+tests now share one UI thread (`HeadlessGui`) instead of each starting their
+own. Tests: 357/357.
+
 **Milestone 13 (A whole season at a time) is complete.**
 
 - **The tool now writes the blank file, not the user.** `template --season

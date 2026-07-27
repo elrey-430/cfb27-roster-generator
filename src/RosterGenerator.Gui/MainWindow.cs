@@ -58,6 +58,11 @@ public sealed class MainWindow : Window
         Opacity = 0.75,
         IsVisible = false,
     };
+    private readonly TextBlock _blocker = new()
+    {
+        TextWrapping = TextWrapping.Wrap,
+        IsVisible = false,
+    };
     private readonly Button _checkButton = new() { Content = "Check roster file", IsEnabled = false };
     private readonly Button _generateButton = new() { Content = "Generate", IsEnabled = false };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
@@ -75,6 +80,12 @@ public sealed class MainWindow : Window
 
     /// <summary>True when the chosen dynasty is a save file rather than an export.</summary>
     private bool DynastyIsSave => _package?.IsNativeSave == true;
+
+    // Why the last dynasty failed to open. Kept separately from the status
+    // line because the status line is transient — checking a roster
+    // afterwards used to overwrite it, leaving the user with "Ready" on
+    // screen, Generate greyed out, and no trace of what had gone wrong.
+    private string? _dynastyProblem;
 
     /// <summary>Builds the window.</summary>
     public MainWindow()
@@ -171,6 +182,7 @@ public sealed class MainWindow : Window
             Children = { _checkButton, _generateButton },
         });
 
+        panel.Children.Add(_blocker);
         panel.Children.Add(_status);
         panel.Children.Add(new Border
         {
@@ -316,6 +328,7 @@ public sealed class MainWindow : Window
         // reselect leaks a copy of the dynasty's tables into the temp folder.
         _package?.Dispose();
         _package = null;
+        _dynastyProblem = null;
 
         try
         {
@@ -329,14 +342,15 @@ public sealed class MainWindow : Window
         }
         catch (NativeSaveException ex)
         {
+            _dynastyProblem = ex.Message;
             SetStatus(ex.Message, ok: false);
         }
         catch (Exception ex)
         {
-            SetStatus(
+            _dynastyProblem =
                 "No player table was found there. Choose your dynasty save, the folder the export " +
-                $"tool wrote its CSV files into, or a .zip of that folder. ({ex.Message})",
-                ok: false);
+                $"tool wrote its CSV files into, or a .zip of that folder. ({ex.Message})";
+            SetStatus(_dynastyProblem, ok: false);
         }
 
         UpdateSaveOption();
@@ -442,13 +456,17 @@ public sealed class MainWindow : Window
 
             var blocking = report.OfSeverity(RosterCsvSeverity.Blocking).Count();
             var warnings = report.OfSeverity(RosterCsvSeverity.Warning).Count();
-            SetStatus(
-                blocking > 0
-                    ? $"{blocking} problem(s) must be fixed before generating."
-                    : warnings > 0
-                        ? $"Ready — {report.UsablePlayers} players, {warnings} thing(s) worth a look."
-                        : $"Ready — {report.UsablePlayers} players, nothing to fix.",
-                ok: blocking == 0);
+
+            // This check reads the roster file and nothing else, so it cannot
+            // say the run is ready — only that the roster is. Saying "Ready"
+            // while the dynasty had failed to load is what left users staring
+            // at a greyed-out Generate with a reassuring message above it.
+            var roster = blocking > 0
+                ? $"{blocking} problem(s) must be fixed before generating."
+                : warnings > 0
+                    ? $"Roster is fine — {report.UsablePlayers} players, {warnings} thing(s) worth a look."
+                    : $"Roster is fine — {report.UsablePlayers} players, nothing to fix.";
+            SetStatus(roster, ok: blocking == 0);
         }
         catch (Exception ex)
         {
@@ -617,6 +635,34 @@ public sealed class MainWindow : Window
         var hasDynasty = _dynasty is not null;
         _checkButton.IsEnabled = hasRoster;
         _generateButton.IsEnabled = hasRoster && hasDynasty;
+
+        // A greyed-out button with no explanation is the worst thing this
+        // window can do: everything looks fine and nothing says why it will
+        // not proceed. Whenever Generate is unavailable, this says what is
+        // missing — and it stays on screen, unlike the status line.
+        _blocker.Text = WhyGenerateIsUnavailable();
+        _blocker.IsVisible = _blocker.Text is { Length: > 0 };
+    }
+
+    /// <summary>
+    /// What is standing between the user and Generate, in their terms, or an
+    /// empty string when nothing is.
+    /// </summary>
+    private string WhyGenerateIsUnavailable()
+    {
+        if (_dynasty is null)
+        {
+            return _dynastyProblem is { Length: > 0 } problem
+                ? $"Cannot generate: {problem}"
+                : "Cannot generate yet — choose your dynasty in step 1.";
+        }
+
+        if (string.IsNullOrWhiteSpace(_rosterBox.Text))
+        {
+            return "Cannot generate yet — choose your roster CSV in step 2.";
+        }
+
+        return "";
     }
 
     private void SetStatus(string message, bool? ok)
