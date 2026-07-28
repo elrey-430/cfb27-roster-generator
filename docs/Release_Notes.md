@@ -49,6 +49,39 @@ said", and the report tells you which happened.
 
 ## v0.6.1-alpha — Opening a dynasty save no longer looks like a hang
 
+A patch for one problem reported against v0.6.0: **opening a dynasty save
+looked like nothing was happening.** If Generate stayed grey, or the window
+went unresponsive, or the command line printed nothing — that was this.
+Nothing was broken. The tool was working, silently, for longer than anyone
+would reasonably wait.
+
+Reading a save unpacks 30 MB of compressed, bit-packed tables and writes the
+ones the generator needs back out: about fifteen seconds on a fast local disk,
+noticeably longer if Documents is redirected to OneDrive, which is where the
+game keeps saves for most people. The tool said nothing while it did that. The
+command line printed its first line only *after* the unpacking finished, and
+the desktop app was worse — it did the work on the thread that draws the
+window, so Windows rendered the whole app as *"Not Responding"*.
+
+And if the dynasty had genuinely failed to open, choosing a roster afterwards
+**overwrote the error** with "Ready — N players, nothing to fix": a reassuring
+sentence above a button that would not work, with no trace of what went wrong.
+
+### What now happens
+
+- **It says what it is doing, before it does it.** *"Reading DYNASTY-BASE1 — a
+  dynasty save takes twenty seconds or so to open."*
+- **The window stays responsive** while it reads, and the dynasty buttons are
+  disabled during the load so a second click cannot race the first.
+- **Generate always explains itself.** Whenever it is unavailable, a line
+  underneath names the missing step, or the dynasty's own error. That line
+  cannot be overwritten by anything else.
+- **The roster check stops saying "Ready".** It reads the roster file and
+  nothing else, so it cannot know whether the run is ready. It says **"Roster
+  is fine"**, which is what it actually established.
+
+Same features, same output, same guarantees as v0.6.0.
+
 ## v0.6.0-alpha — Drop your dynasty in, get your dynasty back
 
 **The headline: you no longer export anything, and you no longer import

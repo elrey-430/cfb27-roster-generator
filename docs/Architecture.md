@@ -89,7 +89,7 @@ can add it without reworking this layer.
 | Decision | Rationale |
 |---|---|
 | C# / .NET 8 | Requested target; first-class Windows 10/11 support |
-| Self-contained single-file publish | `dotnet publish -r win-x64 --self-contained -p:PublishSingleFile=true` produces one `.exe` (~67 MB) needing no .NET, Python, Docker or WSL. **Reading a dynasty save directly is the one exception**: it needs Node.js 22.19+, because the save format lives in an MIT Node library rather than being reimplemented. The CSV workflow stays install-free, and the app names the missing dependency rather than failing obscurely |
+| Self-contained single-file publish | `dotnet publish -r win-x64 --self-contained -p:PublishSingleFile=true` produces one `.exe` (~67 MB) needing no .NET, Python, Docker or WSL. Reading a dynasty save directly needs a Node runtime, because the save format lives in an MIT Node library rather than being reimplemented — so the release **bundles that runtime** (v22.23.1 LTS, checksum-verified at build time) beside the vendored library, and the user still installs nothing. `NativeSave` prefers the bundled copy and falls back to PATH for source checkouts; without either, it names what is missing and the CSV workflow is untouched |
 | **Zero external dependencies** in `RosterGenerator.Core` | The CSV dialect is trivial (no quoting, CRLF) but the *round-trip guarantee* is critical; a third-party CSV library that normalizes quoting/line endings would silently break byte-fidelity. Test projects use xunit (dev-time only) |
 | No GUI in this milestone | Core is a class library; the PoC is a console app. A future GUI (or the existing Electron suite) sits on top of the same library |
 
@@ -261,16 +261,25 @@ itself produced must always remain exportable, so rules are classified:
   duplicate keys): findings whose cells are unchanged since load are
   downgraded to warnings, annotated "pre-existing in the source file".
 - **Change-driven rules** (team-change consistency, identity-change
-  consistency, opaque-field guard): fire only on deltas and are never
+  consistency, commentary consistency): fire only on deltas and are never
   downgraded — for them, an *unchanged* cell is often exactly the bug.
 
 ### 6. Unresolved encodings are locked, not guessed
 
-`Weight` (not pounds; suspected spline index) and `PLYR_COMMENT` (internal
-pool index) have no setter on `Player`, and the `OpaqueFieldGuard` rule
-blocks any change to them. The derived `Player[]` league-wide array tables
-are simply never loaded. All three are documented open research items in
-`Schema.md` — flagged, not solved, per the milestone's non-goals.
+A field nobody has decoded gets no setter on `Player` and a rule that blocks
+any change to it, rather than a plausible guess. `Weight` and `PLYR_COMMENT`
+were both locked this way, and both locks came off only when a measurement
+replaced the guess: `Weight` in Milestone 2 (pounds − 160), and `PLYR_COMMENT`
+in v0.6.2 (an index into the recorded commentary audio, mapped from the
+surname). The lock is what makes that safe — it fails the build rather than
+writing a field the tool does not understand, so the field can only become
+writable through evidence.
+
+When a lock lifts it becomes a *check*, not nothing: `OpaqueFieldGuard` gave
+way to `CommentaryConsistencyRule`, which permits the commentary write and
+rejects an index belonging to a different name. The derived `Player[]`
+league-wide array tables are still simply never loaded, and the remaining open
+research items are documented in `Schema.md` — flagged, not solved.
 
 ### 7. Errors are messages, not silence
 
@@ -301,8 +310,10 @@ fails.
   model class can wrap it the same way `PlayerRoster` does.
 - **New validation rules**: implement `IValidationRule`, add to the rule
   list; rules are independent and composable.
-- **Weight decoding** (Milestone 2 research): once resolved, replace the
-  `OpaqueFieldGuard` lock with a typed accessor + spline lookup component.
+- **Decoding a locked field**: the two that have been decoded followed the
+  same path — measure it against real saves, add a typed accessor, then
+  replace the lock with a rule that checks the new invariant (`WeightRange`
+  for `Weight`, `CommentaryConsistencyRule` for `PLYR_COMMENT`).
 - **GUI**: any front end (WPF/WinUI/console/Electron bridge) can consume
   `RosterGenerator.Core` — the library performs no console I/O.
 

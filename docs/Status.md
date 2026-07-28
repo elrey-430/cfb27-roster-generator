@@ -1,8 +1,84 @@
 # Project Status
 
-_Last updated: 2026-07-27 — end of Milestone 14._
+_Last updated: 2026-07-28 — v0.6.2-alpha shipped._
 
 ## Current status
+
+**The announcers now say the right name (v0.6.2).** Reported as an oversight:
+the Player table's `PLYR_COMMENT` selects which recorded name the commentary
+uses, and a recreated player kept whatever the slot already had — so a
+generated Jordan Travis was called by the replaced player's name for the whole
+dynasty, with nothing in the game to reveal it.
+
+Each player's surname now sets the index, with **0** for a surname the
+commentary has no recording of. No new column and no user input: it comes from
+the `LastName` already supplied.
+
+**Measured, not invented.** `data/CommentaryIds.json` holds 5,918 surnames,
+built by `tools/build_commentary_ids.py` from **146,295 player rows across nine
+game-generated saves**. Hand-edited saves are deliberately excluded — a roster
+editor can leave `PLYR_COMMENT` pointing at a slot's previous occupant, and
+pooling one such save was visibly poisoning the mapping (All-Time USC names —
+Bush, Palmer, Allen, Leinart — each disagreeing with all nine base saves).
+Across the base saves only 2 surnames of 9,070 are ambiguous.
+
+**The game itself confirms the rule.** Renaming two players in-game and
+re-exporting shows the game rewriting `PLYR_COMMENT` to exactly the values this
+mapping gives for the new surnames, 2 of 2 — including 0 for a surname with no
+recording. That also resolves an old note in `Schema.md` calling this field
+"changed spontaneously on one observed rename with no clear trigger": the
+trigger was the rename.
+
+**A lock became a check.** `OpaqueFieldGuard` forbade any write to
+`PLYR_COMMENT` because the field was not understood, and it correctly blocked
+this work. It is replaced by `CommentaryConsistencyRule`, which permits the
+write but rejects an index belonging to a different name — the precise defect
+being fixed. With no mapping file present the converter does not touch the
+field at all, since "we know nothing" is not the same as "the name cannot be
+said".
+
+Verified on a real save: 85 of 85 Florida State players carry the index for
+their own surname. Tests: 368/368.
+
+**Bug: opening a dynasty save looked like a hang.** Reported against v0.6.0
+alongside the above, and the more serious of the two. Reading a save unpacks
+30 MB of bit-packed tables and writes the ones the generator needs back out —
+fifteen seconds on a fast local disk, longer from a OneDrive-redirected
+Documents folder. Nothing said so. The command line printed its first line only
+*after* that finished, so a working program looked like a dead one; the desktop
+app was worse, because `LoadDynasty` ran inline and froze the entire window for
+the duration.
+
+The load now runs off the UI thread, announces itself before it starts, and
+locks the dynasty pickers while it works so a second choice cannot race the
+first. `RosterGenerationService` gained an optional `Progress` callback, which
+the CLI sends to the console and the app marshals back to the UI thread.
+
+The first attempt at this deadlocked: a `LoadDynasty()` shim kept for the tests
+did `GetAwaiter().GetResult()` on the UI thread, and the continuation needed
+the very thread the blocking call was holding. The suite went from 5 seconds to
+a timeout, which is exactly what it is for. The shim is gone and the tests pump
+the dispatcher while awaiting instead. Tests: 357/357.
+
+**Bug: a greyed-out Generate button that would not say why.** Reported against
+the v0.6.0 build — the status line read "Ready — 75 players, nothing to fix"
+and Generate stayed dead. The status was telling the truth about the roster and
+nothing at all about the dynasty: `CheckAsync` reads only the roster file, and
+its message overwrote whatever the dynasty had failed with. Whatever had gone
+wrong in step 1 was erased by step 2, leaving a reassuring sentence above a
+button that would not work.
+
+Two changes. The window now carries a **persistent line naming what is
+missing** — the step that has not been done, or the dynasty's own error
+message, kept in a field so a later roster check cannot overwrite it. And the
+roster check no longer says "Ready", which was a claim about the whole run it
+had no way to make; it says "Roster is fine", which is all it actually knows.
+
+Four headless tests pin it, including the exact sequence reported: fail the
+dynasty, then choose a roster, and the explanation must survive. Setting them
+up exposed that Avalonia's `SetupWithoutStarting` is process-global, so the GUI
+tests now share one UI thread (`HeadlessGui`) instead of each starting their
+own. Tests: 357/357.
 
 **Milestone 14 (Native dynasty saves) is complete.**
 
@@ -54,82 +130,6 @@ _Last updated: 2026-07-27 — end of Milestone 14._
   offset corrupts a dynasty silently.
 - Tests: 353/353. The end-to-end save test runs when `CFB27_TEST_SAVE` points
   at a real save; a green suite says nothing about that path unless it was set.
-
-**Bug: a greyed-out Generate button that would not say why.** Reported against
-the v0.6.0 build — the status line read "Ready — 75 players, nothing to fix"
-and Generate stayed dead. The status was telling the truth about the roster and
-nothing at all about the dynasty: `CheckAsync` reads only the roster file, and
-its message overwrote whatever the dynasty had failed with. Whatever had gone
-wrong in step 1 was erased by step 2, leaving a reassuring sentence above a
-button that would not work.
-
-Two changes. The window now carries a **persistent line naming what is
-missing** — the step that has not been done, or the dynasty's own error
-message, kept in a field so a later roster check cannot overwrite it. And the
-roster check no longer says "Ready", which was a claim about the whole run it
-had no way to make; it says "Roster is fine", which is all it actually knows.
-
-Four headless tests pin it, including the exact sequence reported: fail the
-dynasty, then choose a roster, and the explanation must survive. Setting them
-up exposed that Avalonia's `SetupWithoutStarting` is process-global, so the GUI
-tests now share one UI thread (`HeadlessGui`) instead of each starting their
-own. Tests: 357/357.
-
-**Bug: opening a dynasty save looked like a hang.** Reported against v0.6.0
-alongside the above, and the more serious of the two. Reading a save unpacks
-30 MB of bit-packed tables and writes the ones the generator needs back out —
-fifteen seconds on a fast local disk, longer from a OneDrive-redirected
-Documents folder. Nothing said so. The command line printed its first line only
-*after* that finished, so a working program looked like a dead one; the desktop
-app was worse, because `LoadDynasty` ran inline and froze the entire window for
-the duration.
-
-The load now runs off the UI thread, announces itself before it starts, and
-locks the dynasty pickers while it works so a second choice cannot race the
-first. `RosterGenerationService` gained an optional `Progress` callback, which
-the CLI sends to the console and the app marshals back to the UI thread.
-
-The first attempt at this deadlocked: a `LoadDynasty()` shim kept for the tests
-did `GetAwaiter().GetResult()` on the UI thread, and the continuation needed
-the very thread the blocking call was holding. The suite went from 5 seconds to
-a timeout, which is exactly what it is for. The shim is gone and the tests pump
-the dispatcher while awaiting instead. Tests: 357/357.
-
-**The announcers now say the right name (v0.6.2).** Reported as an oversight:
-the Player table's `PLYR_COMMENT` selects which recorded name the commentary
-uses, and a recreated player kept whatever the slot already had — so a
-generated Jordan Travis was called by the replaced player's name for the whole
-dynasty, with nothing in the game to reveal it.
-
-Each player's surname now sets the index, with **0** for a surname the
-commentary has no recording of. No new column and no user input: it comes from
-the `LastName` already supplied.
-
-**Measured, not invented.** `data/CommentaryIds.json` holds 5,918 surnames,
-built by `tools/build_commentary_ids.py` from **146,295 player rows across nine
-game-generated saves**. Hand-edited saves are deliberately excluded — a roster
-editor can leave `PLYR_COMMENT` pointing at a slot's previous occupant, and
-pooling one such save was visibly poisoning the mapping (All-Time USC names —
-Bush, Palmer, Allen, Leinart — each disagreeing with all nine base saves).
-Across the base saves only 2 surnames of 9,070 are ambiguous.
-
-**The game itself confirms the rule.** Renaming two players in-game and
-re-exporting shows the game rewriting `PLYR_COMMENT` to exactly the values this
-mapping gives for the new surnames, 2 of 2 — including 0 for a surname with no
-recording. That also resolves an old note in `Schema.md` calling this field
-"changed spontaneously on one observed rename with no clear trigger": the
-trigger was the rename.
-
-**A lock became a check.** `OpaqueFieldGuard` forbade any write to
-`PLYR_COMMENT` because the field was not understood, and it correctly blocked
-this work. It is replaced by `CommentaryConsistencyRule`, which permits the
-write but rejects an index belonging to a different name — the precise defect
-being fixed. With no mapping file present the converter does not touch the
-field at all, since "we know nothing" is not the same as "the name cannot be
-said".
-
-Verified on a real save: 85 of 85 Florida State players carry the index for
-their own surname. Tests: 368/368.
 
 **Milestone 13 (A whole season at a time) is complete.**
 
@@ -776,9 +776,12 @@ brief).
   `TeamAssignment` (range + optional membership in the save's team list),
   **`TeamChangeConsistency`** (the Group 4 multi-field dependency),
   **`IdentityChangeConsistency`** (rename-vs-replace intent enforcement),
-  and `OpaqueFieldGuard` (blocks writes to `PLYR_COMMENT`; it also locked
+  and `OpaqueFieldGuard` (blocked writes to `PLYR_COMMENT`; it also locked
   `Weight` until the encoding was confirmed — now range-checked by
-  `WeightRange` instead).
+  `WeightRange` instead). Both locks have since been retired by the
+  measurement that resolved the field they guarded: `OpaqueFieldGuard` was
+  replaced in v0.6.2 by `CommentaryConsistencyRule`, which permits the
+  commentary write and rejects an index belonging to a different name.
   Anomalies already present in the source file downgrade to warnings so
   genuine EA exports — which contain blank-name placeholder rows — always
   remain exportable; the same anomaly introduced by an edit is an error.
@@ -809,9 +812,15 @@ guessed at (details in `docs/Schema.md`):
    evidence of game-recomputed sorted/indexed lists. Never loaded or
    written by this tool; treat any future need as a full-table recompute
    problem, not diff-and-patch.
-3. **`PLYR_COMMENT` semantics.** Internal flavor-text/comment-pool index;
-   changed spontaneously on one observed rename with no clear trigger.
-   Policy: leave alone, never set.
+3. ~~**`PLYR_COMMENT` semantics.**~~ **RESOLVED (v0.6.2):** it is an index
+   into the recorded commentary audio — which name the announcers say — and
+   `0` means the name is never said, held by 20.3% of an untouched save. The
+   surname determines it: `data/CommentaryIds.json` maps 5,918 surnames,
+   measured across 146,295 player rows in nine game-generated saves. The
+   "changed spontaneously on one observed rename" note is explained by that —
+   the trigger was the rename, and the game rewrote the index to the new
+   surname's value, 2 of 2. Now written by the converter and checked by
+   `CommentaryConsistencyRule`. See Schema.md Group 3.
 4. ~~**`PLYR_PREVTEAMID` native domain.**~~ **RESOLVED (Milestone 6):** it
    holds the school a transfer came from, as that school's `TEAM_ORIGID` —
    not a `TeamIndex`, which is why the values (1009–1235) never matched the
@@ -873,13 +882,15 @@ to this tool and lost on the next run.
   threshold, costing him run blocking. Both are one-line data edits; neither is
   obviously wrong; both are worth a deliberate review rather than a reaction.
 - **Sign the executables.** SmartScreen still warns on every download.
-- **Bundle Node, or drop the dependency.** Reading a save needs Node.js 22.19+,
-  which is the only thing a user must install. Options, none yet judged worth
-  it: ship a Node single-executable build of the two sidecars (~50 MB added to
-  the release), or reimplement the format in C# (owns a bit-packer and a
-  3,498-entry schema table forever). The current answer — name the missing
-  dependency and keep the CSV route working — is honest and cheap, but it is a
-  step between a user and the good workflow.
+- **Opening a save is still slow.** Fifteen to thirty seconds, and v0.6.1 only
+  made the wait honest rather than shorter. Most of it is `extract.mjs` writing
+  every column of the Player and CharacterVisuals tables back out as CSV when
+  the generator reads a fraction of them; a narrower extract is the obvious
+  first thing to measure.
+- **Two ambiguous surnames.** "Butts" and "David" carry two different
+  commentary indexes across the base saves, and the more common one wins. The
+  tie-break is a count, not evidence about which recording the game intends —
+  worth resolving by a controlled in-game rename rather than more sampling.
 
 ### Deliberately *not* next
 
