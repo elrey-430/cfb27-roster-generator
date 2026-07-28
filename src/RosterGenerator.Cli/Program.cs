@@ -220,6 +220,15 @@ static DynastyPackage OpenDynastyPackage(Dictionary<string, string> options)
             : throw new ArgumentException(
                 "Missing required option --dynasty (the folder of CSV files exported from your " +
                 "dynasty, or the Player table CSV itself).");
+    // Said before the work starts, not after. Opening a dynasty save means
+    // unpacking 30 MB of bit-packed tables, which takes twenty seconds or so;
+    // printing nothing until it finished made a working program look like a
+    // hung one.
+    if (NativeSave.LooksLikeSave(path))
+    {
+        Console.WriteLine($"Reading dynasty save {Path.GetFileName(path)} — this takes a few seconds…");
+    }
+
     // A .zip of the export folder, or the dynasty save itself, is accepted
     // wherever the folder is. The caller owns the package: both of those are
     // expanded into a scratch folder that disposing deletes.
@@ -475,7 +484,7 @@ static int Generate(Dictionary<string, string> options)
     RosterGenerationResult result;
     try
     {
-        result = new RosterGenerationService().Run(request);
+        result = new RosterGenerationService { Progress = Console.WriteLine }.Run(request);
     }
     catch (RosterExportException ex)
     {

@@ -75,6 +75,26 @@ up exposed that Avalonia's `SetupWithoutStarting` is process-global, so the GUI
 tests now share one UI thread (`HeadlessGui`) instead of each starting their
 own. Tests: 357/357.
 
+**Bug: opening a dynasty save looked like a hang.** Reported against v0.6.0
+alongside the above, and the more serious of the two. Reading a save unpacks
+30 MB of bit-packed tables and writes the ones the generator needs back out —
+fifteen seconds on a fast local disk, longer from a OneDrive-redirected
+Documents folder. Nothing said so. The command line printed its first line only
+*after* that finished, so a working program looked like a dead one; the desktop
+app was worse, because `LoadDynasty` ran inline and froze the entire window for
+the duration.
+
+The load now runs off the UI thread, announces itself before it starts, and
+locks the dynasty pickers while it works so a second choice cannot race the
+first. `RosterGenerationService` gained an optional `Progress` callback, which
+the CLI sends to the console and the app marshals back to the UI thread.
+
+The first attempt at this deadlocked: a `LoadDynasty()` shim kept for the tests
+did `GetAwaiter().GetResult()` on the UI thread, and the continuation needed
+the very thread the blocking call was holding. The suite went from 5 seconds to
+a timeout, which is exactly what it is for. The shim is gone and the tests pump
+the dispatcher while awaiting instead. Tests: 357/357.
+
 **Milestone 13 (A whole season at a time) is complete.**
 
 - **The tool now writes the blank file, not the user.** `template --season

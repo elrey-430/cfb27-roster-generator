@@ -156,6 +156,13 @@ public sealed record RosterGenerationResult(
 public sealed class RosterGenerationService
 {
     /// <summary>
+    /// Called with a plain-English line whenever the run reaches a step slow
+    /// enough that silence would look like a hang. Optional: a caller that
+    /// does not set it simply gets no progress.
+    /// </summary>
+    public Action<string>? Progress { get; init; }
+
+    /// <summary>
     /// Opens a dynasty for listing teams before generating. Accepts a dynasty
     /// save, the folder of exported CSVs, the Player CSV alone, or a
     /// <c>.zip</c> of the folder.
@@ -226,8 +233,13 @@ public sealed class RosterGenerationService
     /// <exception cref="RosterExportException">Validation rejected the result; nothing was written.</exception>
     public RosterGenerationResult Run(RosterGenerationRequest request)
     {
-        // The dynasty may be a folder or a .zip of one; the package owns the
-        // difference, and owns cleaning up after an archive it expanded.
+        // The dynasty may be a folder, a .zip of one, or the save itself; the
+        // package owns the difference, and owns cleaning up after anything it
+        // expanded. Opening a save is the slow step of the whole run, so the
+        // caller is told before it starts rather than after.
+        Progress?.Invoke(NativeSave.LooksLikeSave(request.DynastyPath)
+            ? "Reading your dynasty save — this takes a few seconds…"
+            : "Reading your dynasty…");
         using var package = DynastyPackage.Open(request.DynastyPath);
         var export = package.Export;
         var data = request.DataDirectory;

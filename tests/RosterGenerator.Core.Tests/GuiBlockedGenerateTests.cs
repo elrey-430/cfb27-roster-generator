@@ -98,7 +98,24 @@ public sealed class GuiBlockedGenerateTests
     private static void SetDynasty(MainWindow window, string path)
     {
         SetText(window, "_dynastyBox", path);
-        Invoke(window, "LoadDynasty");
+
+        // Opening a dynasty is asynchronous now, and its continuation runs on
+        // this thread — so the dispatcher has to keep being pumped while we
+        // wait, or the continuation never runs and the wait never ends.
+        var loading = (Task)typeof(MainWindow)
+            .GetMethod("LoadDynastyAsync",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .Invoke(window, null)!;
+
+        var deadline = DateTime.UtcNow.AddSeconds(60);
+        while (!loading.IsCompleted && DateTime.UtcNow < deadline)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(5);
+        }
+
+        Assert.True(loading.IsCompleted, "the dynasty did not finish loading");
+        loading.GetAwaiter().GetResult();
     }
 
     private static void SetText(MainWindow window, string field, string text)

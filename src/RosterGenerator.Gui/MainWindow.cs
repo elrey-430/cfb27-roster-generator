@@ -72,6 +72,8 @@ public sealed class MainWindow : Window
         FontFamily = new FontFamily("Consolas, Menlo, monospace"),
     };
 
+    private readonly List<Button> _dynastyPickers = new();
+
     private DynastyExport? _dynasty;
 
     // Held so the scratch folder an archive or a save is expanded into is
@@ -119,6 +121,8 @@ public sealed class MainWindow : Window
 
         var browseDynastySave = new Button { Content = "Save file…" };
         browseDynastySave.Click += async (_, _) => await PickDynastySaveAsync();
+
+        _dynastyPickers.AddRange(new[] { browseDynastySave, browseDynasty, browseDynastyZip });
 
         var browseRoster = new Button { Content = "Browse…" };
         browseRoster.Click += async (_, _) => await PickRosterAsync();
@@ -248,7 +252,7 @@ public sealed class MainWindow : Window
         }
 
         _dynastyBox.Text = folders[0].Path.LocalPath;
-        LoadDynasty();
+        await LoadDynastyAsync();
     }
 
     private async Task PickDynastyArchiveAsync()
@@ -269,7 +273,7 @@ public sealed class MainWindow : Window
         }
 
         _dynastyBox.Text = files[0].Path.LocalPath;
-        LoadDynasty();
+        await LoadDynastyAsync();
     }
 
     private async Task PickDynastySaveAsync()
@@ -289,7 +293,7 @@ public sealed class MainWindow : Window
         }
 
         _dynastyBox.Text = files[0].Path.LocalPath;
-        LoadDynasty();
+        await LoadDynastyAsync();
     }
 
     /// <summary>
@@ -318,8 +322,19 @@ public sealed class MainWindow : Window
         }
     }
 
-    private void LoadDynasty()
+    /// <summary>
+    /// Opens the chosen dynasty, off the UI thread.
+    ///
+    /// <para>Reading a dynasty save means unpacking 30 MB of bit-packed tables
+    /// and writing the ones the generator needs back out as CSV — twenty to
+    /// thirty seconds. Doing that inline froze the whole window for the
+    /// duration, with nothing on screen to say anything was happening, so the
+    /// app looked hung at exactly the moment it was working hardest.</para>
+    /// </summary>
+    private async Task LoadDynastyAsync()
     {
+        var path = _dynastyBox.Text ?? "";
+
         _teamBox.ItemsSource = null;
         _dynasty = null;
 
@@ -330,10 +345,20 @@ public sealed class MainWindow : Window
         _package = null;
         _dynastyProblem = null;
 
+        var isSave = NativeSave.LooksLikeSave(path);
+        SetStatus(
+            isSave
+                ? $"Reading {Path.GetFileName(path)}… a dynasty save takes twenty seconds or so to open."
+                : "Reading your dynasty…",
+            ok: null);
+        _blocker.IsVisible = false;
+        SetPickersEnabled(false);
+
         try
         {
-            _package = DynastyPackage.Open(_dynastyBox.Text ?? "");
-            _dynasty = _package.Export;
+            var package = await Task.Run(() => DynastyPackage.Open(path));
+            _package = package;
+            _dynasty = package.Export;
             _teamBox.ItemsSource = _dynasty.Teams.Select(t => t.DisplayName).ToList();
             SetStatus(
                 $"Read {_dynasty.Teams.Count} teams from {Path.GetFileName(_dynasty.PlayerTablePath)}." +
@@ -352,9 +377,24 @@ public sealed class MainWindow : Window
                 $"tool wrote its CSV files into, or a .zip of that folder. ({ex.Message})";
             SetStatus(_dynastyProblem, ok: false);
         }
+        finally
+        {
+            SetPickersEnabled(true);
+            UpdateSaveOption();
+            UpdateButtons();
+        }
+    }
 
-        UpdateSaveOption();
-        UpdateButtons();
+    /// <summary>
+    /// Locks the file pickers while a dynasty is opening, so a second choice
+    /// cannot start on top of the first and leave the two racing.
+    /// </summary>
+    private void SetPickersEnabled(bool enabled)
+    {
+        foreach (var button in _dynastyPickers)
+        {
+            button.IsEnabled = enabled;
+        }
     }
 
     /// <summary>
@@ -512,7 +552,13 @@ public sealed class MainWindow : Window
 
         try
         {
-            var result = await Task.Run(() => new RosterGenerationService().Run(request));
+            // Progress arrives from the worker thread; SetStatus touches the
+            // UI, so it is marshalled back rather than called from there.
+            var service = new RosterGenerationService
+            {
+                Progress = line => Avalonia.Threading.Dispatcher.UIThread.Post(() => SetStatus(line, ok: null)),
+            };
+            var result = await Task.Run(() => service.Run(request));
             _output.Text = Describe(result);
             SetStatus(
                 result.SaveOutput is { } written
