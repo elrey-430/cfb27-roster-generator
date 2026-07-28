@@ -35,6 +35,14 @@ public sealed class PlayerConversionEntry
 
     /// <summary>Archetype choice, or null when the donor archetype was kept.</summary>
     public Rating.ArchetypeChoice? Archetype { get; set; }
+
+    /// <summary>
+    /// The commentary index written for this player, from their surname.
+    /// <see cref="Mapping.CommentaryIdSet.None"/> means the announcers have no
+    /// recording of that name and will not say it — which is the game's own
+    /// answer for a fifth of its players, not a failure of this tool.
+    /// </summary>
+    public int CommentaryId { get; set; }
 }
 
 /// <summary>

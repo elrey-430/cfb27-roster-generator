@@ -22,7 +22,8 @@ Re-running the base-vs-multi-edit diff during Milestone 1 development
 reproduced the published findings exactly: the trade touched only
 `TeamIndex`, `PrevTeamIndex`, `PLYR_PREVTEAMID`, `BaseNILValue`,
 `CurrentNILCompensation`; the renames touched only `FirstName`/`LastName`
-(plus one spontaneous `PLYR_COMMENT` change on one of the two renames).
+(plus a `PLYR_COMMENT` change on one of the two renames — since explained: the
+game rewrites it to the commentary index of the new surname, see below).
 
 Anything **not** covered by those diffs is labeled *unconfirmed
 observation* — statistically profiled from 16,257 live rows of the base
@@ -175,7 +176,7 @@ not of name text. A controlled in-game rename left all of them untouched.
 | `PLYR_ASSETNAME` | Auto-derived from name at *generation* time (e.g. `HowardJamari_7025`); a plain rename does NOT regenerate it | Untouched on **Rename**; must be supplied by the caller on **ReplaceIdentity** |
 | `GenericHeadAssetName` | Same derivation family (e.g. `Generic_0877_P_T0042_H_6_3`) | Same as above |
 | `PLYR_PORTRAIT` | Portrait id tied to identity, not name text | Same as above |
-| `PLYR_COMMENT` | Internal flavor-text/comment-pool index; changed on one observed rename with **no clear trigger** | **Leave alone, never set.** Any change is blocked by `OpaqueFieldGuard` |
+| `PLYR_COMMENT` | Index into the recorded commentary audio — which name the announcers say. 0 = never said, held by 20% of an untouched save | **Written from the surname.** The game does the same on a rename: two in-game renames re-exported showed it rewritten to exactly the index for the new surname, 2 of 2, including 0 for an unrecorded name. Mapping measured from 146,295 rows across nine game-generated saves (`data/CommentaryIds.json`); validated by `CommentaryConsistencyRule`, which rejects an index belonging to a different name |
 
 Because "cosmetic rename" and "replace with a different real player" are
 both valid operations with different correct outcomes, the tool makes the

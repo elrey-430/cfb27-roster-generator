@@ -15,8 +15,13 @@ public sealed class ValidationRuleTests
     private static ValidationReport Validate(
         Model.PlayerRoster roster,
         RosterEditSession? session = null,
-        IReadOnlySet<int>? knownTeams = null) =>
-        new RosterValidator().Validate(new RosterValidationContext(roster, session, knownTeams));
+        IReadOnlySet<int>? knownTeams = null,
+        Mapping.CommentaryIdSet? commentary = null) =>
+        new RosterValidator().Validate(
+            new RosterValidationContext(roster, session, knownTeams, commentaryIds: commentary));
+
+    private static Mapping.CommentaryIdSet Commentary() =>
+        Mapping.CommentaryIdSet.Load(TestFixtures.DataPath("CommentaryIds.json"));
 
     [Fact]
     public void CleanRosterPassesAllRules()
@@ -286,13 +291,56 @@ public sealed class ValidationRuleTests
     }
 
     [Fact]
-    public void CommentChangeIsBlocked()
+    public void ACommentaryIndexThatBelongsToAnotherNameIsBlocked()
     {
+        // The defect this whole feature exists to prevent: a player carrying
+        // the recorded name of whoever held the slot before them.
+        var roster = TestFixtures.LoadSampleRoster();
+        var player = roster.Players.First();
+        player.SetRaw(PlayerColumns.Comment, "1234");
+
+        var report = Validate(roster, commentary: Commentary());
+
+        Assert.Contains(report.Errors,
+            i => i.RuleName == "CommentaryConsistency" && i.Column == PlayerColumns.Comment);
+    }
+
+    [Fact]
+    public void TheCommentaryIndexForThePlayersOwnNameIsAccepted()
+    {
+        var roster = TestFixtures.LoadSampleRoster();
+        var commentary = Commentary();
+        var player = roster.Players.First();
+        player.SetRaw(PlayerColumns.Comment, commentary.ForLastName(player.LastName).ToString());
+
+        var report = Validate(roster, commentary: commentary);
+
+        Assert.DoesNotContain(report.Errors, i => i.RuleName == "CommentaryConsistency");
+    }
+
+    [Fact]
+    public void SilencingAPlayerIsAlwaysAllowed()
+    {
+        // 0 is the game's own value for a name the announcers cannot say, and
+        // a fifth of an untouched save holds it. It must never be an error.
+        var roster = TestFixtures.LoadSampleRoster();
+        roster.Players.First().SetRaw(PlayerColumns.Comment, "0");
+
+        var report = Validate(roster, commentary: Commentary());
+
+        Assert.DoesNotContain(report.Errors, i => i.RuleName == "CommentaryConsistency");
+    }
+
+    [Fact]
+    public void WithoutTheMappingTheCommentaryRuleStaysInert()
+    {
+        // Someone validating a raw file has supplied no mapping; the rule must
+        // not invent a verdict from nothing.
         var roster = TestFixtures.LoadSampleRoster();
         roster.Players.First().SetRaw(PlayerColumns.Comment, "1234");
 
         var report = Validate(roster);
 
-        Assert.Contains(report.Errors, i => i.RuleName == "OpaqueFieldGuard" && i.Column == PlayerColumns.Comment);
+        Assert.DoesNotContain(report.Errors, i => i.RuleName == "CommentaryConsistency");
     }
 }

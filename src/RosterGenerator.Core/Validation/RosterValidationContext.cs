@@ -27,16 +27,22 @@ public sealed class RosterValidationContext
     /// EA's overall formulas. Supplying them enables the archetype
     /// consistency checks; without them that rule stays inert.
     /// </param>
+    /// <param name="commentaryIds">
+    /// The measured surname → commentary mapping. Supplying it enables the
+    /// commentary check; without it that rule stays inert.
+    /// </param>
     public RosterValidationContext(
         PlayerRoster roster,
         RosterEditSession? editSession = null,
         IReadOnlySet<int>? knownTeamIndices = null,
-        Rating.OverallFormulaSet? overallFormulas = null)
+        Rating.OverallFormulaSet? overallFormulas = null,
+        Mapping.CommentaryIdSet? commentaryIds = null)
     {
         Roster = roster;
         EditSession = editSession;
         KnownTeamIndices = knownTeamIndices;
         OverallFormulas = overallFormulas;
+        CommentaryIds = commentaryIds;
     }
 
     /// <summary>The roster being validated.</summary>
@@ -50,4 +56,10 @@ public sealed class RosterValidationContext
 
     /// <summary>EA's overall formulas, or null to skip archetype checks.</summary>
     public Rating.OverallFormulaSet? OverallFormulas { get; }
+
+    /// <summary>
+    /// The measured surname → commentary mapping, or null to skip the
+    /// commentary check.
+    /// </summary>
+    public Mapping.CommentaryIdSet? CommentaryIds { get; }
 }

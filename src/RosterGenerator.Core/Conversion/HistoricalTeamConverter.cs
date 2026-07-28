@@ -35,6 +35,7 @@ public sealed class HistoricalTeamConverter
     private Appearance.HeadAssetPool? _faces;
     private readonly RosterDepthModel? _depth;
     private readonly TeamMappingSet? _previousSchools;
+    private readonly CommentaryIdSet _commentaryIds;
 
     /// <summary>
     /// Creates a converter.
@@ -83,8 +84,10 @@ public sealed class HistoricalTeamConverter
         RosterDepthModel? rosterDepth = null,
         TeamMappingSet? previousSchoolMappings = null,
         bool replaceRealPersonFaces = true,
-        Equipment.CharacterVisualsTable? characterVisuals = null)
+        Equipment.CharacterVisualsTable? characterVisuals = null,
+        CommentaryIdSet? commentaryIds = null)
     {
+        _commentaryIds = commentaryIds ?? CommentaryIdSet.Empty;
         _replaceRealPersonFaces = replaceRealPersonFaces;
         _characterVisuals = characterVisuals;
         _teamMappings = teamMappings;
@@ -190,6 +193,19 @@ public sealed class HistoricalTeamConverter
                 ReportUnfilledSlots(report, freeSlots);
             }
         }
+
+        // Reported once for the roster rather than once per player: the
+        // commentary has no recording of roughly a third of surnames, so a
+        // per-player note would bury everything else in the report.
+        var named = report.Converted.Count(e => e.CommentaryId != CommentaryIdSet.None);
+        var unnamed = report.Converted.Count() - named;
+        report.GlobalAssumptions.Add(_commentaryIds.Count == 0
+            ? "Commentary was left as the replaced players had it, so the announcers will use their " +
+              "names. data/CommentaryIds.json is missing."
+            : $"Commentary follows each player's surname, as the game does it on a rename: " +
+              $"{named} of {named + unnamed} will be named by the announcers. The other {unnamed} " +
+              "have a surname the commentary has no recording of and are left unnamed rather than " +
+              "called by the name of whoever held their slot.");
 
         return report;
     }
@@ -526,6 +542,23 @@ public sealed class HistoricalTeamConverter
             assetName: face.AssetName,
             genericHeadAssetName: face.HeadAssetName,
             portrait: face.Portrait);
+
+        // Commentary follows the surname, exactly as the game does it on a
+        // rename. Left alone, the announcers would keep calling this player by
+        // the name of whoever held the slot. 0 is a real answer, not a
+        // failure: it is what the game itself stores for a surname it has no
+        // recording of, and it is what stops the wrong name being said.
+        //
+        // With no mapping loaded the field is not touched at all. An absent
+        // mapping means this tool knows nothing about commentary, which is a
+        // different thing from knowing the announcers cannot say the name —
+        // writing 0 on that basis would silence a roster over a missing file.
+        if (_commentaryIds.Count > 0)
+        {
+            var commentary = _commentaryIds.ForLastName(historicalPlayer.LastName);
+            session.SetCommentaryId(slot, commentary);
+            entry.CommentaryId = commentary;
+        }
 
         // Position: keep the slot's position when interchangeable with the
         // mapped one (a generic DE keeps the slot's LE or RE), otherwise

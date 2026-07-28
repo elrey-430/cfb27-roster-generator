@@ -110,12 +110,16 @@ cfb27-roster-generator/
 │   ├── RosterDepth.json             roster shape and program standing
 │   ├── EquipmentEras.json           period-correct helmets, masks, sleeves, pads
 │   ├── FbsMembership.json           when each school reached the FBS (advisory)
+│   ├── CommentaryIds.json           MEASURED: surname -> the recorded name
+│   │                                the announcers say, 0 when there is none
 │   └── RosterSkeleton.json          MEASURED: the league-mean layout of a
 │                                    team's 85 slots, by position
 ├── Ratings/                     ← rating model documentation + test results
 ├── tools/                       ← measurement scripts that generate data/ files
 │   ├── build_archetype_profiles.py  fits every archetype's every attribute
 │   │                                against overall across a real export
+│   ├── build_commentary_ids.py      reads surname -> commentary index out of
+│   │                                game-generated saves only
 │   └── native-save/             ← Node sidecar: reads and writes the dynasty
 │       ├── extract.mjs              save -> the CSVs the pipeline reads
 │       ├── apply.mjs                generated CSVs + save -> a NEW save
@@ -137,7 +141,8 @@ cfb27-roster-generator/
 │   │   ├── Historical/          ← HistoricalPlayer/Roster model + simple-CSV reader,
 │   │   │                          RosterCsvValidator, FbsMembership,
 │   │   │                          SeasonTemplateWriter (blank whole-season file)
-│   │   ├── Mapping/             ← TeamMappingSet / PositionMappingSet (external files)
+│   │   ├── Mapping/             ← TeamMappingSet / PositionMappingSet /
+│   │   │                          CommentaryIdSet (external files)
 │   │   ├── Dynasty/             ← DynastyExport: discover tables/teams in any export;
 │   │   │                          DynastyPackage (folder / .zip / save file);
 │   │   │                          NativeSave (the sidecar boundary)
@@ -147,7 +152,7 @@ cfb27-roster-generator/
 │   │                              validate / list-teams / compare
 │   └── RosterGenerator.Poc/     ← Milestone 1 proof-of-concept (rename + jersey)
 └── tests/
-    └── RosterGenerator.Core.Tests/  335 xunit tests + real-data fixtures
+    └── RosterGenerator.Core.Tests/  368 xunit tests + real-data fixtures
 ```
 
 Parsing (`Csv/`), business logic (`Editing/`), validation (`Validation/`)
@@ -303,7 +308,7 @@ fails.
 
 ## Verification status (what was actually proven)
 
-- 335 xunit tests pass, covering round-trip fidelity, every validation rule,
+- 368 xunit tests pass, covering round-trip fidelity, every validation rule,
   both multi-field dependency rules, the archetype floors, the equipment and
   appearance passes, whole-season templating and conversion, and the full
   PoC pipeline.

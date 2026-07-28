@@ -40,7 +40,7 @@ public sealed class RosterValidator
         new TeamAssignmentRule(),
         new TeamChangeConsistencyRule(),
         new IdentityChangeConsistencyRule(),
-        new OpaqueFieldGuardRule(),
+        new CommentaryConsistencyRule(),
         new WeightRangeRule(),
         new ArchetypeConsistencyRule(),
     };

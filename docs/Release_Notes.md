@@ -1,5 +1,54 @@
 # Release notes
 
+## v0.6.2-alpha — The announcers say the right name
+
+An oversight, reported and fixed: your recreated players were being called by
+somebody else's name.
+
+The game stores a **commentary index** per player, choosing which recorded
+name the announcers use. The tool never set it, so a recreated player kept
+whatever the roster slot already had — your Jordan Travis was announced as the
+player he replaced, every game, for the whole dynasty. Nothing in the game
+tells you, which is why it went unnoticed.
+
+**Now it follows the surname you already typed.** No new column, nothing to
+fill in, no option to tick. The `LastName` in your roster CSV sets the index.
+
+A surname the commentary has no recording of gets **0** — the announcers
+simply do not say the name, rather than saying the wrong one. That is the
+game's own value: a fifth of the players in an untouched save have it. On the
+2023 Florida State roster, 61 of 85 players are named and 24 are not, and the
+generation report gives you those counts.
+
+### Measured, not guessed
+
+The mapping covers **5,918 surnames**, read out of **146,295 player rows across
+nine dynasty saves the game generated itself** — where the game assigned both
+the name and the index.
+
+Hand-edited saves were deliberately left out of that measurement. A roster
+editor can leave the index pointing at a slot's previous occupant, and one such
+save was visibly wrong: All-Time USC names — Bush, Palmer, Allen, Leinart —
+each disagreed with all nine untouched saves. Including it would have taught
+the tool names the announcers cannot actually say.
+
+**The game agrees with the rule.** Renaming two players in-game and exporting
+again shows the game rewriting the index itself, to exactly the values this
+mapping gives for the new surnames — including 0 for a surname it has no audio
+for.
+
+### What this does not change
+
+Ratings, equipment, faces, hometowns and every output file are identical to
+v0.6.1. Existing roster CSVs work unchanged. Re-generating a roster you already
+made will change the commentary index on those players, and nothing else.
+
+If `data/CommentaryIds.json` is missing, the field is left exactly as it was
+rather than zeroed — "we know nothing" is not the same as "the name cannot be
+said", and the report tells you which happened.
+
+## v0.6.1-alpha — Opening a dynasty save no longer looks like a hang
+
 ## v0.6.0-alpha — Drop your dynasty in, get your dynasty back
 
 **The headline: you no longer export anything, and you no longer import

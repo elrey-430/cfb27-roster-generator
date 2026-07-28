@@ -95,6 +95,42 @@ the very thread the blocking call was holding. The suite went from 5 seconds to
 a timeout, which is exactly what it is for. The shim is gone and the tests pump
 the dispatcher while awaiting instead. Tests: 357/357.
 
+**The announcers now say the right name (v0.6.2).** Reported as an oversight:
+the Player table's `PLYR_COMMENT` selects which recorded name the commentary
+uses, and a recreated player kept whatever the slot already had — so a
+generated Jordan Travis was called by the replaced player's name for the whole
+dynasty, with nothing in the game to reveal it.
+
+Each player's surname now sets the index, with **0** for a surname the
+commentary has no recording of. No new column and no user input: it comes from
+the `LastName` already supplied.
+
+**Measured, not invented.** `data/CommentaryIds.json` holds 5,918 surnames,
+built by `tools/build_commentary_ids.py` from **146,295 player rows across nine
+game-generated saves**. Hand-edited saves are deliberately excluded — a roster
+editor can leave `PLYR_COMMENT` pointing at a slot's previous occupant, and
+pooling one such save was visibly poisoning the mapping (All-Time USC names —
+Bush, Palmer, Allen, Leinart — each disagreeing with all nine base saves).
+Across the base saves only 2 surnames of 9,070 are ambiguous.
+
+**The game itself confirms the rule.** Renaming two players in-game and
+re-exporting shows the game rewriting `PLYR_COMMENT` to exactly the values this
+mapping gives for the new surnames, 2 of 2 — including 0 for a surname with no
+recording. That also resolves an old note in `Schema.md` calling this field
+"changed spontaneously on one observed rename with no clear trigger": the
+trigger was the rename.
+
+**A lock became a check.** `OpaqueFieldGuard` forbade any write to
+`PLYR_COMMENT` because the field was not understood, and it correctly blocked
+this work. It is replaced by `CommentaryConsistencyRule`, which permits the
+write but rejects an index belonging to a different name — the precise defect
+being fixed. With no mapping file present the converter does not touch the
+field at all, since "we know nothing" is not the same as "the name cannot be
+said".
+
+Verified on a real save: 85 of 85 Florida State players carry the index for
+their own surname. Tests: 368/368.
+
 **Milestone 13 (A whole season at a time) is complete.**
 
 - **The tool now writes the blank file, not the user.** `template --season

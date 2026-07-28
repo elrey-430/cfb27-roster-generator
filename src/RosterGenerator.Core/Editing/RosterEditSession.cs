@@ -144,6 +144,29 @@ public sealed class RosterEditSession
     }
 
     /// <summary>
+    /// Sets the commentary index — which recorded name the announcers use.
+    ///
+    /// <para><see cref="Mapping.CommentaryIdSet.None"/> (0) is a legitimate
+    /// value, not a failure: it is what the game holds for a player whose
+    /// surname it has no recording of, and writing it is how a recreated
+    /// player stops being called by the name of whoever held the slot.</para>
+    /// </summary>
+    public void SetCommentaryId(Player player, int commentaryId)
+    {
+        if (commentaryId < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(commentaryId), commentaryId, "A commentary id cannot be negative.");
+        }
+
+        player.SetRaw(PlayerColumns.Comment, commentaryId.ToString());
+        Record(player, EditIntent.AttributeChange,
+            commentaryId == Mapping.CommentaryIdSet.None
+                ? $"Set commentary of {player} to none (the announcers have no recording of that name)"
+                : $"Set commentary of {player} to {commentaryId}");
+    }
+
+    /// <summary>
     /// Sets the home town (free text) and home state (51-value enum).
     /// </summary>
     public void SetHometown(Player player, string town, string state)

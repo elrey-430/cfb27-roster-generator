@@ -305,10 +305,17 @@ public sealed class RosterGenerationService
             ? export.LoadCharacterVisuals()
             : null;
 
+        // Optional: a missing file leaves commentary alone rather than
+        // refusing to generate, and the report says which happened.
+        var commentaryPath = FindOptionalDataFile(data, "CommentaryIds.json");
+        var commentaryIds = commentaryPath is null
+            ? CommentaryIdSet.Empty
+            : CommentaryIdSet.Load(commentaryPath);
+
         var converter = new HistoricalTeamConverter(
             teamMappings, positionMappings, ratingEngine, archetypeSelector, filler, depth,
             export.BuildPreviousSchoolMappings(teamAliases), request.ReplaceRealPersonFaces,
-            visuals);
+            visuals, commentaryIds);
 
         // One file can carry a whole season. Each team's slots are disjoint, so
         // they convert one after another into the same session and the single
@@ -348,7 +355,9 @@ public sealed class RosterGenerationService
         CreateParentDirectory(request.ReportPath);
 
         var result = new RosterExporter().Export(
-            new RosterValidationContext(donor, session, overallFormulas: formulas), request.OutputPath);
+            new RosterValidationContext(
+                donor, session, overallFormulas: formulas, commentaryIds: commentaryIds),
+            request.OutputPath);
 
         // Equipment is a second table, so it is applied after the player table
         // has validated and been written: a run that refuses to produce a

@@ -94,8 +94,19 @@ public static class PlayerColumns
     public const string CharacterVisuals = "CharacterVisuals";
 
     /// <summary>
-    /// Internal flavor-text/comment-pool index. Changed spontaneously on one
-    /// observed rename with no clear trigger — leave alone, never set.
+    /// Index into the recorded commentary audio: what lets the announcers say
+    /// a player's name out loud. 0 means they never say it, and 20% of an
+    /// untouched save's players hold 0.
+    ///
+    /// <para>This was previously documented as changing "spontaneously on one
+    /// observed rename with no clear trigger", and left alone on that basis.
+    /// The trigger was the rename. Renaming players in the game and exporting
+    /// again shows it being rewritten to the commentary id of the <b>new
+    /// surname</b> every time — so a recreated player who keeps the replaced
+    /// player's value is called by the replaced player's name.</para>
+    ///
+    /// <para>Written from <see cref="Mapping.CommentaryIdSet"/>, which is
+    /// measured from saves the game generated rather than guessed at.</para>
     /// </summary>
     public const string Comment = "PLYR_COMMENT";
 
