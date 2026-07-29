@@ -112,6 +112,9 @@ cfb27-roster-generator/
 │   ├── FbsMembership.json           when each school reached the FBS (advisory)
 │   ├── CommentaryIds.json           MEASURED: surname -> the recorded name
 │   │                                the announcers say, 0 when there is none
+│   ├── AbilityModel.json            MEASURED: how many ability slots a player
+│   │                                has at a given overall, which of their
+│   │                                archetype's slots, and at what tier
 │   └── RosterSkeleton.json          MEASURED: the league-mean layout of a
 │                                    team's 85 slots, by position
 ├── Ratings/                     ← rating model documentation + test results
@@ -123,6 +126,8 @@ cfb27-roster-generator/
 │   ├── measure_archetype_usage.py   checks ArchetypeRules.json against what
 │   │                                the game does: is the default the game's
 │   │                                own choice, does weight predict anything
+│   ├── measure_ability_model.py     how the game hands out ability slots and
+│   │                                tiers against overall and archetype
 │   └── native-save/             ← Node sidecar: reads and writes the dynasty
 │       ├── extract.mjs              save -> the CSVs the pipeline reads
 │       ├── apply.mjs                generated CSVs + save -> a NEW save
@@ -155,7 +160,7 @@ cfb27-roster-generator/
 │   │                              validate / list-teams / compare
 │   └── RosterGenerator.Poc/     ← Milestone 1 proof-of-concept (rename + jersey)
 └── tests/
-    └── RosterGenerator.Core.Tests/  413 xunit tests + real-data fixtures
+    └── RosterGenerator.Core.Tests/  431 xunit tests + real-data fixtures
 ```
 
 Parsing (`Csv/`), business logic (`Editing/`), validation (`Validation/`)
@@ -322,7 +327,7 @@ fails.
 
 ## Verification status (what was actually proven)
 
-- 413 xunit tests pass, covering round-trip fidelity, every validation rule,
+- 431 xunit tests pass, covering round-trip fidelity, every validation rule,
   both multi-field dependency rules, the archetype floors, the equipment and
   appearance passes, whole-season templating and conversion, and the full
   PoC pipeline.

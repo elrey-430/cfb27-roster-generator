@@ -43,6 +43,13 @@ public sealed class PlayerConversionEntry
     /// answer for a fifth of its players, not a failure of this tool.
     /// </summary>
     public int CommentaryId { get; set; }
+
+    /// <summary>
+    /// The ability tiers written for this player, or none. The slots come
+    /// from their archetype and how good they are in them from their overall;
+    /// nothing here names an ability, because the save does not store one.
+    /// </summary>
+    public Rating.PlayerAbilities Abilities { get; set; } = Rating.PlayerAbilities.None;
 }
 
 /// <summary>
@@ -188,6 +195,24 @@ public sealed class ConversionReport
                 sb.AppendLine(
                     $"  {entry.Player.FirstName + " " + entry.Player.LastName,-26} " +
                     $"{entry.AssignedPosition,-4} {r.Overall,3}  {r.Confidence,-10}  {basis}");
+            }
+        }
+
+        var withAbilities = Converted.Where(e => e.Abilities.Any).ToList();
+        if (withAbilities.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Abilities:");
+            sb.AppendLine(
+                $"  {withAbilities.Count} of {Converted.Count()} players have at least one ability slot " +
+                "filled. Which ability a slot is comes from the player's position and archetype in the");
+            sb.AppendLine("  game's own data; what is set here is the tier they hold in it.");
+            sb.AppendLine();
+            foreach (var entry in withAbilities.OrderByDescending(e => e.Ratings?.Overall ?? 0))
+            {
+                sb.AppendLine(
+                    $"  {entry.Player.FirstName + " " + entry.Player.LastName,-26} " +
+                    $"{entry.AssignedPosition,-4} {entry.Ratings?.Overall,3}  {entry.Abilities.Describe()}");
             }
         }
 

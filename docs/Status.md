@@ -1,8 +1,58 @@
 # Project Status
 
-_Last updated: 2026-07-29 — the dynasty year, all-time rosters, archetype review._
+_Last updated: 2026-07-29 — abilities, the dynasty year, all-time rosters._
 
 ## Current status
+
+**Recreated players get the abilities their rating earns.** Requested after
+the ability research, and the research is what shaped it — the two families are
+stored so differently that only one of them can be chosen at all.
+
+**Physical abilities cannot be chosen, and the tool does not pretend
+otherwise.** `PhysicalAbility1..5` are typed `AbilitiesRank` — the same type as
+the mental *ranks* — and hold only None/Bronze/Silver/Gold/Platinum. Nothing on
+the player names the ability. That mapping is game data:
+`PositionSignatureAbility[]`, `PositionAbilityTable[]` and
+`PositionalAbilitySplines[]` are each one row of references, none of which
+resolves to a table inside the save. It is position- and archetype-dependent —
+600 of the 696 single-ability `DT_PurePower` players use slot 4, every
+single-ability `KP_Power` uses slot 3 — so slot 4 on a nose tackle is not slot 4
+on a kicker. What the tool sets is **how many** of a player's slots are filled,
+**which** of them, and **at what tier**; the archetype it already chooses does
+the rest.
+
+**Measured, not authored.** `tools/measure_ability_model.py` reads
+`data/AbilityModel.json` out of a base save: the share of players with an
+ability rises from 3.6% at OVR 50–54 to 99.1% at 90–94, tiers go from
+Bronze-heavy at the bottom to 52% Platinum at 95+, and each archetype has its
+own slot order. Six tests assert the tool reproduces that share to within 4
+points at six overalls — the model is checked against the game, not against
+itself.
+
+**Mental abilities are the opposite and are treated so.** They name the ability
+outright, and they are rare and elite: 248 of 11,730 players carry any, 244 of
+those carry all three, essentially none below OVR 80. A player is only ever
+given one the game has been **observed** giving their position. An earlier cut
+tried to classify abilities as "position-locked" or "general" by counting
+positions; that over-fit — `FieldGeneral` (QB) and `OLRally` (the line) really
+are locked, but `Headstrong` looked locked to four positions purely because
+only 32 players carry it. No rule is inferred from a 22-player sample; the pool
+is the observation.
+
+**A defect the roster diff caught, not the tests.** Abilities were applied to
+converted players but not to the slots the filler re-rates as depth, so a
+63-overall walk-on kept two Silvers from the player before him — the exact
+thing the feature exists to prevent, and invisible without diffing the output
+against the save it came from. Filled slots are now decided too, and a test
+fails if any fringe player's slots match the donor's.
+
+Nothing new is asked of the user: the tiers come from the overall the rating
+engine already produced and the archetype already selected, so awards, draft
+slot and production reach abilities through the rating they earned. With
+`--ratings inherit` there is no generated overall, so nothing is written rather
+than invented.
+
+Tests: 431/431.
 
 **You can play the season you recreated.** Reported as the last gap before a
 release: a recreated 1985 roster was still played in whatever year the save

@@ -1,0 +1,812 @@
+{
+  "//": "MEASURED, not authored. How the game itself distributes abilities, from tools/measure_ability_model.py. PhysicalAbility1..5 hold a TIER ONLY -- the ability a slot represents lives in the game's data, not the save -- so what is modelled here is how many slots a player has, which of their archetype's slots they are, and what tier each holds. Overall drives all three.",
+  "sourcePlayers": 11730,
+  "sourceCount": 1,
+  "overallBand": 5,
+  "physical": {
+    "slotCountByOverall": {
+      "40": {
+        "0": 1.0
+      },
+      "45": {
+        "0": 1.0
+      },
+      "50": {
+        "0": 0.96429,
+        "2": 0.03571
+      },
+      "55": {
+        "0": 0.91284,
+        "1": 0.06881,
+        "2": 0.01835
+      },
+      "60": {
+        "0": 0.88267,
+        "1": 0.10334,
+        "2": 0.01399
+      },
+      "65": {
+        "0": 0.81682,
+        "1": 0.15291,
+        "2": 0.02844,
+        "3": 0.00183
+      },
+      "70": {
+        "0": 0.72355,
+        "1": 0.21737,
+        "2": 0.05125,
+        "3": 0.00724,
+        "4": 0.0006
+      },
+      "75": {
+        "0": 0.55866,
+        "1": 0.29935,
+        "2": 0.12663,
+        "3": 0.0135,
+        "4": 0.00186
+      },
+      "80": {
+        "0": 0.25603,
+        "1": 0.3914,
+        "2": 0.23505,
+        "3": 0.08919,
+        "4": 0.02728,
+        "5": 0.00105
+      },
+      "85": {
+        "0": 0.02571,
+        "1": 0.18766,
+        "2": 0.30591,
+        "3": 0.29049,
+        "4": 0.15681,
+        "5": 0.03342
+      },
+      "90": {
+        "0": 0.00943,
+        "1": 0.0283,
+        "2": 0.12264,
+        "3": 0.22642,
+        "4": 0.41509,
+        "5": 0.19811
+      },
+      "95": {
+        "1": 0.09091,
+        "3": 0.09091,
+        "4": 0.27273,
+        "5": 0.54545
+      }
+    },
+    "tierByOverall": {
+      "50": {
+        "Bronze": 0.0,
+        "Silver": 1.0,
+        "Gold": 0.0,
+        "Platinum": 0.0
+      },
+      "55": {
+        "Bronze": 0.21739,
+        "Silver": 0.56522,
+        "Gold": 0.13043,
+        "Platinum": 0.08696
+      },
+      "60": {
+        "Bronze": 0.43787,
+        "Silver": 0.42012,
+        "Gold": 0.11243,
+        "Platinum": 0.02959
+      },
+      "65": {
+        "Bronze": 0.47159,
+        "Silver": 0.41051,
+        "Gold": 0.10653,
+        "Platinum": 0.01136
+      },
+      "70": {
+        "Bronze": 0.4645,
+        "Silver": 0.3567,
+        "Gold": 0.15688,
+        "Platinum": 0.02191
+      },
+      "75": {
+        "Bronze": 0.44651,
+        "Silver": 0.35039,
+        "Gold": 0.17209,
+        "Platinum": 0.03101
+      },
+      "80": {
+        "Bronze": 0.46582,
+        "Silver": 0.29705,
+        "Gold": 0.173,
+        "Platinum": 0.06414
+      },
+      "85": {
+        "Bronze": 0.32951,
+        "Silver": 0.35766,
+        "Gold": 0.19812,
+        "Platinum": 0.1147
+      },
+      "90": {
+        "Bronze": 0.18325,
+        "Silver": 0.22251,
+        "Gold": 0.3089,
+        "Platinum": 0.28534
+      },
+      "95": {
+        "Bronze": 0.17391,
+        "Silver": 0.21739,
+        "Gold": 0.08696,
+        "Platinum": 0.52174
+      }
+    },
+    "slotOrderByArchetype": {
+      "CB_HybridCorner": [
+        2,
+        4,
+        5,
+        3
+      ],
+      "CB_MantoMan": [
+        2,
+        3,
+        1,
+        4,
+        5
+      ],
+      "CB_Slot": [
+        5,
+        1,
+        3,
+        2
+      ],
+      "CB_Zone": [
+        4,
+        5,
+        3,
+        2
+      ],
+      "C_Agile": [
+        2,
+        1,
+        3,
+        4,
+        5
+      ],
+      "C_PassProtector": [
+        1,
+        3,
+        5,
+        2,
+        4
+      ],
+      "C_Power": [
+        2,
+        5,
+        3,
+        4,
+        1
+      ],
+      "DE_PowerRusher": [
+        4,
+        1,
+        5
+      ],
+      "DE_PurePower": [
+        4,
+        5,
+        2,
+        3,
+        1
+      ],
+      "DE_RunStopper": [
+        4,
+        2,
+        5,
+        3
+      ],
+      "DE_SmallerSpeedRusher": [
+        5,
+        1,
+        3,
+        4,
+        2
+      ],
+      "DT_NoseTackle": [
+        5,
+        4,
+        2
+      ],
+      "DT_PowerRusher": [
+        4,
+        3,
+        1,
+        5
+      ],
+      "DT_PurePower": [
+        4,
+        5,
+        3,
+        2,
+        1
+      ],
+      "DT_SpeedRusher": [
+        3,
+        5,
+        4,
+        2
+      ],
+      "FB_Blocking": [
+        2
+      ],
+      "FB_Utility": [
+        5,
+        1
+      ],
+      "G_Agile": [
+        2,
+        3,
+        5,
+        1,
+        4
+      ],
+      "G_PassProtector": [
+        1,
+        3,
+        5,
+        2
+      ],
+      "G_Power": [
+        3,
+        2,
+        5,
+        4,
+        1
+      ],
+      "G_WellRounded": [
+        1,
+        5
+      ],
+      "HB_ElusiveBack": [
+        4,
+        3,
+        2,
+        5,
+        1
+      ],
+      "HB_ElusivePower": [
+        5,
+        2,
+        4
+      ],
+      "HB_PowerBack": [
+        2,
+        5,
+        1,
+        4,
+        3
+      ],
+      "HB_ReceivingBack": [
+        2,
+        3,
+        4,
+        1
+      ],
+      "KP_Accurate": [
+        2,
+        1,
+        3
+      ],
+      "KP_Power": [
+        3,
+        1,
+        2
+      ],
+      "MLB_FieldGeneral": [
+        3,
+        2,
+        5
+      ],
+      "MLB_PassCoverage": [
+        1,
+        4,
+        3,
+        2,
+        5
+      ],
+      "MLB_RunStopper": [
+        3,
+        5,
+        2,
+        4
+      ],
+      "OLB_PassCoverage": [
+        4,
+        2,
+        3,
+        1
+      ],
+      "OLB_PowerRusher": [
+        5,
+        2
+      ],
+      "OLB_RunStopper": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "OT_Agile": [
+        2,
+        5,
+        1,
+        3,
+        4
+      ],
+      "OT_PassProtector": [
+        2,
+        1,
+        3,
+        5
+      ],
+      "OT_Power": [
+        3,
+        2,
+        4,
+        5,
+        1
+      ],
+      "QB_FieldGeneral": [
+        2,
+        5,
+        1,
+        4,
+        3
+      ],
+      "QB_Improviser": [
+        5,
+        4,
+        2,
+        3,
+        1
+      ],
+      "QB_PureScrambler": [
+        5,
+        4,
+        2,
+        3,
+        1
+      ],
+      "QB_Scrambler": [
+        2,
+        5,
+        1,
+        3,
+        4
+      ],
+      "S_Hybrid": [
+        5,
+        2,
+        4,
+        3
+      ],
+      "S_RunSupport": [
+        4,
+        5,
+        1,
+        3,
+        2
+      ],
+      "S_Zone": [
+        3,
+        1,
+        2,
+        4,
+        5
+      ],
+      "TE_Blocking": [
+        3,
+        4,
+        2
+      ],
+      "TE_PhysicalRouteRunner": [
+        5,
+        2,
+        1,
+        4,
+        3
+      ],
+      "TE_Possession": [
+        1,
+        4
+      ],
+      "TE_PossessionBlocking": [
+        4,
+        2,
+        1
+      ],
+      "TE_VerticalThreat": [
+        5,
+        4,
+        1
+      ],
+      "WR_DeepThreat": [
+        2,
+        1,
+        3,
+        4
+      ],
+      "WR_GadgetReceiver": [
+        1,
+        2,
+        5
+      ],
+      "WR_Physical": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "WR_PhysicalRouteRunner": [
+        2
+      ],
+      "WR_Playmaker": [
+        1,
+        4,
+        5,
+        2,
+        3
+      ],
+      "WR_ShiftyRouteRunner": [
+        1,
+        5,
+        2,
+        3,
+        4
+      ]
+    }
+  },
+  "mental": {
+    "//": "Rare and elite: 2.1% of players, and of those, 244 of 248 carry all three. byPosition is what the game was SEEN giving each position -- an observation, not an inferred eligibility rule, so a position with no observations gets none.",
+    "shareByOverall": {
+      "40": 0.0,
+      "45": 0.0,
+      "50": 0.0,
+      "55": 0.0,
+      "60": 0.0,
+      "65": 0.00061,
+      "70": 0.0006,
+      "75": 0.00372,
+      "80": 0.03148,
+      "85": 0.32648,
+      "90": 0.66981,
+      "95": 0.72727
+    },
+    "slotCountObserved": {
+      "0": 0.97886,
+      "1": 9e-05,
+      "2": 0.00026,
+      "3": 0.0208
+    },
+    "rankMix": {
+      "Bronze": 0.42896,
+      "Gold": 0.17862,
+      "Platinum": 0.12314,
+      "Silver": 0.26928
+    },
+    "byPosition": {
+      "C": [
+        "ClearHeaded",
+        "HomeFanFavorite",
+        "OLRally",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "CB": [
+        "ClearHeaded",
+        "DBRally",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "DT": [
+        "ClearHeaded",
+        "DLRally",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "FB": [],
+      "FS": [
+        "ClearHeaded",
+        "DBRally",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "HB": [
+        "ClearHeaded",
+        "Headstrong",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "K": [
+        "ClearHeaded",
+        "ClutchKicker",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "LE": [
+        "ClearHeaded",
+        "DLRally",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "LG": [
+        "ClearHeaded",
+        "HomeFanFavorite",
+        "OLRally",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "LOLB": [
+        "ClearHeaded",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "LT": [
+        "ClearHeaded",
+        "HomeFanFavorite",
+        "OLRally",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "MLB": [
+        "ClearHeaded",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "P": [
+        "ClearHeaded",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "QB": [
+        "ClearHeaded",
+        "FieldGeneral",
+        "Headstrong",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "RE": [
+        "ClearHeaded",
+        "DLRally",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "RG": [
+        "ClearHeaded",
+        "OLRally",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "ROLB": [
+        "ClearHeaded",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "RT": [
+        "ClearHeaded",
+        "HomeFanFavorite",
+        "OLRally",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "SS": [
+        "ClearHeaded",
+        "DBRally",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "TE": [
+        "BestFriend",
+        "ClearHeaded",
+        "Headstrong",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ],
+      "WR": [
+        "BestFriend",
+        "ClearHeaded",
+        "Headstrong",
+        "HomeFanFavorite",
+        "RoadFanFavorite",
+        "TheNatural",
+        "WinningTime"
+      ]
+    },
+    "observedPositions": {
+      "BestFriend": [
+        "TE",
+        "WR"
+      ],
+      "ClearHeaded": [
+        "C",
+        "CB",
+        "DT",
+        "FS",
+        "HB",
+        "K",
+        "LE",
+        "LG",
+        "LOLB",
+        "LT",
+        "MLB",
+        "P",
+        "QB",
+        "RE",
+        "RG",
+        "ROLB",
+        "RT",
+        "SS",
+        "TE",
+        "WR"
+      ],
+      "ClutchKicker": [
+        "K"
+      ],
+      "DBRally": [
+        "CB",
+        "FS",
+        "SS"
+      ],
+      "DLRally": [
+        "DT",
+        "LE",
+        "RE"
+      ],
+      "FieldGeneral": [
+        "QB"
+      ],
+      "Headstrong": [
+        "HB",
+        "QB",
+        "TE",
+        "WR"
+      ],
+      "HomeFanFavorite": [
+        "C",
+        "CB",
+        "DT",
+        "FS",
+        "HB",
+        "K",
+        "LE",
+        "LG",
+        "LOLB",
+        "LT",
+        "MLB",
+        "P",
+        "QB",
+        "RE",
+        "ROLB",
+        "RT",
+        "SS",
+        "TE",
+        "WR"
+      ],
+      "OLRally": [
+        "C",
+        "LG",
+        "LT",
+        "RG",
+        "RT"
+      ],
+      "RoadFanFavorite": [
+        "C",
+        "CB",
+        "DT",
+        "FS",
+        "HB",
+        "K",
+        "LE",
+        "LG",
+        "LOLB",
+        "LT",
+        "MLB",
+        "P",
+        "QB",
+        "RE",
+        "RG",
+        "ROLB",
+        "RT",
+        "SS",
+        "TE",
+        "WR"
+      ],
+      "TheNatural": [
+        "C",
+        "CB",
+        "DT",
+        "FS",
+        "HB",
+        "K",
+        "LE",
+        "LG",
+        "LOLB",
+        "LT",
+        "MLB",
+        "P",
+        "QB",
+        "RE",
+        "RG",
+        "ROLB",
+        "RT",
+        "SS",
+        "TE",
+        "WR"
+      ],
+      "WinningTime": [
+        "C",
+        "CB",
+        "DT",
+        "FS",
+        "HB",
+        "K",
+        "LE",
+        "LG",
+        "LOLB",
+        "LT",
+        "MLB",
+        "P",
+        "QB",
+        "RE",
+        "RG",
+        "ROLB",
+        "RT",
+        "SS",
+        "TE",
+        "WR"
+      ]
+    },
+    "neverObserved": [
+      "Adrenaline",
+      "BellCow",
+      "Captain",
+      "HotHead",
+      "Instinct",
+      "Rhythm",
+      "TeamPlayer",
+      "Toughness"
+    ]
+  }
+}

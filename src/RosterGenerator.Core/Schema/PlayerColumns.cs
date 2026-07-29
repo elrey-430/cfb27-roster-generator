@@ -110,6 +110,48 @@ public static class PlayerColumns
     /// </summary>
     public const string Comment = "PLYR_COMMENT";
 
+    // -- Abilities -----------------------------------------------------------
+
+    /// <summary>
+    /// The tier a player holds in physical ability slot <paramref name="slot"/>
+    /// (1–5): <c>None</c>, <c>Bronze</c>, <c>Silver</c>, <c>Gold</c> or
+    /// <c>Platinum</c>.
+    ///
+    /// <para><b>The slot's ability is not stored here, or anywhere in the
+    /// save.</b> These columns are typed <c>AbilitiesRank</c> — the same type
+    /// as the mental ability <em>ranks</em> — and hold only how good the player
+    /// is. Which ability slot 3 represents comes from the game's own data,
+    /// referenced by <c>PositionSignatureAbility</c> and
+    /// <c>PositionAbilityTable</c>, neither of which resolves to anything
+    /// inside a save. It depends on position and archetype: slot 4 on a nose
+    /// tackle is not slot 4 on a receiver.</para>
+    ///
+    /// <para>So a slot cannot be pointed at a different archetype's ability.
+    /// What changes a player's ability <em>set</em> is changing their
+    /// archetype, which this tool already does.</para>
+    /// </summary>
+    public static string PhysicalAbility(int slot) => $"PhysicalAbility{slot}";
+
+    /// <summary>How many physical ability slots a player has.</summary>
+    public const int PhysicalAbilitySlots = 5;
+
+    /// <summary>
+    /// Mental ability <paramref name="slot"/> (1–3), which — unlike the
+    /// physical ones — names the ability outright from a 20-value enum. Rare
+    /// and elite: 2.1% of a base save carry any, and 244 of those 248 carry
+    /// all three.
+    /// </summary>
+    public static string MentalAbility(int slot) => $"MentalAbility{slot}";
+
+    /// <summary>The tier held in mental ability slot <paramref name="slot"/> (1–3).</summary>
+    public static string MentalAbilityRank(int slot) => $"MentalAbilityRank{slot}";
+
+    /// <summary>How many mental ability slots a player has.</summary>
+    public const int MentalAbilitySlots = 3;
+
+    /// <summary>The value both ability families use for an empty slot.</summary>
+    public const string NoAbility = "None";
+
     // -- Group 4: team assignment and its companion fields -------------------
 
     /// <summary>Current team index (0–137 FBS in observed saves; 255 = none/FCS).</summary>

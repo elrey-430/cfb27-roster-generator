@@ -324,10 +324,19 @@ public sealed class RosterGenerationService
             ? CommentaryIdSet.Empty
             : CommentaryIdSet.Load(commentaryPath);
 
+        // Abilities ride on the generated overall, so they are only meaningful
+        // when ratings are generated. Without the file, every slot keeps what
+        // the replaced player had — reported, not silent, because that means a
+        // recreated walk-on can be wearing somebody else's gold.
+        var abilityPath = ratingEngine is not null
+            ? FindOptionalDataFile(data, "AbilityModel.json")
+            : null;
+        var abilityModel = abilityPath is null ? null : AbilityModel.Load(abilityPath);
+
         var converter = new HistoricalTeamConverter(
             teamMappings, positionMappings, ratingEngine, archetypeSelector, filler, depth,
             export.BuildPreviousSchoolMappings(teamAliases), request.ReplaceRealPersonFaces,
-            visuals, commentaryIds);
+            visuals, commentaryIds, abilityModel);
 
         // One file can carry a whole season. Each team's slots are disjoint, so
         // they convert one after another into the same session and the single

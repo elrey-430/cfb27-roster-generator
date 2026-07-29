@@ -29,6 +29,7 @@ public sealed class HistoricalTeamConverter
     private readonly PositionMappingSet _positionMappings;
     private readonly RatingEngine? _ratingEngine;
     private readonly ArchetypeSelector? _archetypeSelector;
+    private readonly AbilityModel? _abilities;
     private readonly RosterFiller? _rosterFiller;
     private readonly bool _replaceRealPersonFaces;
     private readonly Equipment.CharacterVisualsTable? _characterVisuals;
@@ -82,6 +83,13 @@ public sealed class HistoricalTeamConverter
     /// cannot be said", and zeroing it would silence a roster over a missing
     /// data file.
     /// </param>
+    /// <param name="abilities">
+    /// How good a player is in the ability slots their archetype gives them,
+    /// measured from a base save. Null leaves every slot exactly as the
+    /// replaced player left it — which means a recreated walk-on can inherit
+    /// somebody else's gold, so the pipeline supplies this whenever ratings are
+    /// generated.
+    /// </param>
     public HistoricalTeamConverter(
         TeamMappingSet teamMappings,
         PositionMappingSet positionMappings,
@@ -92,8 +100,10 @@ public sealed class HistoricalTeamConverter
         TeamMappingSet? previousSchoolMappings = null,
         bool replaceRealPersonFaces = true,
         Equipment.CharacterVisualsTable? characterVisuals = null,
-        CommentaryIdSet? commentaryIds = null)
+        CommentaryIdSet? commentaryIds = null,
+        AbilityModel? abilities = null)
     {
+        _abilities = abilities;
         _commentaryIds = commentaryIds ?? CommentaryIdSet.Empty;
         _replaceRealPersonFaces = replaceRealPersonFaces;
         _characterVisuals = characterVisuals;
@@ -135,6 +145,13 @@ public sealed class HistoricalTeamConverter
         report.GlobalAssumptions.Add(
             "Hometown is written: PLYR_HOME_TOWN takes the town as free text and PLYR_HOME_STATE the " +
             "matching state from the save's 51-value enum (NonUS for anything not a US state).");
+        report.GlobalAssumptions.Add(_abilities is null
+            ? "Ability slots keep whatever the replaced player had, so a recreated player may carry the " +
+              "previous occupant's abilities."
+            : "Ability tiers are set from each player's overall and their archetype's own slots, measured " +
+              "from a base save. The save stores a tier per slot and never names the ability — which slot " +
+              "is which ability is decided by position and archetype in the game's own data — so this " +
+              "sets how good a player is in the slots they already have, not which abilities they get.");
         report.GlobalAssumptions.Add(_archetypeSelector is null
             ? "Player archetype (PlayerType) is inherited from the roster slot each player replaces."
             : "Player archetype (PlayerType) is chosen from each player's historical profile and the " +
@@ -233,8 +250,26 @@ public sealed class HistoricalTeamConverter
             .GroupBy(p => p.Slot.Position, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.Min(p => p.Slot.OverallRating), StringComparer.Ordinal);
 
-        report.FilledSlots.AddRange(
-            _rosterFiller!.Fill(session, freeSlots, weakestByPosition, placements.Count));
+        var filled = _rosterFiller!.Fill(session, freeSlots, weakestByPosition, placements.Count);
+        report.FilledSlots.AddRange(filled);
+
+        // A filled slot is re-rated as depth, so its abilities have to be
+        // re-decided too. Leaving them would let the previous occupant's
+        // abilities survive on a walk-on the filler just rated at 63 — which
+        // is the exact defect this feature exists to close, and it is invisible
+        // unless somebody diffs the slot against the save it came from.
+        if (_abilities is not null)
+        {
+            var byRowKey = freeSlots.ToDictionary(s => s.RowKey);
+            foreach (var slot in filled)
+            {
+                if (byRowKey.TryGetValue(slot.RowKey, out var player))
+                {
+                    session.SetAbilities(player, _abilities.For(
+                        player.GetRaw(PlayerTypeColumn), player.Position, slot.Overall, slot.RowKey));
+                }
+            }
+        }
 
         report.GlobalAssumptions.Add(
             $"{freeSlots.Count} roster slot(s) had no historical player, so they were re-rated as " +
@@ -346,6 +381,19 @@ public sealed class HistoricalTeamConverter
             var (slot, entry) = byPlayer[player.Player];
             session.SetGeneratedRatings(slot, player.Ratings.Attributes, player.Ratings.Overall);
             entry.Ratings = player.Ratings;
+
+            // Abilities come last, because they are read off the overall this
+            // loop has just written — including the one the depth-consistency
+            // pass may have capped. Doing it earlier would rate a player on a
+            // number that then changed.
+            if (_abilities is not null)
+            {
+                var abilities = _abilities.For(
+                    slot.GetRaw(PlayerTypeColumn), slot.Position, player.Ratings.Overall, slot.RowKey);
+                session.SetAbilities(slot, abilities);
+                entry.Abilities = abilities;
+            }
+
             if (player.Ratings.Confidence == RatingConfidence.Low)
             {
                 entry.Warnings.Add(

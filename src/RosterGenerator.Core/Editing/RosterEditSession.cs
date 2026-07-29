@@ -167,6 +167,54 @@ public sealed class RosterEditSession
     }
 
     /// <summary>
+    /// Writes the tiers a player holds in their ability slots, clearing every
+    /// slot they were not given.
+    ///
+    /// <para>Clearing matters: a recreated player takes over a roster slot that
+    /// may have carried abilities, and leaving those behind would hand a
+    /// walk-on the previous occupant's gold. Every slot is cleared and then
+    /// only the ones this player earned are written.</para>
+    ///
+    /// <para>Only the tier is written, because only the tier is stored — see
+    /// <see cref="PlayerColumns.PhysicalAbility"/> for why a slot's ability is
+    /// not something a save can point elsewhere.</para>
+    /// </summary>
+    public void SetAbilities(Player player, Rating.PlayerAbilities abilities)
+    {
+        for (var slot = 1; slot <= PlayerColumns.PhysicalAbilitySlots; slot++)
+        {
+            var column = PlayerColumns.PhysicalAbility(slot);
+            if (!player.HasColumn(column))
+            {
+                continue;
+            }
+
+            player.SetRaw(column, abilities.PhysicalTiers.TryGetValue(slot, out var tier)
+                ? tier
+                : PlayerColumns.NoAbility);
+        }
+
+        var mental = abilities.Mental.OrderBy(m => m.Key, StringComparer.Ordinal).ToList();
+        for (var slot = 1; slot <= PlayerColumns.MentalAbilitySlots; slot++)
+        {
+            var nameColumn = PlayerColumns.MentalAbility(slot);
+            var rankColumn = PlayerColumns.MentalAbilityRank(slot);
+            if (!player.HasColumn(nameColumn) || !player.HasColumn(rankColumn))
+            {
+                continue;
+            }
+
+            var hasOne = slot - 1 < mental.Count;
+            player.SetRaw(nameColumn, hasOne ? mental[slot - 1].Key : PlayerColumns.NoAbility);
+            player.SetRaw(rankColumn, hasOne ? mental[slot - 1].Value : PlayerColumns.NoAbility);
+        }
+
+        Record(player, EditIntent.AttributeChange, abilities.Any
+            ? $"Set abilities of {player}: {abilities.Describe()}"
+            : $"Cleared the ability slots of {player}");
+    }
+
+    /// <summary>
     /// Sets the home town (free text) and home state (51-value enum).
     /// </summary>
     public void SetHometown(Player player, string town, string state)

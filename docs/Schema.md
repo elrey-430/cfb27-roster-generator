@@ -539,6 +539,67 @@ a season somebody is recreating.
 
 ---
 
+## Group 8 — Abilities: a tier is stored, the ability is not
+
+The two ability families are stored completely differently, and the difference
+decides what a save can change at all.
+
+### Physical abilities — `PhysicalAbility1..5`
+
+Typed **`AbilitiesRank`** in the schema — the same type as the mental ability
+*ranks* — with values `None`, `Bronze`, `Silver`, `Gold`, `Platinum`.
+
+**Nothing on the player says which ability a slot is.** That mapping lives in
+the game's own data. `PositionSignatureAbility[]`, `PositionAbilityTable[]` and
+`PositionalAbilitySplines[]` are each a *single row of references*, and none of
+those references resolves to a table inside the save. It depends on position
+and archetype: in a base save 600 of the 696 `DT_PurePower` players with
+exactly one ability have it in **slot 4**, while every single-ability
+`KP_Power` has **slot 3**. Slot 4 on a nose tackle is not slot 4 on a kicker.
+
+So a slot **cannot be pointed at another archetype's ability** by editing a
+save. What changes a player's ability *set* is changing their archetype.
+
+What the save does decide, and what this tool writes:
+
+| | Driven by | Measured |
+|---|---|---|
+| How many slots are filled | Overall | 3.6% at OVR 50–54 rising to 99.1% at 90–94 |
+| Which slots | Archetype | per-archetype slot order |
+| What tier each holds | Overall | Bronze-heavy at the bottom, 52% Platinum at 95+ |
+
+### Mental abilities — `MentalAbility1..3` + `MentalAbilityRank1..3`
+
+These **do** name the ability, from a 20-value enum (`MentalAbilities`):
+RoadFanFavorite, Toughness, FieldGeneral, ClutchKicker, Captain, TeamPlayer,
+ClearHeaded, Headstrong, Adrenaline, HomeFanFavorite, WinningTime, TheNatural,
+Rhythm, BestFriend, OLRally, DLRally, DBRally, BellCow, Instinct, HotHead.
+
+Rare and elite: **248 of 11,730** players in a base save carry any, and **244
+of those 248 carry all three**. Essentially none below OVR 80; 32.6% at 85–89
+and 67.0% at 90–94.
+
+Eight never appear on any player: Adrenaline, BellCow, Captain, HotHead,
+Instinct, Rhythm, TeamPlayer, Toughness.
+
+Five are position-confined in a base save with zero exceptions —
+`FieldGeneral` (QB only, 9 players), `ClutchKicker` (K, 3), `OLRally` (the
+line, 23), `DLRally` (D-line, 10), `DBRally` (DBs, 16). This project does not
+infer an eligibility *rule* from that: `data/AbilityModel.json` records the
+positions each ability was **observed** on and a player may only be given one
+seen at their position. With 22–32 carriers there is no way to tell a rule
+from a small sample, and the observation cannot be wrong in the direction that
+matters.
+
+### Related
+
+`TraitDevelopment` is the development trait: `Normal` (7,595),
+`College_Impact` (3,340), `College_Star` (770), `College_Elite` (25). The
+schema also lists `Star`, `Superstar`, `XFactor` and `Hidden`, which no CFB
+player carries — Madden-side values in a shared schema.
+
+---
+
 ## Appendix — remaining columns (unconfirmed observations)
 
 Statistical profile of every other column across the 16,257 live rows of
