@@ -63,6 +63,18 @@ public sealed class MainWindow : Window
         TextWrapping = TextWrapping.Wrap,
         IsVisible = false,
     };
+
+    // CFB27 ships today's 138 teams, so nothing in the game says that the
+    // school somebody just picked was still in the FCS in the year they just
+    // typed. This sits under the two boxes that raise the question, and
+    // answers it as they change rather than only when a roster is checked.
+    private readonly TextBlock _membershipNote = new()
+    {
+        TextWrapping = TextWrapping.Wrap,
+        FontSize = 12,
+        Foreground = Brushes.DarkGoldenrod,
+        IsVisible = false,
+    };
     private readonly Button _checkButton = new() { Content = "Check roster file", IsEnabled = false };
     private readonly Button _generateButton = new() { Content = "Generate", IsEnabled = false };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
@@ -75,6 +87,13 @@ public sealed class MainWindow : Window
     private readonly List<Button> _dynastyPickers = new();
 
     private DynastyExport? _dynasty;
+
+    /// <summary>
+    /// When each school reached the FBS. Loaded once; an absent or unreadable
+    /// file simply means the question is never asked, because a missing data
+    /// file must not stop somebody building a roster.
+    /// </summary>
+    private static readonly FbsMembership Membership = LoadMembership();
 
     // Held so the scratch folder an archive or a save is expanded into is
     // deleted when another dynasty is chosen, rather than left behind.
@@ -100,6 +119,8 @@ public sealed class MainWindow : Window
 
         _dynastyBox.TextChanged += (_, _) => UpdateButtons();
         _rosterBox.TextChanged += (_, _) => UpdateButtons();
+        _teamBox.SelectionChanged += (_, _) => UpdateMembershipNote();
+        _seasonBox.TextChanged += (_, _) => UpdateMembershipNote();
         _ratingsBox.IsCheckedChanged += (_, _) => OnRatingsToggled();
         _checkButton.Click += async (_, _) => await CheckAsync();
         _generateButton.Click += async (_, _) => await GenerateAsync();
@@ -168,7 +189,12 @@ public sealed class MainWindow : Window
             Spacing = 8,
             Children = { _teamBox, _seasonBox },
         };
-        panel.Children.Add(Labelled("3.  Team and season", teamRow));
+        panel.Children.Add(Labelled(
+            "3.  Team and season",
+            new StackPanel { Spacing = 4, Children = { teamRow, _membershipNote } },
+            "The season picks the era's helmets, and a roster CSV carrying a year per player puts each " +
+            "of them in their own — so an all-time squad is not dressed in one decade. Leave both blank " +
+            "to use what the roster file says."));
 
         var options = new StackPanel
         {
@@ -472,7 +498,11 @@ public sealed class MainWindow : Window
                     RosterGenerationService.FindDataFile(null, "RatingModels.json"),
                     RosterGenerationService.FindDataFile(null, "OverallFormulas.json"),
                     RosterGenerationService.FindOptionalDataFile(null, "ArchetypeProfiles.json"));
-                return RosterCsvValidator.Check(rosterPath, positions, _dynasty, team, season, ratings);
+                // Membership was missing here, so the app never asked the one
+                // question the command line's own check does: whether the
+                // school existed in the season being recreated.
+                return RosterCsvValidator.Check(
+                    rosterPath, positions, _dynasty, team, season, ratings, Membership);
             });
 
             _output.Text = report.ToText();
@@ -660,6 +690,51 @@ public sealed class MainWindow : Window
 
     private int? ParseSeason() =>
         int.TryParse(_seasonBox.Text, out var season) ? season : null;
+
+    private static FbsMembership LoadMembership()
+    {
+        try
+        {
+            var path = RosterGenerationService.FindOptionalDataFile(null, "FbsMembership.json");
+            return path is null ? FbsMembership.Empty : FbsMembership.Load(path);
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or System.Text.Json.JsonException)
+        {
+            return FbsMembership.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Says when the chosen school had not reached the FBS in the chosen
+    /// season.
+    ///
+    /// <para>CFB27 carries the 138 teams of today, which is not who was playing
+    /// in 1985 — so a 2010 roster for Sacramento State, James Madison or
+    /// Liberty builds perfectly and is wrong, with nothing in the game to say
+    /// so. This is the only warning the user gets, and it costs them
+    /// nothing: it is a note, never a block, because the dates are this
+    /// project's reading of the record and the file is theirs to correct.</para>
+    /// </summary>
+    private void UpdateMembershipNote()
+    {
+        var school = _teamBox.SelectedItem as string;
+        var season = ParseSeason();
+        if (school is null || season is not int year || year <= 0)
+        {
+            _membershipNote.IsVisible = false;
+            return;
+        }
+
+        // Reason, not Detail: Detail drops the leading school name for callers
+        // that have already printed it in a column of their own, and this note
+        // is a lone sentence with nothing else naming the team.
+        var problem = Membership.Check(school, year);
+        _membershipNote.Text = problem is null
+            ? ""
+            : $"{problem.Reason}. The roster is still generated — correct data\\FbsMembership.json if " +
+              "you know better.";
+        _membershipNote.IsVisible = problem is not null;
+    }
 
     private void OnRatingsToggled()
     {

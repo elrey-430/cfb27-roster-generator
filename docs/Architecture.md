@@ -120,6 +120,9 @@ cfb27-roster-generator/
 │   │                                against overall across a real export
 │   ├── build_commentary_ids.py      reads surname -> commentary index out of
 │   │                                game-generated saves only
+│   ├── measure_archetype_usage.py   checks ArchetypeRules.json against what
+│   │                                the game does: is the default the game's
+│   │                                own choice, does weight predict anything
 │   └── native-save/             ← Node sidecar: reads and writes the dynasty
 │       ├── extract.mjs              save -> the CSVs the pipeline reads
 │       ├── apply.mjs                generated CSVs + save -> a NEW save
@@ -152,7 +155,7 @@ cfb27-roster-generator/
 │   │                              validate / list-teams / compare
 │   └── RosterGenerator.Poc/     ← Milestone 1 proof-of-concept (rename + jersey)
 └── tests/
-    └── RosterGenerator.Core.Tests/  368 xunit tests + real-data fixtures
+    └── RosterGenerator.Core.Tests/  399 xunit tests + real-data fixtures
 ```
 
 Parsing (`Csv/`), business logic (`Editing/`), validation (`Validation/`)
@@ -319,7 +322,7 @@ fails.
 
 ## Verification status (what was actually proven)
 
-- 368 xunit tests pass, covering round-trip fidelity, every validation rule,
+- 399 xunit tests pass, covering round-trip fidelity, every validation rule,
   both multi-field dependency rules, the archetype floors, the equipment and
   appearance passes, whole-season templating and conversion, and the full
   PoC pipeline.

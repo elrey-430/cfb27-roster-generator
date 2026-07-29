@@ -450,15 +450,38 @@ public sealed class RosterGenerationService
             return (null, null);
         }
 
-        // Teams sharing a season share an era, so they are rehelmeted together
-        // in one pass. A file that mixes seasons gets a pass per season and the
-        // reports are folded into one summary.
+        // Each player wears their own season. On an ordinary roster that is
+        // the team's season for all 85 of them and nothing changes; on an
+        // all-time roster it is the year beside each name, which is the only
+        // way a 1972 halfback and a 2014 receiver end up in the right helmets.
+        //
+        // Every slot the converter touched is covered — the depth it filled as
+        // well as the players supplied — because a team whose starters are in
+        // period helmets and whose walk-ons are in modern ones looks worse
+        // than one left alone. A filled slot has no season of its own, so it
+        // takes its team's.
         var applier = new EquipmentApplier(EquipmentEraSet.Load(erasPath));
-        var report = EquipmentReport.Merge(dated
-            .GroupBy(c => c.Source.Season)
-            .Select(season => applier.Apply(
-                donor, visuals, season.Select(c => c.TeamId).Distinct().ToList(), season.Key))
-            .ToList());
+        var seasonBySlot = new Dictionary<int, int>();
+        var teams = dated.Select(c => c.TeamId).Distinct().ToHashSet();
+        foreach (var team in dated)
+        {
+            foreach (var player in donor.Players.Where(p => p.TeamIndex == team.TeamId))
+            {
+                seasonBySlot[player.RowKey] = team.Source.Season;
+            }
+        }
+
+        // A player's own year wins over their team's wherever the roster gave
+        // one, which is what an all-time file is.
+        foreach (var entry in dated.SelectMany(c => c.Converted))
+        {
+            if (entry.AssignedRowKey is int slot && entry.Player.Season is int season && season > 0)
+            {
+                seasonBySlot[slot] = season;
+            }
+        }
+
+        var report = applier.Apply(donor, visuals, seasonBySlot, teams.Count);
 
         // Nothing changed means nothing to import; writing a 30 MB copy of the
         // user's own table would just be another file to explain.

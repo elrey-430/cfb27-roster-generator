@@ -509,7 +509,17 @@ static int Generate(Dictionary<string, string> options)
     if (result.Teams.Count == 1)
     {
         var only = result.Teams[0];
-        Console.WriteLine($"Historical roster: {only.Source.Season} {only.Source.School} " +
+
+        // An all-time roster is one team spanning decades, so naming a single
+        // year would be the least useful thing to print about it.
+        var years = only.Entries
+            .Select(e => e.Player.Season ?? only.Source.Season)
+            .Where(s => s > 0)
+            .Distinct()
+            .OrderBy(s => s)
+            .ToList();
+        var when = years.Count > 1 ? $"{years[0]}-{years[^1]}" : $"{only.Source.Season}";
+        Console.WriteLine($"Historical roster: {when} {only.Source.School} " +
                           $"— {only.Entries.Count} players");
         Console.WriteLine($"Converted {result.Converted} players onto team {only.TeamId} " +
                           $"({result.Skipped} skipped, {slotSummary}).");

@@ -75,6 +75,13 @@ public sealed class HistoricalTeamConverter
     /// not spell its tone out in its name the way a generated head does, and
     /// this is the only place to read it. Null simply means no preference.
     /// </param>
+    /// <param name="commentaryIds">
+    /// Surname → commentary index, so the announcers say the player's own name
+    /// rather than the name of whoever held the slot. Null or empty leaves the
+    /// field exactly as it was: "we know nothing" is not the same as "the name
+    /// cannot be said", and zeroing it would silence a roster over a missing
+    /// data file.
+    /// </param>
     public HistoricalTeamConverter(
         TeamMappingSet teamMappings,
         PositionMappingSet positionMappings,

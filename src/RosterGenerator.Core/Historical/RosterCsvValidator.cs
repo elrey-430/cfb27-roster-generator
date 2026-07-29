@@ -105,8 +105,24 @@ public sealed class RosterCsvReport
             text.AppendLine($"Team:            {Roster.School}");
         }
 
-        var seasons = Rosters.Select(r => r.Season).Distinct().OrderBy(s => s).ToList();
-        text.AppendLine($"Season:          {(seasons is [0] ? "not given" : string.Join(", ", seasons))}");
+        // Every year on any row, not just the one the roster settled on. An
+        // all-time file has one team and fifty years, and the user needs to see
+        // that the tool read all of them — that is what puts each player in
+        // their own era's gear rather than the whole squad in the first row's.
+        var seasons = Rosters
+            .SelectMany(r => r.Players.Select(p => p.Season ?? r.Season).Append(r.Season))
+            .Where(s => s > 0)
+            .Distinct()
+            .OrderBy(s => s)
+            .ToList();
+        text.AppendLine("Season:          " + seasons switch
+        {
+            [] => "not given",
+            [var only] => only.ToString(),
+            [var first, .., var last] when seasons.Count > 4 =>
+                $"{seasons.Count} seasons, {first}–{last} (each player in their own)",
+            _ => string.Join(", ", seasons),
+        });
         text.AppendLine();
 
         foreach (var (severity, heading) in new[]

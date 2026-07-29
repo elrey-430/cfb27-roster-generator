@@ -1,5 +1,5 @@
 {
-  "description": "Chooses a player's CFB27 archetype (PlayerType) from their historical profile. Rules are evaluated in order and the first whose conditions all hold wins; otherwise the position's default is used. Conditions read season stats by canonical name, or WeightPounds / HeightInches / FortyYardDash. A condition whose field is missing from the player's evidence never matches, so a player with no data falls through to the default. Thresholds were derived from the attribute medians of each real archetype in a base dynasty export. Changing PlayerType changes which of EA's overall formulas applies, so the generator always recomputes OverallRating after selecting an archetype.",
+  "description": "Chooses a player's CFB27 archetype (PlayerType) from their historical profile. Rules are evaluated in order and the first whose conditions all hold wins; otherwise the position's default is used. Conditions read season stats by canonical name, or WeightPounds / HeightInches / FortyYardDash. A condition whose field is missing from the player's evidence never matches, so a player with no data falls through to the default. Each position's default is the archetype the game itself uses most often there, measured across a base save's 11,730 players \u2014 the maximum-likelihood answer for a player nothing is known about, and what most of a researched historical roster receives. Weight thresholds are kept only where the same measurement shows weight actually predicts the archetype; the ones it showed to be no better than guessing were removed rather than retuned. Stat thresholds cannot be checked this way, because the game's own players carry no season statistics, and are unchanged. Re-run tools/measure_archetype_usage.py against a base export to reproduce any of this. Changing PlayerType changes which of EA's overall formulas applies, so the generator always recomputes OverallRating after selecting an archetype.",
   "positions": {
     "QB": {
       "default": "QB_FieldGeneral",
@@ -93,7 +93,7 @@
       ]
     },
     "FB": {
-      "default": "FB_Blocking",
+      "default": "FB_Utility",
       "rules": [
         {
           "archetype": "FB_Utility",
@@ -179,7 +179,7 @@
       ]
     },
     "TE": {
-      "default": "TE_Possession",
+      "default": "TE_PhysicalRouteRunner",
       "rules": [
         {
           "archetype": "TE_VerticalThreat",
@@ -237,15 +237,6 @@
               "min": 315
             }
           ]
-        },
-        {
-          "archetype": "OT_PassProtector",
-          "all": [
-            {
-              "field": "WeightPounds",
-              "max": 295
-            }
-          ]
         }
       ],
       "available": [
@@ -266,15 +257,6 @@
               "min": 315
             }
           ]
-        },
-        {
-          "archetype": "OT_PassProtector",
-          "all": [
-            {
-              "field": "WeightPounds",
-              "max": 295
-            }
-          ]
         }
       ],
       "available": [
@@ -285,7 +267,7 @@
       ]
     },
     "LG": {
-      "default": "G_WellRounded",
+      "default": "G_Agile",
       "rules": [
         {
           "archetype": "G_Power",
@@ -293,24 +275,6 @@
             {
               "field": "WeightPounds",
               "min": 315
-            }
-          ]
-        },
-        {
-          "archetype": "G_PassProtector",
-          "all": [
-            {
-              "field": "WeightPounds",
-              "max": 295
-            }
-          ]
-        },
-        {
-          "archetype": "G_Agile",
-          "all": [
-            {
-              "field": "WeightPounds",
-              "max": 305
             }
           ]
         }
@@ -323,7 +287,7 @@
       ]
     },
     "RG": {
-      "default": "G_WellRounded",
+      "default": "G_Agile",
       "rules": [
         {
           "archetype": "G_Power",
@@ -331,24 +295,6 @@
             {
               "field": "WeightPounds",
               "min": 315
-            }
-          ]
-        },
-        {
-          "archetype": "G_PassProtector",
-          "all": [
-            {
-              "field": "WeightPounds",
-              "max": 295
-            }
-          ]
-        },
-        {
-          "archetype": "G_Agile",
-          "all": [
-            {
-              "field": "WeightPounds",
-              "max": 305
             }
           ]
         }
@@ -361,7 +307,7 @@
       ]
     },
     "C": {
-      "default": "C_WellRounded",
+      "default": "C_Agile",
       "rules": [
         {
           "archetype": "C_Power",
@@ -369,24 +315,6 @@
             {
               "field": "WeightPounds",
               "min": 310
-            }
-          ]
-        },
-        {
-          "archetype": "C_PassProtector",
-          "all": [
-            {
-              "field": "WeightPounds",
-              "max": 290
-            }
-          ]
-        },
-        {
-          "archetype": "C_Agile",
-          "all": [
-            {
-              "field": "WeightPounds",
-              "max": 300
             }
           ]
         }
@@ -399,7 +327,7 @@
       ]
     },
     "LE": {
-      "default": "DE_PowerRusher",
+      "default": "DE_PurePower",
       "rules": [
         {
           "archetype": "DE_SmallerSpeedRusher",
@@ -437,7 +365,7 @@
       ]
     },
     "RE": {
-      "default": "DE_PowerRusher",
+      "default": "DE_SmallerSpeedRusher",
       "rules": [
         {
           "archetype": "DE_SmallerSpeedRusher",
@@ -475,17 +403,8 @@
       ]
     },
     "DT": {
-      "default": "DT_PowerRusher",
+      "default": "DT_PurePower",
       "rules": [
-        {
-          "archetype": "DT_NoseTackle",
-          "all": [
-            {
-              "field": "WeightPounds",
-              "min": 315
-            }
-          ]
-        },
         {
           "archetype": "DT_SpeedRusher",
           "all": [
@@ -513,7 +432,7 @@
       ]
     },
     "LOLB": {
-      "default": "OLB_RunStopper",
+      "default": "OLB_PassCoverage",
       "rules": [
         {
           "archetype": "OLB_PassCoverage",
@@ -653,7 +572,7 @@
       ]
     },
     "FS": {
-      "default": "S_Hybrid",
+      "default": "S_RunSupport",
       "rules": [
         {
           "archetype": "S_RunSupport",
@@ -709,23 +628,18 @@
       ]
     },
     "K": {
-      "default": "KP_Accurate",
+      "default": "KP_Power",
       "rules": [
         {
-          "archetype": "KP_Power",
+          "archetype": "KP_Accurate",
           "all": [
+            {
+              "field": "FieldGoalPct",
+              "min": 85
+            },
             {
               "field": "LongFieldGoal",
-              "min": 52
-            }
-          ]
-        },
-        {
-          "archetype": "KP_Power",
-          "all": [
-            {
-              "field": "PuntAverage",
-              "min": 45
+              "max": 49
             }
           ]
         }
@@ -736,23 +650,18 @@
       ]
     },
     "P": {
-      "default": "KP_Accurate",
+      "default": "KP_Power",
       "rules": [
         {
-          "archetype": "KP_Power",
+          "archetype": "KP_Accurate",
           "all": [
+            {
+              "field": "FieldGoalPct",
+              "min": 85
+            },
             {
               "field": "LongFieldGoal",
-              "min": 52
-            }
-          ]
-        },
-        {
-          "archetype": "KP_Power",
-          "all": [
-            {
-              "field": "PuntAverage",
-              "min": 45
+              "max": 49
             }
           ]
         }

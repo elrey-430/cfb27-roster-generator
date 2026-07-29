@@ -118,7 +118,7 @@ Every correction and every substitution is listed in
 | `Weight` | `212` | Pounds (160–400). Blank = keeps the replaced player's weight |
 | `Class` | `Freshman`, `RS Junior`, `Redshirt Senior`, `Graduate` | "RS"/"Redshirt" prefixes set the in-game redshirt flag; Graduate becomes Senior |
 | `Team` | `Florida State` | The school this roster belongs to. May instead be chosen when running the generator; must match a team in **your** dynasty (see `list-teams`) |
-| `Season` | `2013` | The historical season, used for labeling and reports |
+| `Season` | `2013` | The historical season. Labels the report and picks the equipment era, and is read **per row** — see [all-time rosters](#all-time-rosters-a-season-per-player) |
 | `Role` | `Starter` | `Starter` / `Backup` / `Reserve` / `Walk-on`. The cheapest way to make a roster look right — see above. Blank behaves exactly as if the column were absent; a word the tool does not recognize is ignored and reported |
 
 ## Optional columns — performance evidence (drives rating generation)
@@ -391,6 +391,39 @@ A season no era covers changes nothing at all, and neither does
 `--equipment leave` (or clearing the checkbox in the app). Only helmets
 confirmed to exist in the game are listed, so the generator never writes an
 asset name that could leave a player in a broken helmet.
+
+## All-time rosters — a season per player
+
+An all-time roster is one team with fifty years of players in it, so there is
+no single season to put them in. **Write each player's own year in their own
+`Season` cell** and each of them gets that year's equipment:
+
+```
+FirstName,LastName,Position,Team,Season
+Deion,Sanders,CB,Florida State,1988
+Charlie,Ward,QB,Florida State,1993
+Jalen,Ramsey,CB,Florida State,2015
+```
+
+Sanders comes out in a Riddell TK with a vintage mask, Ward in a VSR-4, Ramsey
+in a Revolution Speed. Before this the whole squad took whichever year was
+typed first, so an all-time Florida State team wore 1988's helmets from Deion
+Sanders to Jalen Ramsey.
+
+Three things worth knowing:
+
+- **The roster still has one season**, and it is the first one in the file.
+  It titles the report, it is what the FBS membership check asks about, and it
+  is what the depth slots filled in for you wear — they belong to no year of
+  their own, and leaving them in the game's present-day gear would put 80
+  modern helmets around your period ones.
+- **A blank `Season` cell** takes the roster's, so a file that names the year
+  once at the top still works exactly as it did.
+- **`--season` on the command line, or the season box in the app, overrides
+  every row.** Saying "treat this file as 1999" has to mean all of it.
+
+Nothing else about a player changes with their season: it is not written into
+the save, and their ratings come from the evidence you supplied, not the year.
 
 Eras live in `data/EquipmentEras.json` and are editable like everything else
 in `data/`. Adding one takes no code: change a single player's helmet in the

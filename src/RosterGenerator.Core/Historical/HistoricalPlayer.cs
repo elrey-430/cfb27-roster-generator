@@ -51,6 +51,19 @@ public sealed record HistoricalPlayer
     public string? Notes { get; init; }
 
     /// <summary>
+    /// The season <em>this player</em> is being recreated from, when the roster
+    /// gives one per row, or null to use the roster's own season.
+    ///
+    /// <para>It exists for all-time rosters, where every player comes from a
+    /// different year. The roster carries one season, which decides the report
+    /// heading and anything roster-wide; before this, it also decided the
+    /// equipment for everybody, so an all-time squad spanning fifty years was
+    /// issued one era's helmets — whichever year happened to be typed first.
+    /// A player's own season now picks their own era.</para>
+    /// </summary>
+    public int? Season { get; init; }
+
+    /// <summary>
     /// EA's skin tone, 1 (lightest) to 8 (darkest), or null to leave the
     /// player's appearance alone. Optional, and blank is the normal case.
     ///

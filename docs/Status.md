@@ -1,8 +1,90 @@
 # Project Status
 
-_Last updated: 2026-07-28 — v0.6.2-alpha shipped._
+_Last updated: 2026-07-29 — all-time rosters, archetype review, FBS note in the app._
 
 ## Current status
+
+**All-time rosters wear their own decades.** An all-time roster is one team
+holding fifty years of players, and `Season` was read once per file — whichever
+year happened to be typed first. The All-Time USC file that reported this took
+1980, so Reggie Bush played in a Riddell TK. `HistoricalPlayer` now carries its
+own optional season, `HistoricalCsv` reads it per row, and `EquipmentApplier`
+gained an overload keyed on roster slot rather than team index, so the era is
+chosen per player.
+
+Verified on a real all-time Florida State file spanning 1988–2015: Deion
+Sanders in a Riddell TK with a vintage mask, Charlie Ward in a VSR-4, Jalen
+Ramsey in a Revolution Speed — three eras in one run, and the report names the
+span rather than a single year. The roster keeps one season for the things that
+genuinely need one: the report heading, the FBS membership check, and the depth
+slots filled in for the user, which belong to no year of their own. An explicit
+`--season` still overrides every row, because "treat this file as 1999" has to
+mean all of it.
+
+One defect the real run caught that the tests had not: `EquipmentReport.Merge`
+sums its parts' team counts, which is right when the parts are disjoint schools
+in a whole-season run and wrong when they are seasons of the same school — it
+reported one team as seven. Merging now takes the real count.
+
+**A second pass on the archetype rules, measured rather than re-argued.**
+`tools/measure_archetype_usage.py` asks a base save what the game itself does,
+and it refutes more than the two calls that prompted the review.
+
+- **Twelve position defaults were archetypes the game barely uses.**
+  `C_WellRounded` is on 0 of 403 centres, `G_WellRounded` on 1 of 944 guards,
+  `TE_Possession` on 8 of 756 tight ends, `KP_Accurate` on 5% of punters. The
+  default is what a player with no usable evidence gets, which on a researched
+  historical roster is most of the squad — so most of a recreated team was
+  being put in an archetype that does not occur, with nothing in the game to
+  say so. Each default is now the archetype the game most often uses at that
+  position, which is the maximum-likelihood answer and needs no threshold to
+  argue about.
+- **The offensive-line weight rules were noise and are gone.** The file said
+  "at most 295 lb means pass protector". The save says `OT_PassProtector`'s
+  median weight is **309 lb — above `OT_Agile`'s 305**, and P(a pass protector
+  is lighter than another tackle) is **0.476**, i.e. very slightly the wrong
+  way. The rule caught 13 of 138 real pass protectors while mislabelling 86
+  other tackles; at RT its precision (7%) was *below* the base rate (14%).
+  Same for the centre and guard variants and for `DT_NoseTackle` (0.494). The
+  Munoz case was the visible symptom: a 278 lb tackle is a normal tackle in
+  1979 and weight cannot tell finesse from anything.
+- **The power-blocker rules are kept**, because the same measurement supports
+  them: separation 0.68–0.71 and precision above the base rate at every OL
+  position. Retuning was not the answer either way — one direction is evidence
+  and the other is not.
+- **The Groza kicker was classified correctly for the wrong reason.**
+  KP_Power is 74% of the game's kickers and 18 of its top 20, so an
+  award-winning kicker belongs there; what was wrong was reaching it through
+  "a 52-yard field goal" while the default was the rarer archetype. KP_Power
+  is now the default, and `KP_Accurate` is selected by what it actually means
+  in the game — accuracy above leg strength (KickAccuracy 79 vs KickPower 72,
+  against +11 the other way for KP_Power) — so it takes both a good percentage
+  and no long.
+- **Stat thresholds were left alone and the reason is recorded**: the game's
+  own players carry no season statistics, so those rules cannot be checked
+  this way. The review says what it measured and what it did not.
+
+On the 2023 Florida State roster: **20 of 85 players changed archetype, every
+overall identical, 1,017 attributes reshaped.** Fidelity is unmoved at 2.12,
+which is the expected result rather than a null one — the engine calibrates
+attributes to a target overall, so an archetype change moves shape, not
+strength.
+
+**The app says when a school was not yet in the FBS.** The command line's
+`validate` has reported this since Milestone 13; the desktop app never asked
+the question at all, which is the wrong way round, because the app is where
+the team and season are actually chosen. A note now sits under the team and
+season boxes and follows both as they change — a season is something a user
+edits after the roster has already been checked. `RosterCsvValidator.Check`
+also gets the membership file from the app now, so the finding appears in the
+output pane like every other one. Advisory, never a gate.
+
+A detail the tests caught: the note uses the problem's full `Reason`, not
+`Detail`. `Detail` strips the leading school name for callers that print the
+school in a column of their own, and this note is a lone sentence with nothing
+else naming the team — it read "did not field an FBS team until 2026."
+
+Tests: 399/399.
 
 **The announcers now say the right name (v0.6.2).** Reported as an oversight:
 the Player table's `PLYR_COMMENT` selects which recorded name the commentary
@@ -865,10 +947,6 @@ to this tool and lost on the next run.
 
 ### Also worth doing
 
-- **A `Season` per row.** The All-Time USC file carried a different season on
-  every player and the tool had to pick one (1980), which then put the whole
-  squad in Riddell TKs. All-time rosters are clearly a thing users want; per
-  player equipment eras would serve them properly.
 - **FBS membership only records arrivals.** `data/FbsMembership.json` covers
   the 31 schools that joined since 1978 and knows nothing about schools that
   *left*: Idaho played the 2010 season and dropped to the FCS after 2017, so
@@ -876,11 +954,6 @@ to this tool and lost on the next run.
   FBS had 120. The tool cannot supply a team the save does not have, but it
   should say so rather than leave the user to count. Seasons before 1978 are
   also outside what the file describes.
-- **Archetype rules deserve a second pass.** Two questionable calls surfaced
-  in verification: a Groza-winning kicker classified `KP_Power` off a 53-yard
-  long, and a 278 lb Anthony Munoz classified `OT_PassProtector` by a weight
-  threshold, costing him run blocking. Both are one-line data edits; neither is
-  obviously wrong; both are worth a deliberate review rather than a reaction.
 - **Sign the executables.** SmartScreen still warns on every download.
 - **Opening a save is still slow.** Fifteen to thirty seconds, and v0.6.1 only
   made the wait honest rather than shorter. Most of it is `extract.mjs` writing

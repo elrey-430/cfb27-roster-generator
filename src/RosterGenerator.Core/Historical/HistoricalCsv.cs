@@ -156,14 +156,25 @@ public static class HistoricalCsv
                 fileSchool = teamValue;
             }
 
+            // A row's own Season is kept on the player as well as being folded
+            // into the roster's. They are different questions on an all-time
+            // file: the roster has one season and the player has theirs, and
+            // it is the player's that decides what they are wearing.
             var seasonValue = Cell(row, "season");
-            if (season is null && seasonValue.Length > 0 && int.TryParse(seasonValue, out var parsedSeason))
+            int? playerSeason = int.TryParse(seasonValue, out var parsedSeason) && parsedSeason > 0
+                ? parsedSeason
+                : null;
+            if (season is null && playerSeason is int fromRow)
             {
-                fileSeason = parsedSeason;
+                fileSeason = fromRow;
             }
 
             var player = new HistoricalPlayer
             {
+                // An explicit override means "treat the whole file as this
+                // season", so it wins over anything a row says rather than
+                // leaving half the roster following the column.
+                Season = season is null ? playerSeason : null,
                 FirstName = firstName,
                 LastName = lastName,
                 Position = position,
@@ -197,8 +208,7 @@ public static class HistoricalCsv
             // An explicit override means the caller wants one team, so rows
             // naming a different one are still theirs.
             roster.Add(player);
-            if (int.TryParse(Cell(row, "season"), out var rowSeason) && rowSeason > 0 &&
-                !seasonByTeam.ContainsKey(owner))
+            if (playerSeason is int rowSeason && !seasonByTeam.ContainsKey(owner))
             {
                 seasonByTeam[owner] = rowSeason;
             }

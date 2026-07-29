@@ -58,7 +58,7 @@ public sealed class ArchetypeAndHometownTests
     [InlineData("HB", 71, 225, "RushYards", 900, "HB_PowerBack")]
     [InlineData("HB", 71, 195, "Receptions", 45, "HB_ReceivingBack")]
     [InlineData("WR", 76, 215, "RecYards", 900, "WR_Physical")]
-    [InlineData("DT", 75, 330, "Sacks", 3, "DT_NoseTackle")]
+    [InlineData("LE", 76, 290, "Sacks", 8, "DE_PurePower")]
     [InlineData("MLB", 73, 235, "Interceptions", 3, "MLB_PassCoverage")]
     [InlineData("CB", 72, 190, "Interceptions", 6, "CB_Zone")]
     public void ProfileDrivesArchetypeChoice(
@@ -80,6 +80,100 @@ public sealed class ArchetypeAndHometownTests
 
         Assert.False(choice.MatchedRule);
         Assert.Contains("default", choice.Reason);
+    }
+
+    // -- The second pass, measured against a base save -----------------------
+    //
+    // tools/measure_archetype_usage.py counts what the game itself does with
+    // archetypes. These pin what that measurement decided, because the default
+    // is what most of a researched historical roster receives: a default the
+    // game never uses puts most of a recreated team in an archetype that does
+    // not occur, and nothing in the game says so.
+
+    [Theory]
+    // Every one of these was previously a default the game barely used —
+    // C_WellRounded on 0 of 403 centres, G_WellRounded on 1 of 944 guards,
+    // TE_Possession on 8 of 756 tight ends, KP_Accurate on 5% of punters.
+    [InlineData("C", "C_Agile")]
+    [InlineData("LG", "G_Agile")]
+    [InlineData("RG", "G_Agile")]
+    [InlineData("TE", "TE_PhysicalRouteRunner")]
+    [InlineData("DT", "DT_PurePower")]
+    [InlineData("K", "KP_Power")]
+    [InlineData("P", "KP_Power")]
+    public void ThePositionDefaultIsWhatTheGameItselfUsesMostOften(string position, string expected)
+    {
+        var choice = Selector.Select(position, Player(position, 74, 280), RatingEvidence.Empty);
+
+        Assert.Equal(expected, choice.Archetype);
+    }
+
+    [Theory]
+    [InlineData("LT", 278)] // Anthony Munoz, and every lineman before about 1990
+    [InlineData("RT", 290)]
+    [InlineData("C", 285)]
+    [InlineData("LG", 292)]
+    public void ALightOffensiveLinemanIsNoLongerCalledAPassProtector(string position, int weight)
+    {
+        // The rule said "at most 295 lb means pass protector". The base save
+        // says otherwise: OT_PassProtector's median weight is 309 lb, *above*
+        // OT_Agile's 305, and the rule caught 13 of 138 real pass protectors
+        // while mislabelling 86 other tackles. A light lineman in 1979 is a
+        // normal lineman, not a finesse one, and weight cannot tell them apart.
+        var choice = Selector.Select(position, Player(position, 76, weight), RatingEvidence.Empty);
+
+        Assert.DoesNotContain("PassProtector", choice.Archetype);
+    }
+
+    [Fact]
+    public void AHeavyOffensiveLinemanIsStillAPowerBlocker()
+    {
+        // The other direction survives the same test: a power blocker really
+        // is heavier (0.68 separation, precision above the base rate at every
+        // OL position), so this rule is kept where the light one was dropped.
+        var choice = Selector.Select("RG", Player("RG", 77, 325), RatingEvidence.Empty);
+
+        Assert.Equal("G_Power", choice.Archetype);
+        Assert.True(choice.MatchedRule);
+    }
+
+    [Fact]
+    public void AnAwardWinningKickerIsAPowerKicker()
+    {
+        // The reported oddity: a Groza winner classified KP_Power off a
+        // 53-yard long. The measurement says the classification was right and
+        // the reason was wrong — 18 of the game's top 20 kickers are KP_Power,
+        // as are 74% of all kickers. It is now the default rather than
+        // something a 52-yard field goal has to unlock.
+        var choice = Selector.Select(
+            "K", Player("K", 71, 190), Ev(("FieldGoalsMade", 21), ("FieldGoalsAttempted", 24),
+                ("LongFieldGoal", 53)));
+
+        Assert.Equal("KP_Power", choice.Archetype);
+    }
+
+    [Fact]
+    public void AKickerWhoIsAccurateWithoutALegIsTheAccurateArchetype()
+    {
+        // What KP_Accurate actually means in the game: accuracy above power
+        // (KickAccuracy 79 vs KickPower 72, against +11 the other way for
+        // KP_Power). So it takes both halves — a good percentage and no long.
+        var choice = Selector.Select(
+            "K", Player("K", 70, 185), Ev(("FieldGoalsMade", 18), ("FieldGoalsAttempted", 20),
+                ("LongFieldGoal", 44)));
+
+        Assert.Equal("KP_Accurate", choice.Archetype);
+        Assert.True(choice.MatchedRule);
+    }
+
+    [Fact]
+    public void APunterWithNoFieldGoalsIsAPowerPunter()
+    {
+        // 95% of the game's punters are KP_Power, and a punter has no field
+        // goal percentage, so the accuracy rule cannot fire on one at all.
+        var choice = Selector.Select("P", Player("P", 74, 205), Ev(("PuntAverage", 44.1)));
+
+        Assert.Equal("KP_Power", choice.Archetype);
     }
 
     [Fact]

@@ -28,6 +28,13 @@ public sealed class EquipmentReport
     /// <summary>The season that selected the era.</summary>
     public int Season { get; init; }
 
+    /// <summary>
+    /// Every season that selected an era, ascending. One entry for an ordinary
+    /// roster; an all-time roster giving each player their own year has one per
+    /// distinct year, which is what makes the multi-era wording honest.
+    /// </summary>
+    public IReadOnlyList<int> Seasons { get; init; } = Array.Empty<int>();
+
     /// <summary>How many teams this report covers.</summary>
     public int TeamCount { get; init; } = 1;
 
@@ -56,11 +63,20 @@ public sealed class EquipmentReport
     /// Folds the per-team reports of a whole-season run into one, so the
     /// caller's summary counts every team rather than only the first.
     /// </summary>
-    public static EquipmentReport Merge(IReadOnlyList<EquipmentReport> parts)
+    /// <param name="parts">The reports to fold together.</param>
+    /// <param name="teamCount">
+    /// The real number of teams, when the parts are not disjoint teams. Summing
+    /// is right for a whole-season run, where each part is its own set of
+    /// schools; it is wrong for an all-time roster, where the parts are seasons
+    /// of the <em>same</em> team and summing reports one team as seven.
+    /// </param>
+    public static EquipmentReport Merge(IReadOnlyList<EquipmentReport> parts, int? teamCount = null)
     {
         if (parts.Count == 1)
         {
-            return parts[0];
+            return teamCount is int only && only != parts[0].TeamCount
+                ? Rescope(parts[0], only)
+                : parts[0];
         }
 
         var applied = parts.Where(p => p.Era is not null).ToList();
@@ -77,7 +93,11 @@ public sealed class EquipmentReport
             Era = names.Count == 1 ? applied[0].Era : null,
             EraNames = names,
             Season = parts[0].Season,
-            TeamCount = parts.Sum(p => p.TeamCount),
+            Seasons = parts.SelectMany(p => p.Seasons.Count > 0 ? p.Seasons : new[] { p.Season })
+                .Distinct()
+                .OrderBy(s => s)
+                .ToList(),
+            TeamCount = teamCount ?? parts.Sum(p => p.TeamCount),
             Changed = parts.SelectMany(p => p.Changed).ToList(),
             AlreadyCorrect = parts.Sum(p => p.AlreadyCorrect),
             SleevesChanged = parts.Sum(p => p.SleevesChanged),
@@ -85,6 +105,21 @@ public sealed class EquipmentReport
             Unresolved = parts.SelectMany(p => p.Unresolved).ToList(),
         };
     }
+
+    /// <summary>The same report, counting a different number of teams.</summary>
+    private static EquipmentReport Rescope(EquipmentReport report, int teamCount) => new()
+    {
+        Era = report.Era,
+        EraNames = report.EraNames,
+        Season = report.Season,
+        Seasons = report.Seasons,
+        TeamCount = teamCount,
+        Changed = report.Changed,
+        AlreadyCorrect = report.AlreadyCorrect,
+        SleevesChanged = report.SleevesChanged,
+        ShoulderPadsChanged = report.ShoulderPadsChanged,
+        Unresolved = report.Unresolved,
+    };
 
     /// <summary>Plain-English summary for the generation report.</summary>
     public string Describe()
@@ -101,6 +136,15 @@ public sealed class EquipmentReport
 
         var era = Era?.Name ?? string.Join(" + ", EraNames);
         var scope = TeamCount > 1 ? $" across {TeamCount} teams" : "";
+
+        // Said plainly, because it is the thing an all-time roster gets wrong
+        // when nobody notices: each player is in their own year's gear, not one
+        // year's gear for the whole squad.
+        if (Seasons.Count > 1)
+        {
+            scope += $", each player in their own season's gear ({Seasons[0]}–{Seasons[^1]})";
+        }
+
         var text = $"Equipment: {era}{scope} — {Changed.Count} player(s) rehelmeted"
                    + (Changed.Count > 0 ? $" ({string.Join(", ", byHelmet)})" : "");
         if (AlreadyCorrect > 0)
@@ -184,10 +228,53 @@ public sealed class EquipmentApplier
         int season)
     {
         var teams = teamIndexes.ToHashSet();
+        return Apply(roster.Players.Where(p => teams.Contains(p.TeamIndex)), visuals, season, teams.Count);
+    }
+
+    /// <summary>
+    /// Applies each player's <em>own</em> era, from a roster slot → season map.
+    ///
+    /// <para>An all-time roster carries a different year on every row, and one
+    /// era for all of them means a 1972 halfback in a 2014 helmet or the
+    /// reverse. Slots absent from the map are left out entirely rather than
+    /// defaulted, so a caller decides what an undated player gets.</para>
+    /// </summary>
+    /// <param name="roster">The player table being written.</param>
+    /// <param name="visuals">The export's CharacterVisuals table.</param>
+    /// <param name="seasonByRosterSlot">Donor slot <c>_row</c> key → that player's season.</param>
+    /// <param name="teamCount">Teams covered, for the report's wording only.</param>
+    public EquipmentReport Apply(
+        PlayerRoster roster,
+        CharacterVisualsTable visuals,
+        IReadOnlyDictionary<int, int> seasonByRosterSlot,
+        int teamCount)
+    {
+        // Grouped by season so each era is applied in one pass and the report
+        // can name every era in play, which is the whole point on a file that
+        // spans decades.
+        var parts = seasonByRosterSlot
+            .GroupBy(entry => entry.Value)
+            .OrderBy(group => group.Key)
+            .Select(group =>
+            {
+                var slots = group.Select(entry => entry.Key).ToHashSet();
+                return Apply(
+                    roster.Players.Where(p => slots.Contains(p.RowKey)), visuals, group.Key, teamCount);
+            })
+            .ToList();
+
+        return parts.Count > 0
+            ? EquipmentReport.Merge(parts, teamCount)
+            : new EquipmentReport { Era = null, Season = 0, TeamCount = teamCount };
+    }
+
+    private EquipmentReport Apply(
+        IEnumerable<Player> players, CharacterVisualsTable visuals, int season, int teamCount)
+    {
         var era = _eras.ForSeason(season);
         if (era is null)
         {
-            return new EquipmentReport { Era = null, Season = season, TeamCount = teams.Count };
+            return new EquipmentReport { Era = null, Season = season, TeamCount = teamCount };
         }
 
         var changed = new List<EquipmentChange>();
@@ -196,7 +283,7 @@ public sealed class EquipmentApplier
         var sleeves = 0;
         var pads = 0;
 
-        foreach (var player in roster.Players.Where(p => teams.Contains(p.TeamIndex)))
+        foreach (var player in players)
         {
             var rowId = CharacterVisualsReference.RowId(RawVisualsReference(player));
             if (rowId is null)
@@ -253,7 +340,8 @@ public sealed class EquipmentApplier
             Era = era,
             EraNames = new[] { era.Name },
             Season = season,
-            TeamCount = teams.Count,
+            Seasons = new[] { season },
+            TeamCount = teamCount,
             Changed = changed,
             AlreadyCorrect = alreadyCorrect,
             Unresolved = unresolved,
