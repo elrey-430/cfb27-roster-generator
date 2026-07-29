@@ -17,12 +17,23 @@ public sealed class NativeSaveException : Exception
 /// <param name="CellsChanged">Fields written, across every table.</param>
 /// <param name="EmptyRecordsSkipped">Pre-allocated empty slots deliberately left alone.</param>
 /// <param name="Tables">Table name → fields written in it.</param>
+/// <param name="SeasonYearFrom">
+/// The year the save displayed before, when the season year was set; null when
+/// it was left alone.
+/// </param>
+/// <param name="SeasonYearTo">The year it displays now, or null.</param>
 public sealed record NativeSaveWriteReport(
     string Destination,
     long Bytes,
     int CellsChanged,
     int EmptyRecordsSkipped,
-    IReadOnlyDictionary<string, int> Tables);
+    IReadOnlyDictionary<string, int> Tables,
+    int? SeasonYearFrom = null,
+    int? SeasonYearTo = null)
+{
+    /// <summary>True when this run changed the year the game will show.</summary>
+    public bool SeasonYearChanged => SeasonYearTo is not null;
+}
 
 /// <summary>
 /// Reads and writes a CFB27 dynasty save directly, instead of requiring the
@@ -99,12 +110,26 @@ public static class NativeSave
     /// <param name="savePath">The user's original save. Never modified.</param>
     /// <param name="destinationPath">The save to create.</param>
     /// <param name="tableCsvPaths">Generated table CSVs to write in.</param>
+    /// <param name="seasonYear">
+    /// The season the game should display, or null to leave the save's own year
+    /// alone. See <see cref="FirstSeason"/> for the accepted range.
+    /// </param>
     public static NativeSaveWriteReport Apply(
-        string savePath, string destinationPath, IReadOnlyList<string> tableCsvPaths)
+        string savePath,
+        string destinationPath,
+        IReadOnlyList<string> tableCsvPaths,
+        int? seasonYear = null)
     {
         if (tableCsvPaths.Count == 0)
         {
             throw new ArgumentException("No tables were supplied to write into the save.", nameof(tableCsvPaths));
+        }
+
+        if (seasonYear is int year && !IsSupportedSeason(year))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(seasonYear), year,
+                $"The season year must be between {FirstSeason} and {LastSeason}.");
         }
 
         var directory = Path.GetDirectoryName(Path.GetFullPath(destinationPath));
@@ -113,9 +138,33 @@ public static class NativeSave
             Directory.CreateDirectory(directory);
         }
 
-        var json = Run("apply.mjs", new[] { savePath, destinationPath }.Concat(tableCsvPaths).ToArray());
-        return ParseWriteReport(json, destinationPath);
+        var arguments = new[] { savePath, destinationPath }.Concat(tableCsvPaths).ToList();
+        if (seasonYear is int display)
+        {
+            arguments.Add("--year");
+            arguments.Add(display.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        return ParseWriteReport(Run("apply.mjs", arguments.ToArray()), destinationPath);
     }
+
+    /// <summary>
+    /// The earliest season the year can be set to: the first college football
+    /// game ever played. Anything before it is a typo rather than a season
+    /// somebody is recreating.
+    /// </summary>
+    public const int FirstSeason = 1869;
+
+    /// <summary>
+    /// The latest season the save format can hold. The field is a 12-bit
+    /// integer, and the library does not enforce its own schema — setting 5000
+    /// is accepted in silence and writes a number the game cannot read — so
+    /// the bound is checked here and again in the sidecar.
+    /// </summary>
+    public const int LastSeason = 4095;
+
+    /// <summary>True when the year can actually be written into a save.</summary>
+    public static bool IsSupportedSeason(int year) => year is >= FirstSeason and <= LastSeason;
 
     private static NativeSaveWriteReport ParseWriteReport(string json, string destination)
     {
@@ -138,7 +187,15 @@ public static class NativeSave
             }
 
             var bytes = root.TryGetProperty("destinationBytes", out var size) ? size.GetInt64() : 0;
-            return new NativeSaveWriteReport(destination, bytes, changed, skipped, byTable);
+            int? yearFrom = null, yearTo = null;
+            if (root.TryGetProperty("seasonYear", out var season))
+            {
+                yearFrom = season.GetProperty("from").GetInt32();
+                yearTo = season.GetProperty("to").GetInt32();
+            }
+
+            return new NativeSaveWriteReport(
+                destination, bytes, changed, skipped, byTable, yearFrom, yearTo);
         }
         catch (JsonException ex)
         {

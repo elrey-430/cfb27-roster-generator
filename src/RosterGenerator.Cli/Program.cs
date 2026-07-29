@@ -59,6 +59,7 @@ static int Usage()
                      [--ratings generate|inherit] [--archetypes select|inherit]
                      [--fill fill|leave] [--equipment era|leave] [--faces replace|inherit]
                      [--equipment-output <csv>] [--package <out.zip>] [--save-out <save>]
+                     [--dynasty-year <year>|roster]
                      [--team-mappings <json>] [--position-mappings <json>]
           template   --dynasty <exported CSVs: folder or .zip> --season <year>
                      [--output <csv>] [--from-template <csv>]
@@ -103,6 +104,21 @@ static int Usage()
         you supplied is never modified — --save-out is always a new file, and
         writing over the original is refused. This needs Node.js 22.19+ on your
         machine; without it the export-to-CSV route still works.
+
+        --dynasty-year sets the season the GAME DISPLAYS while you play, so a
+        1985 roster is played in 1985 rather than in the year your save started
+        in. Give a year, or "roster" to use the one your roster file already
+        names:
+
+          generate --dynasty DYNASTY-BASE1 --roster 1985_Roster.csv
+                   --save-out DYNASTY-1985 --dynasty-year roster
+
+        It is opt-in, because recreating an old roster inside a present-day
+        dynasty is a perfectly reasonable thing to want and rewinding the
+        calendar is not something to do to somebody's save uninvited. Only the
+        year moves: it writes two fields plus each team's current-season row,
+        141 bytes of a 30 MB database, and it needs --save-out because the year
+        lives in a table the export tool does not write.
 
         --package writes your whole dynasty back out as a single .zip with the
         generated tables inside it and every other file copied through byte for
@@ -464,6 +480,7 @@ static int Generate(Dictionary<string, string> options)
             : Path.Combine("Output", "Generated_Equipment.csv"),
         PackageOutputPath = options.GetValueOrDefault("package"),
         SaveOutputPath = options.GetValueOrDefault("save-out"),
+        DynastyYear = DynastyYearOption(options, seasonOption, rosterPath),
     };
 
     if (generateRatings)
@@ -562,6 +579,13 @@ static int Generate(Dictionary<string, string> options)
             $"Dynasty save:     {save.Destination} ({save.Bytes:N0} bytes) — " +
             $"{save.CellsChanged:N0} field(s) written across {save.Tables.Count} table(s); " +
             $"{save.EmptyRecordsSkipped:N0} empty roster slot(s) left untouched.");
+        if (save.SeasonYearChanged)
+        {
+            Console.WriteLine(
+                $"                  The game will show {save.SeasonYearTo} rather than " +
+                $"{save.SeasonYearFrom}.");
+        }
+
         Console.WriteLine(
             "                  Copy it into your CFB27 saves folder. Your original is unchanged.");
     }
@@ -586,6 +610,55 @@ static string DynastyPathOption(Dictionary<string, string> options) =>
             : throw new ArgumentException(
                 "Missing required option --dynasty (the folder of CSV files exported from your " +
                 "dynasty, or the Player table CSV itself).");
+
+/// <summary>
+/// Resolves <c>--dynasty-year</c>: an explicit season, or "roster" to take the
+/// one the roster file already names.
+///
+/// <para>It is opt-in rather than automatic. Recreating a 1985 roster inside a
+/// present-day dynasty is a perfectly reasonable thing to want, and silently
+/// rewinding somebody's dynasty to 1985 because their roster file said so
+/// would be the tool making a decision that is not its to make.</para>
+/// </summary>
+static int? DynastyYearOption(
+    Dictionary<string, string> options, int? seasonOption, string rosterPath)
+{
+    if (!options.TryGetValue("dynasty-year", out var value) || value.Length == 0)
+    {
+        return null;
+    }
+
+    if (value.Equals("roster", StringComparison.OrdinalIgnoreCase) ||
+        value.Equals("auto", StringComparison.OrdinalIgnoreCase))
+    {
+        var fromRoster = seasonOption
+            ?? RosterGenerationService.ReadRoster(new RosterGenerationRequest
+            {
+                DynastyPath = "", RosterPath = rosterPath, Season = seasonOption,
+            }).Roster.Season;
+
+        return fromRoster > 0
+            ? fromRoster
+            : throw new ArgumentException(
+                "--dynasty-year roster needs a season to read: the roster file has no Season column " +
+                "and --season was not given. Pass a year instead, e.g. --dynasty-year 1985.");
+    }
+
+    if (!int.TryParse(value, out var year))
+    {
+        throw new ArgumentException(
+            $"--dynasty-year must be a season, or 'roster' to use the roster file's own; got '{value}'.");
+    }
+
+    if (!NativeSave.IsSupportedSeason(year))
+    {
+        throw new ArgumentException(
+            $"--dynasty-year must be between {NativeSave.FirstSeason} and {NativeSave.LastSeason}; " +
+            $"got {year}.");
+    }
+
+    return year;
+}
 
 static bool CsvHasTeam(string rosterPath)
 {

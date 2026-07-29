@@ -480,6 +480,65 @@ Known gaps, in rough order of value:
 
 ---
 
+## Group 7 — The season year lives in SeasonInfo (confirmed in-game)
+
+Not a Player column at all, and not present in an export: `SeasonInfo` is a
+**one-row table** inside the save, and it holds the year the game puts on
+screen while the dynasty is played.
+
+| Column | Base save | Range | Meaning |
+|---|---|---|---|
+| `CurrentSeasonYear` | 2026 | 0–4095 | The season being played |
+| `BaseCalendarYear` | 2026 | 0–4096 | The anchor the dynasty counts forward from |
+| `CurrentYear` | 0 | 0–100 | Offset into the dynasty, **not** a calendar year |
+| `MaxYears` | 30 | 0–100 | How far the dynasty runs |
+
+**Confirmed by loading the game.** A save built from a real dynasty with
+`CurrentSeasonYear` and `BaseCalendarYear` set to 2023 — and nothing else
+changed — loads and displays 2023. That is the whole edit: **141 bytes of a
+30,005,935-byte database**, and the extracted Player, Team and
+CharacterVisuals tables come back byte-identical to the original's.
+
+All eight base saves available carry `CurrentYear: 0`, so which of the two
+fields the UI reads cannot be told apart from data alone — `CurrentSeasonYear`
+and `BaseCalendarYear + CurrentYear` give the same answer. **Both are
+written**, so they agree however the game derives what it shows.
+
+### What else carries a year, and why it is left alone
+
+Sweeping all 2,272 tables for integer fields able to hold a calendar year
+returns 18. Only one of them tracks the current season:
+
+- **`TeamHistoricSeriesYear.Year`** — 138 live rows, one per team, all stamped
+  with the save's year. Written too, or it would disagree with the rest of the
+  dynasty.
+- **`PlayerStatRecord.calendarYear`** — 4,023 live rows across 36 tables. This
+  is the **record book**: Sam Hartman's 2023 passing touchdowns, Philip
+  Rivers' 2003 passing yards, Rashad Greene's 2014 receiving yards. Real dated
+  achievements that belong to the years they happened in, whatever year the
+  dynasty is set to. Never written.
+- **`Team.YearSchoolEstablished`, `Team.YearStartOfFootballProgram`** (150 live
+  rows, 1890–1893 and similar) and **`Stadium.STADIUM_CALENDAR_YEARBUILT`** —
+  historical facts. Never written.
+- **`Rivalry.FirstYearPlayed`** — named like a year and defaulted to 1890, but
+  the 233 live rows hold 23, 24, 25, 30. Not a calendar year in practice.
+- **`ContractYearSummary.ContractYear`** and
+  `DraftPickTransactionHistoryEntry.Year` — zero live rows in a base save.
+- **`DraftClassInfo.DraftClassYear`** — range 0–30, so it is relative to the
+  dynasty rather than absolute, and follows the anchor by itself.
+
+### The trap
+
+**`madden-franchise` does not enforce its own schema.** Setting
+`CurrentSeasonYear` to 5000, or to −1, is accepted in silence and writes a
+number the game was never built to read. The bound is this project's to hold —
+checked in `NativeSave.Apply` before the save is opened, and again in
+`apply.mjs` so the sidecar is safe to run on its own. The floor is **1869**,
+the first college football game ever played; anything below it is a typo, not
+a season somebody is recreating.
+
+---
+
 ## Appendix — remaining columns (unconfirmed observations)
 
 Statistical profile of every other column across the 16,257 live rows of

@@ -48,6 +48,14 @@ Copy the result into `Documents\EA SPORTS College Football 27\saves\` and load
 it. No export step, no separate roster importer. Your original save is never
 modified — the output is always a new file.
 
+**And you can play it in the right year.** Add `--dynasty-year roster` — or tick
+*"Play it in 2023"* in the app — and the game shows the season your roster is
+from rather than the year your save happened to start in:
+
+```
+RosterGenerator.Cli generate --dynasty DYNASTY-BASE1 --roster 1985_Roster.csv --save-out DYNASTY-1985 --dynasty-year roster
+```
+
 **Nothing to install.** The release bundles everything it needs to read a save,
 including its own copy of the Node.js runtime (v22 LTS, MIT, checksum-verified
 at build time). You do not install Node, you do not run a package manager, and
@@ -104,7 +112,9 @@ obscurely.
    ```
 
    `--dynasty` takes your save file or an export folder; `--save-out` writes a
-   save you can drop straight into the game.
+   save you can drop straight into the game. Add `--dynasty-year roster` to
+   play it in the season your roster is from — it needs `--save-out`, because
+   the year lives in a table the export tool does not write.
 
    `validate` checks your roster file and writes nothing, so a mistake shows
    up in a few lines instead of inside a 27 MB file's report. The desktop app

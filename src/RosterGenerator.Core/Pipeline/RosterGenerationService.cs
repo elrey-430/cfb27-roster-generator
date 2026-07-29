@@ -92,6 +92,18 @@ public sealed record RosterGenerationRequest
     /// The save that came in is never modified: this is always a new file.
     /// </summary>
     public string? SaveOutputPath { get; init; }
+
+    /// <summary>
+    /// The season the game should <b>display</b> while the dynasty is played,
+    /// so a 1985 roster is played in 1985 rather than in whatever year the save
+    /// started in. Null leaves the save's own year alone.
+    ///
+    /// <para>Only meaningful alongside <see cref="SaveOutputPath"/>: the year
+    /// lives in a table the export tool does not write, so it can only be set
+    /// when a save is being written. Setting it on a CSV-only run is reported
+    /// rather than silently ignored.</para>
+    /// </summary>
+    public int? DynastyYear { get; init; }
 }
 
 /// <summary>What a generation run produced.</summary>
@@ -351,6 +363,18 @@ public sealed class RosterGenerationService
             conversion.GlobalWarnings.Add($"Skipped — {failure}");
         }
 
+        // Said here rather than where the save is written, because the report
+        // goes out before that and a warning nobody reads is not a warning.
+        // The year lives in a table the export tool does not write, so a
+        // CSV-only run has nowhere to put it — and handing back a roster that
+        // quietly dropped the request is the failure worth avoiding.
+        if (request.DynastyYear is not null && string.IsNullOrEmpty(request.SaveOutputPath))
+        {
+            conversion.GlobalWarnings.Add(
+                "The season year the game displays can only be set when a new dynasty save is written. " +
+                "This run produced CSVs, so the year was left as it was.");
+        }
+
         CreateParentDirectory(request.OutputPath);
         CreateParentDirectory(request.ReportPath);
 
@@ -415,7 +439,7 @@ public sealed class RosterGenerationService
                 tables.Add(equipmentPath);
             }
 
-            saveOutput = package.WriteSave(saveDestination, tables);
+            saveOutput = package.WriteSave(saveDestination, tables, request.DynastyYear);
         }
 
         return new RosterGenerationResult(

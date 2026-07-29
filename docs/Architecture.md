@@ -155,7 +155,7 @@ cfb27-roster-generator/
 │   │                              validate / list-teams / compare
 │   └── RosterGenerator.Poc/     ← Milestone 1 proof-of-concept (rename + jersey)
 └── tests/
-    └── RosterGenerator.Core.Tests/  399 xunit tests + real-data fixtures
+    └── RosterGenerator.Core.Tests/  413 xunit tests + real-data fixtures
 ```
 
 Parsing (`Csv/`), business logic (`Editing/`), validation (`Validation/`)
@@ -322,7 +322,7 @@ fails.
 
 ## Verification status (what was actually proven)
 
-- 399 xunit tests pass, covering round-trip fidelity, every validation rule,
+- 413 xunit tests pass, covering round-trip fidelity, every validation rule,
   both multi-field dependency rules, the archetype floors, the equipment and
   appearance passes, whole-season templating and conversion, and the full
   PoC pipeline.

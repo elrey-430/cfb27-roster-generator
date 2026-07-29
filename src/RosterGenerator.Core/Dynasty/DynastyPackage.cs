@@ -157,8 +157,13 @@ public sealed class DynastyPackage : IDisposable
     /// </summary>
     /// <param name="destinationSave">The save to create.</param>
     /// <param name="tableCsvPaths">Generated table CSVs to write into it.</param>
+    /// <param name="seasonYear">
+    /// The season the game should display, or null to leave the save's own year
+    /// alone.
+    /// </param>
     /// <exception cref="InvalidOperationException">This package did not come from a save.</exception>
-    public NativeSaveWriteReport WriteSave(string destinationSave, IReadOnlyList<string> tableCsvPaths)
+    public NativeSaveWriteReport WriteSave(
+        string destinationSave, IReadOnlyList<string> tableCsvPaths, int? seasonYear = null)
     {
         if (SourceSavePath is null)
         {
@@ -167,7 +172,7 @@ public sealed class DynastyPackage : IDisposable
                 "back. Point --dynasty at the save itself to get one out.");
         }
 
-        return NativeSave.Apply(SourceSavePath, destinationSave, tableCsvPaths);
+        return NativeSave.Apply(SourceSavePath, destinationSave, tableCsvPaths, seasonYear);
     }
 
     /// <summary>

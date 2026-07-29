@@ -2,6 +2,12 @@
  * Writes generated tables back into a dynasty save, producing a NEW save.
  *
  *   node apply.mjs <sourceSave> <destSave> <table.csv> [table.csv ...]
+ *                  [--year <season>]
+ *
+ * `--year` sets the season the game puts on screen, so a 1985 roster can be
+ * played in 1985 rather than in whatever year the save started in. Measured on
+ * a real save and confirmed in-game: it moves 141 bytes of the 30 MB database
+ * and nothing else — see the SEASON YEAR block below.
  *
  * Three rules hold this together, and all three exist because the input is
  * somebody's dynasty:
@@ -29,10 +35,41 @@ import path from 'path';
 import { parseRecords } from './csv.mjs';
 import { looksLikeSave, openSave, schemaOf, schemaId, tablesNamed } from './save.mjs';
 
-const [, , sourcePath, destPath, ...csvPaths] = process.argv;
+/**
+ * The range the season year may take.
+ *
+ * The schema says CurrentSeasonYear is 0-4095, but the library does not
+ * enforce its own schema — setting 5000, or -1, is accepted in silence and
+ * writes a number the game was never built to read. The lower bound is the
+ * first college football game ever played; anything below it is a typo, not a
+ * season somebody wants to recreate.
+ */
+const FIRST_SEASON = 1869;
+const LAST_SEASON = 4095;
+
+const argv = process.argv.slice(2);
+let seasonYear = null;
+const positional = [];
+for (let i = 0; i < argv.length; i++) {
+  if (argv[i] === '--year') {
+    seasonYear = Number(argv[++i]);
+    continue;
+  }
+
+  positional.push(argv[i]);
+}
+
+const [sourcePath, destPath, ...csvPaths] = positional;
 if (!sourcePath || !destPath || csvPaths.length === 0) {
-  console.error('usage: node apply.mjs <sourceSave> <destSave> <table.csv> [table.csv ...]');
+  console.error('usage: node apply.mjs <sourceSave> <destSave> <table.csv> [table.csv ...] [--year <season>]');
   process.exit(2);
+}
+
+if (seasonYear !== null &&
+    (!Number.isInteger(seasonYear) || seasonYear < FIRST_SEASON || seasonYear > LAST_SEASON)) {
+  console.error(
+    `--year must be a whole season between ${FIRST_SEASON} and ${LAST_SEASON}; got '${seasonYear}'.`);
+  process.exit(8);
 }
 
 if (path.resolve(sourcePath) === path.resolve(destPath)) {
@@ -136,6 +173,47 @@ for (const csvPath of csvPaths) {
     `${changed} cell(s) changed, ${skippedEmpty} empty record(s) left alone` +
     (failed.length ? `, ${failed.length} FAILED` : ''));
   for (const f of failed.slice(0, 10)) console.error(`      ${f}`);
+}
+
+// ---- SEASON YEAR -----------------------------------------------------------
+//
+// The year the game displays lives in SeasonInfo, a one-row table. Two fields
+// carry it: CurrentSeasonYear, and BaseCalendarYear, which is the anchor the
+// dynasty counts forward from (CurrentYear is the offset, 0 in a fresh save).
+// Both are written, so they agree however the game derives what it shows.
+//
+// TeamHistoricSeriesYear holds one row per team stamped with the current
+// season; left at the save's original year it would disagree with the rest of
+// the dynasty, so it moves too. Every other year-bearing field in the schema
+// was checked and deliberately left alone: Team.YearStartOfFootballProgram and
+// Stadium.STADIUM_CALENDAR_YEARBUILT are historical facts, and the 4,023
+// PlayerStatRecord rows are the record book -- real dated achievements that
+// belong to the years they happened in, whatever year this dynasty is set to.
+if (seasonYear !== null) {
+  const info = tablesNamed(file, ['SeasonInfo'])[0];
+  if (!info) {
+    console.error('This save has no SeasonInfo table, so the season year cannot be set.');
+    process.exit(9);
+  }
+
+  await info.table.readRecords();
+  const record = info.table.records[0];
+  const from = record.CurrentSeasonYear;
+  record.CurrentSeasonYear = seasonYear;
+  record.BaseCalendarYear = seasonYear;
+
+  let seriesRows = 0;
+  for (const { table } of tablesNamed(file, ['TeamHistoricSeriesYear'])) {
+    await table.readRecords(['Year']);
+    for (const row of table.records) {
+      if (row.isEmpty || row.Year === seasonYear) continue;
+      row.Year = seasonYear;
+      seriesRows++;
+    }
+  }
+
+  report.seasonYear = { from, to: seasonYear, teamRowsChanged: seriesRows };
+  console.error(`  season year: ${from} -> ${seasonYear} (${seriesRows} team row(s) restamped)`);
 }
 
 await file.packFile(destPath);

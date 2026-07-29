@@ -1,8 +1,56 @@
 # Project Status
 
-_Last updated: 2026-07-29 — all-time rosters, archetype review, FBS note in the app._
+_Last updated: 2026-07-29 — the dynasty year, all-time rosters, archetype review._
 
 ## Current status
+
+**You can play the season you recreated.** Reported as the last gap before a
+release: a recreated 1985 roster was still played in whatever year the save
+started in, and that is the one thing about a historical recreation a user
+cannot edit around afterwards.
+
+**Found, then confirmed in the game.** The year lives in `SeasonInfo`, a
+one-row table: `CurrentSeasonYear` and `BaseCalendarYear`, the anchor the
+dynasty counts forward from (`CurrentYear` is the offset into it, 0 in a fresh
+save). A probe save built from a real dynasty with both set to 2023 — and
+nothing else changed — was loaded by the user and **displays 2023**. All eight
+base saves carry `CurrentYear: 0`, so which field the UI reads could not be
+told apart from data; both are written, so they agree either way.
+
+The edit is **141 bytes of a 30,005,935-byte database**: two `SeasonInfo`
+fields plus the current-season row each team keeps in
+`TeamHistoricSeriesYear`, which would otherwise disagree with the rest of the
+dynasty. Re-extracting the written save returns Player, Team and
+CharacterVisuals byte-identical to the original's.
+
+**Every other year-bearing field was checked and deliberately left alone.**
+Sweeping all 2,272 tables returns 18 fields wide enough to hold a calendar
+year. `Team.YearStartOfFootballProgram` and `Stadium.STADIUM_CALENDAR_YEARBUILT`
+are historical facts; `Rivalry.FirstYearPlayed` is named like a year but holds
+23, 24, 25, 30; `DraftClassInfo.DraftClassYear` is 0–30, relative, and follows
+the anchor by itself. The interesting one is `PlayerStatRecord.calendarYear` —
+4,023 live rows that turn out to be the **record book**, real dated
+achievements like Philip Rivers' 2003 passing yards. Those belong to the years
+they happened in whatever year the dynasty is set to.
+
+**Opt-in, not automatic.** `--dynasty-year <year>|roster` on the command line,
+and in the app a checkbox that names the year — "Play it in 2023" — appearing
+only once there is both a save to write into and a season to write. Recreating
+an old roster inside a present-day dynasty is a perfectly reasonable thing to
+want, and rewinding somebody's calendar uninvited is not this tool's call.
+Asking for a year on a CSV-only run is reported rather than dropped, because
+the year lives in a table the export tool does not write.
+
+**A trap worth recording**: `madden-franchise` does not enforce its own schema.
+Setting `CurrentSeasonYear` to 5000, or to −1, is accepted in silence and
+writes a number the game cannot read. The bound is ours — checked in
+`NativeSave.Apply` before the save is opened, and again in `apply.mjs` so the
+sidecar is safe standalone. The floor is 1869, the first college football game
+ever played.
+
+Tests: 413/413, and the end-to-end path verified against a real save: the 2023
+Florida State roster and the year land together, 5,524 fields written, and the
+source save's hash is unchanged.
 
 **All-time rosters wear their own decades.** An all-time roster is one team
 holding fifty years of players, and `Season` was read once per file — whichever

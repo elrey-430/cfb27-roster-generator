@@ -58,6 +58,16 @@ public sealed class MainWindow : Window
         Opacity = 0.75,
         IsVisible = false,
     };
+
+    // Opt-in, and only offered when a save is being written: recreating an old
+    // roster inside a present-day dynasty is a reasonable thing to want, and
+    // rewinding somebody's calendar uninvited is not this tool's call.
+    private readonly CheckBox _dynastyYearBox = new()
+    {
+        Content = "Play it in that season",
+        IsChecked = false,
+        IsVisible = false,
+    };
     private readonly TextBlock _blocker = new()
     {
         TextWrapping = TextWrapping.Wrap,
@@ -120,7 +130,12 @@ public sealed class MainWindow : Window
         _dynastyBox.TextChanged += (_, _) => UpdateButtons();
         _rosterBox.TextChanged += (_, _) => UpdateButtons();
         _teamBox.SelectionChanged += (_, _) => UpdateMembershipNote();
-        _seasonBox.TextChanged += (_, _) => UpdateMembershipNote();
+        _seasonBox.TextChanged += (_, _) =>
+        {
+            UpdateMembershipNote();
+            UpdateSaveOption();
+        };
+        _saveOutBox.IsCheckedChanged += (_, _) => UpdateSaveOption();
         _ratingsBox.IsCheckedChanged += (_, _) => OnRatingsToggled();
         _checkButton.Click += async (_, _) => await CheckAsync();
         _generateButton.Click += async (_, _) => await GenerateAsync();
@@ -200,7 +215,7 @@ public sealed class MainWindow : Window
         {
             Spacing = 4,
             Children = { _ratingsBox, _archetypesBox, _fillBox, _equipmentBox, _facesBox,
-                         _saveOutBox, _saveOutNote },
+                         _saveOutBox, _dynastyYearBox, _saveOutNote },
         };
         panel.Children.Add(Labelled("4.  Options", options));
 
@@ -433,6 +448,7 @@ public sealed class MainWindow : Window
         _saveOutNote.IsVisible = DynastyIsSave;
         if (!DynastyIsSave)
         {
+            _dynastyYearBox.IsVisible = false;
             return;
         }
 
@@ -449,6 +465,34 @@ public sealed class MainWindow : Window
             _saveOutBox.IsChecked = false;
             _saveOutNote.Text = reason;
         }
+
+        UpdateDynastyYearOption();
+    }
+
+    /// <summary>
+    /// Offers "play it in that season" only when there is both a save to write
+    /// into and a season to write.
+    ///
+    /// <para>The year is stored in a table the export tool never writes, so it
+    /// can only be set on the save path — and there is nothing to offer until
+    /// the user has named a season. Naming the year in the label rather than
+    /// leaving it abstract is the difference between an option somebody
+    /// understands and one they leave alone.</para>
+    /// </summary>
+    private void UpdateDynastyYearOption()
+    {
+        var season = ParseSeason();
+        var offer = _saveOutBox is { IsVisible: true, IsEnabled: true, IsChecked: true }
+                    && season is int year && NativeSave.IsSupportedSeason(year);
+
+        _dynastyYearBox.IsVisible = offer;
+        if (!offer)
+        {
+            _dynastyYearBox.IsChecked = false;
+            return;
+        }
+
+        _dynastyYearBox.Content = $"Play it in {season} — the game shows that year instead of the save's";
     }
 
     private async Task PickRosterAsync()
@@ -574,6 +618,7 @@ public sealed class MainWindow : Window
             ApplyEquipment = _equipmentBox.IsChecked == true,
             ReplaceRealPersonFaces = _facesBox.IsChecked == true,
             SaveOutputPath = DynastyIsSave && _saveOutBox.IsChecked == true ? RecreatedSavePath() : null,
+            DynastyYear = _dynastyYearBox is { IsVisible: true, IsChecked: true } ? ParseSeason() : null,
         };
 
         _generateButton.IsEnabled = false;
@@ -628,6 +673,11 @@ public sealed class MainWindow : Window
             text.AppendLine($"Dynasty save:      {Path.GetFullPath(save.Destination)}");
             text.AppendLine($"                   {save.CellsChanged:N0} field(s) written; " +
                             $"{save.EmptyRecordsSkipped:N0} empty roster slot(s) left untouched.");
+            if (save.SeasonYearChanged)
+            {
+                text.AppendLine($"                   The game will show {save.SeasonYearTo} rather than " +
+                                $"{save.SeasonYearFrom}.");
+            }
             text.AppendLine("                   Copy it into your saves folder. Your original is unchanged.");
             text.AppendLine();
         }

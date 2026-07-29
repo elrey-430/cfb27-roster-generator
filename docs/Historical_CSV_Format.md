@@ -425,6 +425,35 @@ Three things worth knowing:
 Nothing else about a player changes with their season: it is not written into
 the save, and their ratings come from the evidence you supplied, not the year.
 
+## Playing it in the right year
+
+The season also sets what the **game itself displays** while you play, so a
+1985 roster is played in 1985 rather than in whatever year your save started
+in. It is opt-in:
+
+```
+generate --dynasty DYNASTY-BASE1 --roster 1985_Roster.csv ^
+         --save-out DYNASTY-1985 --dynasty-year roster
+```
+
+`--dynasty-year` takes a year, or `roster` to use the one your file already
+names. In the desktop app it is a checkbox that names the year — *"Play it in
+1985"* — which appears once you have chosen a save to write and a season.
+
+It needs `--save-out`, because the year lives in a table the export tool does
+not write. Asking for it on a CSV-only run is reported rather than silently
+dropped.
+
+**Only the year moves.** Two fields in the save's one-row `SeasonInfo` table
+plus the current-season row each team keeps — 141 bytes of a 30 MB database.
+Your players, ratings, helmets and coach are untouched, and the record book
+keeps its real dates: Philip Rivers' 2003 passing yards stay in 2003 whatever
+year you set.
+
+On an all-time roster, set the year explicitly rather than using `roster` —
+`roster` takes the file's first year, which on an all-time file is whichever
+player you happened to type first.
+
 Eras live in `data/EquipmentEras.json` and are editable like everything else
 in `data/`. Adding one takes no code: change a single player's helmet in the
 roster editor, export, and read the helmet and face mask names out of the
