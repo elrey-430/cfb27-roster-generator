@@ -1,5 +1,40 @@
 # Release notes
 
+## v0.7.1-alpha — Recreated players get abilities
+
+A small update. A generated 92-overall edge rusher used to come out with
+whatever ability tiers the player he replaced happened to have. The tiers now
+follow the rating the player earned, from the overall the engine already
+produces — so nothing new is asked of the user.
+
+**It sets how good a player is in the slots they have; it does not choose which
+abilities those are**, because the save does not store that.
+`PhysicalAbility1..5` hold a tier only, and which ability a slot represents
+lives in the game's own data keyed on position and archetype. See Schema.md
+Group 8.
+
+`data/AbilityModel.json` is measured from a base save: the share of players with
+an ability rises from 3.6% at OVR 50–54 to 99.1% at 90–94, tiers run
+Bronze-heavy at the bottom to 52% Platinum above 95, and each archetype fills
+its own slots in the game's own order. Six tests hold the tool to those shares
+within 4 points.
+
+Mental abilities stay as rare as the game makes them — 248 of 11,730 players
+carry any, 244 of those all three — and a player is only given one the game has
+been observed giving their position.
+
+### Also fixed
+
+Slots filled as end-of-roster depth kept the previous player's abilities, so a
+63-overall walk-on on the Florida State roster was holding two Silvers from his
+predecessor. Every slot on the team is now decided fresh.
+
+### Unchanged
+
+Ratings, archetypes, equipment, faces, the commentary index and the season year
+are identical to v0.7.0. `--ratings inherit` writes no abilities, because there
+is no generated overall to read them from.
+
 ## v0.7.0-alpha — Play the season you recreated
 
 Build a 1985 roster and the game says 1985. Until now a recreated roster was
