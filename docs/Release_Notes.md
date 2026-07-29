@@ -1,5 +1,49 @@
 # Release notes
 
+## v0.7.0-alpha — Play the season you recreated
+
+Build a 1985 roster and the game says 1985. Until now a recreated roster was
+played in whatever year the save started in, and it was the one thing about a
+historical recreation that could not be fixed afterwards in a roster editor —
+the year is not in the roster at all.
+
+```
+generate --dynasty DYNASTY-BASE1 --roster 1985_Roster.csv \
+         --save-out DYNASTY-1985 --dynasty-year roster
+```
+
+The year lives in `SeasonInfo`, a one-row table inside the save:
+`CurrentSeasonYear` and `BaseCalendarYear`, the anchor the dynasty counts
+forward from. Both are written, because every base save has `CurrentYear: 0`
+and so cannot distinguish which one the UI reads. Confirmed by loading the
+game: a save with both set to 2023, and nothing else changed, displays 2023.
+
+**Opt-in, and only the year moves.** Two fields plus the current-season row
+each team keeps — 141 bytes of a 30 MB database — and the Player, Team and
+CharacterVisuals tables re-extract byte-identical. The record book keeps its
+real dates. It requires `--save-out`, because the year lives in a table the
+export tool does not write; asking on a CSV-only run is reported rather than
+dropped.
+
+### Also in this release
+
+- **All-time rosters wear their own decades.** `Season` is read per row, so
+  each player gets their own year's equipment instead of the whole squad
+  taking whichever year was typed first.
+- **A second pass on the archetype rules, measured against the game.** Twelve
+  position defaults were archetypes the game barely uses (`C_WellRounded` on 0
+  of 403 centres); the offensive-line weight rules were shown to be worse than
+  guessing and removed; the power-blocker rules were kept because the same
+  measurement supports them. 20 of 85 players on the 2023 FSU roster changed
+  archetype, with every overall identical.
+- **The app warns about teams that were not in the FBS yet**, which the
+  command line has done since v0.6.0 and the app never did.
+
+### Known limitations
+
+- The season year is verified on the display, not across a simulated dynasty.
+- `--dynasty-year roster` on an all-time file takes the first year in it.
+
 ## v0.6.2-alpha — The announcers say the right name
 
 An oversight, reported and fixed: your recreated players were being called by
