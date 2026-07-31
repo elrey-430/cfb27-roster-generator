@@ -77,6 +77,25 @@ if (path.resolve(sourcePath) === path.resolve(destPath)) {
   process.exit(4);
 }
 
+// Checked here, before the save is opened, because the alternative is what a
+// user actually got: a raw ENOENT stack trace out of readFileSync sixty lines
+// below, naming a path they never typed. Relative paths resolve against THIS
+// process's working directory — tools/native-save — and not the caller's, so
+// they are echoed resolved rather than as they were given.
+const missingCsv = csvPaths.filter(p => !fs.existsSync(p));
+if (missingCsv.length > 0) {
+  console.error(
+    `Cannot find the generated table${missingCsv.length > 1 ? 's' : ''} to write into the save:\n` +
+    missingCsv.map(p => `  ${path.resolve(p)}`).join('\n') +
+    '\nNothing was written and your save was not touched.');
+  process.exit(9);
+}
+
+if (!fs.existsSync(sourcePath)) {
+  console.error(`There is no dynasty save at '${path.resolve(sourcePath)}'.`);
+  process.exit(3);
+}
+
 if (!looksLikeSave(sourcePath)) {
   console.error(`'${sourcePath}' is not a CFB27 dynasty save (no FBCHUNKS header).`);
   process.exit(3);

@@ -1,8 +1,42 @@
 # Project Status
 
-_Last updated: 2026-07-30 — the Team column decides the team._
+_Last updated: 2026-07-31 — writing a save no longer loses the roster it wrote._
 
 ## Current status
+
+**Writing a dynasty save from the app has never worked in a shipped build.**
+Reported against v0.7.2-alpha, generating a full FBS roster:
+
+```
+Error: ENOENT: no such file or directory, open
+  '...\CFB27-Roster-Generator-0.7.2-alpha-win-x64\tools\native-save\Output\Generated_Roster.csv'
+```
+
+The roster was written, and written correctly — to `Output\Generated_Roster.csv`
+beside the executable, which is the shipped default and a *relative* path. The
+sidecar runs with its working directory set to `tools\native-save`, because
+that is where its scripts and its `node_modules` are, so the same relative path
+named a file that has never existed. Nothing to do with the size of the roster:
+the step after generating it was simply being reached.
+
+**Every path handed to the sidecar is now resolved against the caller's
+directory first**, in `NativeSave.ApplyArguments` and `ExtractArguments`, the
+only two places a path crosses that boundary.
+
+Why 442 tests missed it is worth writing down: **they all wrote to a temporary
+directory**, which is to say they all passed absolute paths, so every one of
+them exercised the one case that worked. The new tests pass relative paths on
+purpose, and three of them fail against the old code — including one that runs
+the real sidecar.
+
+The sidecar also stops answering with a stack trace. A table it cannot find is
+now named, with "nothing was written and your save was not touched", and a save
+that is not there says so rather than complaining about a missing FBCHUNKS
+header. The C# layer surfaces stderr, so that is what the user reads.
+
+Tests: 449/449.
+
+## Previously
 
 **A whole-season roster could not actually be generated.** Reported: importing
 a roster for all teams was limited by team selection. It was worse than a

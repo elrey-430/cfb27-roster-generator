@@ -29,6 +29,15 @@ if (!savePath || !outDir) {
 // it already does it, so this must not quietly make that decision here.
 const names = (tableList || 'Player,Team,CharacterVisuals').split(',').map(s => s.trim()).filter(Boolean);
 
+// Told apart from the header check below: a save that is not there and a file
+// that is not a save are different problems, and "no FBCHUNKS header" is a
+// baffling thing to be told about a file nobody pointed at. Relative paths
+// resolve against this process's working directory, not the caller's.
+if (!fs.existsSync(savePath)) {
+  console.error(`There is no dynasty save at '${path.resolve(savePath)}'.`);
+  process.exit(3);
+}
+
 if (!looksLikeSave(savePath)) {
   console.error(`'${savePath}' is not a CFB27 dynasty save (no FBCHUNKS header).`);
   process.exit(3);

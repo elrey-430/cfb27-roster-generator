@@ -100,8 +100,33 @@ public static class NativeSave
     public static void Extract(string savePath, string outputDirectory, string? tables = null)
     {
         Directory.CreateDirectory(outputDirectory);
-        Run("extract.mjs", new[] { savePath, outputDirectory, tables ?? DefaultTables });
+        Run("extract.mjs", ExtractArguments(savePath, outputDirectory, tables));
     }
+
+    /// <summary>
+    /// The arguments handed to <c>extract.mjs</c>, with every path made absolute.
+    /// See <see cref="ApplyArguments"/> for why that matters.
+    /// </summary>
+    internal static IReadOnlyList<string> ExtractArguments(
+        string savePath, string outputDirectory, string? tables = null) =>
+        new[] { Absolute(savePath), Absolute(outputDirectory), tables ?? DefaultTables };
+
+    /// <summary>
+    /// Resolves a path against the caller's working directory, so that it still
+    /// means the same file once the sidecar has changed to its own.
+    ///
+    /// <para>This is the whole of the bug this method exists for. The sidecar
+    /// runs with its working directory set to <c>tools/native-save</c>, because
+    /// that is where its scripts and its <c>node_modules</c> live. The app's
+    /// own paths are relative to wherever the app was started — the generated
+    /// roster defaults to <c>Output/Generated_Roster.csv</c> — so handing one
+    /// straight through asked Node for
+    /// <c>tools/native-save/Output/Generated_Roster.csv</c>, which has never
+    /// existed, and writing a save died on a raw <c>ENOENT</c> stack trace.
+    /// Every test passed because every test used a temporary directory, which
+    /// is to say an absolute path.</para>
+    /// </summary>
+    private static string Absolute(string path) => Path.GetFullPath(path);
 
     /// <summary>
     /// Writes generated tables into a copy of <paramref name="savePath"/>,
@@ -138,14 +163,30 @@ public static class NativeSave
             Directory.CreateDirectory(directory);
         }
 
-        var arguments = new[] { savePath, destinationPath }.Concat(tableCsvPaths).ToList();
+        return ParseWriteReport(
+            Run("apply.mjs", ApplyArguments(savePath, destinationPath, tableCsvPaths, seasonYear)),
+            destinationPath);
+    }
+
+    /// <summary>
+    /// The arguments handed to <c>apply.mjs</c>, with every path made absolute
+    /// first — see <see cref="Absolute"/> for what that is guarding against.
+    /// </summary>
+    internal static IReadOnlyList<string> ApplyArguments(
+        string savePath,
+        string destinationPath,
+        IReadOnlyList<string> tableCsvPaths,
+        int? seasonYear)
+    {
+        var arguments = new List<string> { Absolute(savePath), Absolute(destinationPath) };
+        arguments.AddRange(tableCsvPaths.Select(Absolute));
         if (seasonYear is int display)
         {
             arguments.Add("--year");
             arguments.Add(display.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
-        return ParseWriteReport(Run("apply.mjs", arguments.ToArray()), destinationPath);
+        return arguments;
     }
 
     /// <summary>
