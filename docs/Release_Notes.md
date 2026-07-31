@@ -1,5 +1,36 @@
 # Release notes
 
+## v0.7.2-alpha — The Team column decides the team
+
+A correctness fix. **A roster covering more than one team only generated one of
+them**, and said nothing about the rest.
+
+The app sent its detected team on every run, and `HistoricalCsv` gave an
+explicit team priority over each row's own — so a whole-season file was written
+onto whichever school appeared first. 10,115 players, one team, silent.
+
+Each player now goes to the team their own `Team` cell names. The caller's team
+(`--team`, or the app's picker) is a fallback for rows that leave it blank.
+`--season` is unchanged and is still a true override, because a season really
+is roster-wide.
+
+Verified on a filled 2010 season against a real base save with `--team`
+deliberately set: **10,115 players across 119 teams, 85 each, zero misplaced.**
+
+The app's picker now disables itself when the file names teams and says which
+case applies, rather than leaving the user to infer it from a player count. It
+remains for the one case it exists for: a file with no `Team` column.
+
+**Re-run any multi-team roster made before this.** Single-team files are
+unaffected.
+
+### Why nothing caught it
+
+An existing test asserted the old behaviour by name —
+`SimpleCsvCallerTeamOverridesFileTeamColumn`. The bug was written down as
+intent, so the suite stayed green while 118 teams were discarded. It now states
+the new rule and still pins the season override.
+
 ## v0.7.1-alpha — Recreated players get abilities
 
 A small update. A generated 92-overall edge rusher used to come out with
