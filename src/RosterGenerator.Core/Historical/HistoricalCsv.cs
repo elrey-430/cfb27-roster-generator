@@ -60,8 +60,10 @@ public static class HistoricalCsv
     /// </summary>
     /// <param name="path">The CSV file path.</param>
     /// <param name="school">
-    /// School override. When null, the file's Team column must supply one
-    /// consistent value.
+    /// The school to use for rows whose <c>Team</c> cell is empty — a fallback,
+    /// not an override. A row that names its own team always goes to that team,
+    /// so a file covering a whole season is read as a whole season no matter
+    /// what the caller passes.
     /// </param>
     /// <param name="season">
     /// Season override. When null, the file's Season column is used when
@@ -190,9 +192,16 @@ public static class HistoricalCsv
             };
             players.Add(player);
 
-            // A row's own Team wins; the override, then the file's first Team,
-            // stand in for a file that names the team once or not at all.
-            var owner = school ?? (teamValue.Length > 0 ? teamValue : fileSchool);
+            // A row's own Team decides where that player goes. The caller's
+            // team, then the file's first Team, only stand in for a row that
+            // does not say.
+            //
+            // This used to be the other way round — an explicit team won over
+            // every row — which quietly collapsed a whole-season file onto one
+            // school. The desktop app sends the team it detected on every run,
+            // so a 119-team file generated 10,115 players onto whichever team
+            // happened to be listed first, with nothing reported.
+            var owner = (teamValue.Length > 0 ? teamValue : null) ?? school ?? fileSchool;
             if (owner is null)
             {
                 continue;
@@ -205,8 +214,6 @@ public static class HistoricalCsv
                 teamOrder.Add(owner);
             }
 
-            // An explicit override means the caller wants one team, so rows
-            // naming a different one are still theirs.
             roster.Add(player);
             if (playerSeason is int rowSeason && !seasonByTeam.ContainsKey(owner))
             {

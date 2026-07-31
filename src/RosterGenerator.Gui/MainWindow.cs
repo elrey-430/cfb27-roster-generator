@@ -31,7 +31,26 @@ public sealed class MainWindow : Window
         IsReadOnly = true,
     };
     private readonly TextBox _rosterBox = new() { Watermark = "Your roster CSV", IsReadOnly = true };
-    private readonly ComboBox _teamBox = new() { PlaceholderText = "Choose a team", MinWidth = 260 };
+    private readonly ComboBox _teamBox = new()
+    {
+        PlaceholderText = "Only needed if your file has no Team column",
+        MinWidth = 300,
+    };
+
+    /// <summary>
+    /// Teams the chosen roster file names in its own Team column. When it
+    /// names any, they decide where every player goes and the picker is not
+    /// consulted at all.
+    /// </summary>
+    private IReadOnlyList<string> _rosterTeams = Array.Empty<string>();
+
+    private readonly TextBlock _teamNote = new()
+    {
+        TextWrapping = TextWrapping.Wrap,
+        FontSize = 12,
+        Opacity = 0.75,
+        IsVisible = false,
+    };
     private readonly TextBox _seasonBox = new() { Watermark = "Season (optional)", Width = 160 };
     private readonly CheckBox _ratingsBox = new() { Content = "Generate ratings from the roster CSV", IsChecked = true };
     private readonly CheckBox _archetypesBox = new() { Content = "Choose each player's archetype", IsChecked = true };
@@ -206,7 +225,7 @@ public sealed class MainWindow : Window
         };
         panel.Children.Add(Labelled(
             "3.  Team and season",
-            new StackPanel { Spacing = 4, Children = { teamRow, _membershipNote } },
+            new StackPanel { Spacing = 4, Children = { teamRow, _teamNote, _membershipNote } },
             "The season picks the era's helmets, and a roster CSV carrying a year per player puts each " +
             "of them in their own — so an all-time squad is not dressed in one decade. Leave both blank " +
             "to use what the roster file says."));
@@ -551,9 +570,19 @@ public sealed class MainWindow : Window
 
             _output.Text = report.ToText();
 
-            // Preselect the team the file names, so the common case needs no
-            // extra click.
-            if (team is null && report.Roster is not null && _teamBox.ItemsSource is IEnumerable<string> names)
+            // The file's own Team column decides where players go. Reading it
+            // here is what lets the picker step out of the way entirely.
+            _rosterTeams = report.Rosters
+                .Select(r => r.School)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            UpdateTeamNote();
+
+            // Preselect only when the file names nothing, because then the
+            // picker really is the answer.
+            if (_rosterTeams.Count == 0 && team is null && report.Roster is not null &&
+                _teamBox.ItemsSource is IEnumerable<string> names)
             {
                 var match = names.FirstOrDefault(n =>
                     string.Equals(n, report.Roster.School, StringComparison.OrdinalIgnoreCase));
@@ -610,7 +639,10 @@ public sealed class MainWindow : Window
         {
             DynastyPath = _dynastyBox.Text ?? "",
             RosterPath = _rosterBox.Text ?? "",
-            Team = _teamBox.SelectedItem as string,
+            // Only ever a fallback for rows with no Team of their own.
+            // Sending it unconditionally is what collapsed a whole-season
+            // file onto a single school.
+            Team = _rosterTeams.Count > 0 ? null : _teamBox.SelectedItem as string,
             Season = ParseSeason(),
             Ratings = _ratingsBox.IsChecked == true ? RatingsMode.Generate : RatingsMode.Inherit,
             SelectArchetypes = _ratingsBox.IsChecked == true && _archetypesBox.IsChecked == true,
@@ -740,6 +772,37 @@ public sealed class MainWindow : Window
 
     private int? ParseSeason() =>
         int.TryParse(_seasonBox.Text, out var season) ? season : null;
+
+    /// <summary>
+    /// Says which teams the roster file itself names, and takes the picker out
+    /// of play when it names any.
+    ///
+    /// <para>The picker used to be sent on every run, which silently collapsed
+    /// a whole-season file onto one school — 10,115 players onto whichever team
+    /// was listed first. The Team column is the answer whenever it is filled
+    /// in; the picker only covers a file that leaves it blank.</para>
+    /// </summary>
+    private void UpdateTeamNote()
+    {
+        var named = _rosterTeams.Count;
+        _teamBox.IsEnabled = named == 0;
+        _teamNote.IsVisible = true;
+
+        _teamNote.Text = named switch
+        {
+            0 => "Your file has no Team column, so choose the team above and every player goes there.",
+            1 => $"Your file names its own team ({_rosterTeams[0]}), so it is used and the picker is " +
+                 "not needed.",
+            _ => $"Your file covers {named} teams and each player goes to the one their Team cell " +
+                 $"names — {string.Join(", ", _rosterTeams.Take(3))}" +
+                 (named > 3 ? $" and {named - 3} more." : "."),
+        };
+
+        if (named > 0)
+        {
+            _teamBox.SelectedItem = null;
+        }
+    }
 
     private static FbsMembership LoadMembership()
     {

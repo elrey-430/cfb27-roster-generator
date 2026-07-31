@@ -259,7 +259,7 @@ public sealed class HistoricalPipelineTests
     }
 
     [Fact]
-    public void SimpleCsvCallerTeamOverridesFileTeamColumn()
+    public void SimpleCsvRowTeamBeatsTheCallerButTheSeasonOverrideStands()
     {
         var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".csv");
         File.WriteAllText(path,
@@ -268,7 +268,15 @@ public sealed class HistoricalPipelineTests
         {
             var result = HistoricalCsv.Read(path, school: "Florida State", season: 2013);
 
-            Assert.Equal("Florida State", result.Roster.School);
+            // This asserted the opposite until the team rule changed. A caller's
+            // team winning over each row's own is what collapsed a whole-season
+            // file onto one school, because the desktop app passes a team on
+            // every run. A row that names its team now keeps it.
+            Assert.Equal("Alabama", result.Roster.School);
+
+            // The season override is unaffected and stays a true override: it
+            // is genuinely roster-wide, and "treat this file as 2013" has to
+            // mean all of it.
             Assert.Equal(2013, result.Roster.Season);
         }
         finally

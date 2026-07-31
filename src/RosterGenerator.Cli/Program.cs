@@ -25,8 +25,13 @@ using RosterGenerator.Core.Validation;
 //   compare    --left <Player.csv> --right <Player.csv> --team <name or id>
 //              [--dynasty <folder of exported CSVs>] [--output <md>]
 //
-// When --team / --season are omitted and the roster CSV does not supply
-// them, generate asks interactively (listing the dynasty's own teams).
+// The roster CSV's own Team column decides where each player goes, so one
+// file can carry a whole season. --team is only a fallback for rows that
+// leave it blank; when the file names teams it is not consulted. --season
+// IS a true override, because a season is genuinely roster-wide.
+//
+// When neither the file nor --team supplies a team, generate asks
+// interactively (listing the dynasty's own teams).
 
 try
 {
@@ -104,6 +109,11 @@ static int Usage()
         you supplied is never modified — --save-out is always a new file, and
         writing over the original is refused. This needs Node.js 22.19+ on your
         machine; without it the export-to-CSV route still works.
+
+        --team is a FALLBACK, not a filter. Each player goes to the team their
+        own Team cell names, so a file covering all 138 teams generates all 138
+        in one run. --team only fills in rows that leave Team blank. To build
+        one team, put one team in the file.
 
         --dynasty-year sets the season the GAME DISPLAYS while you play, so a
         1985 roster is played in 1985 rather than in the year your save started

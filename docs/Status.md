@@ -1,8 +1,36 @@
 # Project Status
 
-_Last updated: 2026-07-29 — abilities, the dynasty year, all-time rosters._
+_Last updated: 2026-07-30 — the Team column decides the team._
 
 ## Current status
+
+**A whole-season roster could not actually be generated.** Reported: importing
+a roster for all teams was limited by team selection. It was worse than a
+limit — the desktop app sent the team it had detected on *every* run, and
+`HistoricalCsv` gave an explicit team priority over each row's own, so a
+119-team file was silently written onto whichever school appeared first.
+10,115 players, one team, nothing reported. Reproduced before changing
+anything: a three-team file with `--team "Florida State"` put all six players,
+Alabama's and Michigan's included, onto Florida State.
+
+**The Team column now decides.** A row that names its team goes to that team;
+the caller's team is a fallback for rows that leave the cell blank, and the
+season override is untouched because a season really is roster-wide. Verified
+end to end on a filled 2010 season against the full base save, with `--team`
+deliberately set: **10,115 players across 119 teams, 85 each, zero misplaced.**
+
+**The app stops asking a question the file already answers.** The picker
+disables itself when the file names teams and says which case applies — "Your
+file covers 119 teams and each player goes to the one their Team cell names" —
+rather than leaving the user to infer it from a player count. It stays for the
+one case it exists for: a file with no Team column at all.
+
+One existing test asserted the old contract outright
+(`SimpleCsvCallerTeamOverridesFileTeamColumn`). It was the bug, written down as
+intent, which is why nothing caught this — it is rewritten to state the new
+rule and to keep pinning the season override, which did not change.
+
+Tests: 442/442.
 
 **Recreated players get the abilities their rating earns.** Requested after
 the ability research, and the research is what shaped it — the two families are

@@ -117,7 +117,7 @@ Every correction and every substitution is listed in
 | `HeightInches` | `74` | **Inches, always** — see [below](#heightinches-is-inches-and-only-inches). `6-2` is still read and converted, but it is reported, because it does not survive a spreadsheet |
 | `Weight` | `212` | Pounds (160–400). Blank = keeps the replaced player's weight |
 | `Class` | `Freshman`, `RS Junior`, `Redshirt Senior`, `Graduate` | "RS"/"Redshirt" prefixes set the in-game redshirt flag; Graduate becomes Senior |
-| `Team` | `Florida State` | The school this roster belongs to. May instead be chosen when running the generator; must match a team in **your** dynasty (see `list-teams`) |
+| `Team` | `Florida State` | **Where this player goes.** Read per row, so one file can carry any number of teams — a whole season generates in one run. Must match a team in **your** dynasty (see `list-teams`). Leave it blank and the team chosen at run time is used instead |
 | `Season` | `2013` | The historical season. Labels the report and picks the equipment era, and is read **per row** — see [all-time rosters](#all-time-rosters-a-season-per-player) |
 | `Role` | `Starter` | `Starter` / `Backup` / `Reserve` / `Walk-on`. The cheapest way to make a roster look right — see above. Blank behaves exactly as if the column were absent; a word the tool does not recognize is ignored and reported |
 
