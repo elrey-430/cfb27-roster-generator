@@ -215,6 +215,41 @@ public sealed class RosterEditSession
     }
 
     /// <summary>
+    /// Sets whether the player carries an NIL deal.
+    ///
+    /// <para>Written for every generated player, because the alternative is
+    /// inheriting it. The flag belongs to whoever held the slot, and it tracks
+    /// standing rather than money — 100% of the players at 90 overall and above
+    /// carry it — so a recreated 1985 roster built on a modern save would come
+    /// out with NIL deals signed decades before college athletes could sign
+    /// one.</para>
+    ///
+    /// <para>The two NIL money fields are not touched. They are not companions
+    /// of this flag: 3,473 of the 7,246 players a base save marks
+    /// <c>false</c> still hold a non-zero <c>BaseNILValue</c>, so moving them
+    /// together would be inventing a rule the save does not hold. Where the
+    /// game <em>does</em> tie them together is a transfer, which
+    /// <see cref="TransferPlayer"/> already handles.</para>
+    ///
+    /// <para>Silently skipped when the export has no such column, which is how
+    /// every optional field here behaves: an older export is still a usable
+    /// export.</para>
+    /// </summary>
+    public void SetNilStatus(Player player, bool isNil)
+    {
+        if (!player.HasColumn(PlayerColumns.IsNil))
+        {
+            return;
+        }
+
+        player.SetRaw(PlayerColumns.IsNil, isNil ? "true" : "false");
+        Record(player, EditIntent.AttributeChange,
+            isNil
+                ? $"Gave {player} an NIL deal"
+                : $"Cleared the NIL deal on {player}");
+    }
+
+    /// <summary>
     /// Sets the home town (free text) and home state (51-value enum).
     /// </summary>
     public void SetHometown(Player player, string town, string state)

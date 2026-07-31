@@ -1,8 +1,36 @@
 # Project Status
 
-_Last updated: 2026-07-31 — writing a save no longer loses the roster it wrote._
+_Last updated: 2026-07-31 — no NIL deals on recreated players._
 
 ## Current status
+
+**A generated player no longer inherits the roster slot's NIL deal.**
+Requested: everyone the tool writes should default to `IsNIL` false. It is not
+a cosmetic leftover — measured across the 16,257 players of a base save, the
+flag tracks standing rather than money: 1.7% of players in the 40s carry one,
+42.4% in the 60s, 78.0% in the 70s, and **100% of the 114 players at 90 and
+above**. A recreated roster is built on the best slots the save has, so the
+inheritance landed hardest on exactly the players a user looks at first — a
+1985 starting eleven arriving with contracts signed forty years early.
+
+**The NIL money fields are deliberately left alone.** They are not companions
+of the flag: 3,473 of the 7,246 players a base save marks `false` still hold a
+non-zero `BaseNILValue`. Moving them together would be inventing a rule the
+game does not follow. Where the game does tie them together is a team change,
+which `TransferPlayer` has handled since Milestone 1.
+
+Filled depth slots are cleared too, for the same reason their abilities are:
+the slot has just been re-rated as a 63-overall walk-on, so what was true of it
+at 88 is not true of it any more. A slot the tool did *not* generate into is
+left exactly as it was.
+
+The donor fixture holds `false` throughout, so a test asserting the output is
+`false` would pass with the feature deleted. The new tests flip every slot to
+`true` first; two of the seven fail against the old code.
+
+Tests: 456/456.
+
+## Previously
 
 **Writing a dynasty save from the app has never worked in a shipped build.**
 Reported against v0.7.2-alpha, generating a full FBS roster:
@@ -35,8 +63,6 @@ that is not there says so rather than complaining about a missing FBCHUNKS
 header. The C# layer surfaces stderr, so that is what the user reads.
 
 Tests: 449/449.
-
-## Previously
 
 **A whole-season roster could not actually be generated.** Reported: importing
 a roster for all teams was limited by team selection. It was worse than a

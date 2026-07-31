@@ -184,4 +184,24 @@ public static class PlayerColumns
 
     /// <summary>Current NIL compensation; observed reset to 0 on every team change.</summary>
     public const string CurrentNilCompensation = "CurrentNILCompensation";
+
+    /// <summary>
+    /// Whether the player carries an NIL deal. A bool, and both values are
+    /// ordinary: a base save holds <c>false</c> for 7,246 players and
+    /// <c>true</c> for 9,011.
+    ///
+    /// <para>It tracks standing, not money. The flag climbs steeply with
+    /// overall — 1.7% true in the 40s, 42.4% in the 60s, 78.0% in the 70s,
+    /// 100% of the 114 players at 90 and above — which is why a recreated
+    /// player must not inherit it: the slot's flag describes whoever held it,
+    /// and a 1985 walk-on landing on a 95-overall slot would arrive with an
+    /// NIL deal a decade before college athletes could sign one.</para>
+    ///
+    /// <para>The two money fields above are <em>not</em> companions of this
+    /// one and are deliberately left alone. They move independently in the
+    /// game's own data: 3,473 of the 7,246 <c>false</c> players still carry a
+    /// non-zero <see cref="BaseNilValue"/>, so zeroing them here would be this
+    /// tool inventing a rule the save does not hold.</para>
+    /// </summary>
+    public const string IsNil = "IsNIL";
 }

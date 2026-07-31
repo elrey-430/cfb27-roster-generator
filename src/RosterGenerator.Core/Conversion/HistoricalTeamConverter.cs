@@ -164,6 +164,12 @@ public sealed class HistoricalTeamConverter
         report.GlobalAssumptions.Add(
             "Slot assignment prefers a donor slot at the same position (or an interchangeable one, e.g. " +
             "LE/RE); players placed in an unrelated slot get an explicit position change.");
+        report.GlobalAssumptions.Add(
+            "Every generated player is written with no NIL deal (IsNIL = false). The flag belongs to the " +
+            "roster slot and tracks standing rather than money — every player at 90 overall and above " +
+            "carries one in a base save — so inheriting it would put NIL deals on a roster recreated from " +
+            "a season that had none. The NIL money fields are left alone: they move independently of the " +
+            "flag in the game's own data.");
 
         // Donor slots for this team, position-preferred assignment.
         var slots = roster.Players
@@ -253,21 +259,28 @@ public sealed class HistoricalTeamConverter
         var filled = _rosterFiller!.Fill(session, freeSlots, weakestByPosition, placements.Count);
         report.FilledSlots.AddRange(filled);
 
-        // A filled slot is re-rated as depth, so its abilities have to be
-        // re-decided too. Leaving them would let the previous occupant's
-        // abilities survive on a walk-on the filler just rated at 63 — which
-        // is the exact defect this feature exists to close, and it is invisible
-        // unless somebody diffs the slot against the save it came from.
-        if (_abilities is not null)
+        // A filled slot is re-rated as depth, so everything that was true of it
+        // because of the rating it used to have has to be re-decided too.
+        //
+        // Abilities are the case this was first found on: leaving them let the
+        // previous occupant's gold survive on a walk-on the filler had just
+        // rated at 63, invisible unless somebody diffed the slot against the
+        // save it came from. NIL is the same shape of mistake — a 63-overall
+        // walk-on holding the deal of the 88 who used to be there — and it is
+        // cleared whether or not an ability model was loaded.
+        var byRowKey = freeSlots.ToDictionary(s => s.RowKey);
+        foreach (var slot in filled)
         {
-            var byRowKey = freeSlots.ToDictionary(s => s.RowKey);
-            foreach (var slot in filled)
+            if (!byRowKey.TryGetValue(slot.RowKey, out var player))
             {
-                if (byRowKey.TryGetValue(slot.RowKey, out var player))
-                {
-                    session.SetAbilities(player, _abilities.For(
-                        player.GetRaw(PlayerTypeColumn), player.Position, slot.Overall, slot.RowKey));
-                }
+                continue;
+            }
+
+            session.SetNilStatus(player, false);
+            if (_abilities is not null)
+            {
+                session.SetAbilities(player, _abilities.For(
+                    player.GetRaw(PlayerTypeColumn), player.Position, slot.Overall, slot.RowKey));
             }
         }
 
@@ -597,6 +610,13 @@ public sealed class HistoricalTeamConverter
             assetName: face.AssetName,
             genericHeadAssetName: face.HeadAssetName,
             portrait: face.Portrait);
+
+        // NIL belongs to the slot, not to the player arriving in it. Left
+        // alone, a recreated roster inherits whatever deals the modern players
+        // holding those slots had — and because the flag tracks standing rather
+        // than money, every slot at 90 overall and above carries one, so it is
+        // precisely the best players on the roster who come out wrong.
+        session.SetNilStatus(slot, false);
 
         // Commentary follows the surname, exactly as the game does it on a
         // rename. Left alone, the announcers would keep calling this player by
