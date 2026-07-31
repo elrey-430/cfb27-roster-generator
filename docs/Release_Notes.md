@@ -1,5 +1,34 @@
 # Release notes
 
+## v0.7.3-alpha — Writing a save actually writes a save
+
+**"Write a new dynasty save" has never worked in a released build.** Turning it
+on ended the run with a Node `ENOENT` and no save, whatever roster was being
+generated.
+
+The roster was written, correctly, to `Output\Generated_Roster.csv` beside the
+executable — the shipped default, and a relative path. The sidecar runs with its
+working directory set to `tools\native-save`, where its scripts and
+`node_modules` live, so the same relative path named a file that has never
+existed. Nothing to do with the size of the roster; a full FBS run is simply the
+first time that step gets reached.
+
+Every path is now resolved against the caller's directory in
+`NativeSave.ApplyArguments` and `ExtractArguments` — the only two places a path
+crosses that boundary.
+
+The sidecar also stops answering with a stack trace. A table it cannot find is
+named, with *"nothing was written and your save was not touched"*, and a save
+that is not there says so rather than complaining about a missing FBCHUNKS
+header.
+
+### Why nothing caught it
+
+All 442 tests wrote to a temporary directory — which is to say they all passed
+absolute paths, so every one of them exercised the one case that worked. The
+seven new tests pass relative paths on purpose; three fail against the old code,
+including one that runs the real sidecar end to end.
+
 ## v0.7.2-alpha — The Team column decides the team
 
 A correctness fix. **A roster covering more than one team only generated one of
