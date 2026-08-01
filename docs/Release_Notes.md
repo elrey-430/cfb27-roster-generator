@@ -1,5 +1,38 @@
 # Release notes
 
+## v0.8.1-alpha — Cap by role first, class second
+
+The Low-confidence overall cap read class year alone, conflating "young" with
+"unknown". Measured across 11,730 players on 138 teams, role dominates and
+class barely registers below the starting eleven — the 90th percentile by role
+and class:
+
+| | Freshman | Sophomore | Junior | Senior |
+|---|---|---|---|---|
+| Starter | 82 | 84 | 87 | 87 |
+| Backup | 78 | 77 | 77 | 77 |
+| Reserve | 73 | 73 | 73 | 73 |
+| Walk-on | 68 | 68 | 68 | 67 |
+
+One number per class (68/74/78/82) was wrong in both directions at once: a
+freshman backup held ten points under where the game puts one, a senior reserve
+let nine points over. `lowConfidenceCapByRole` replaces it and falls back to the
+per-class value when a file names no role.
+
+| | Biggest pile | Distinct overalls | MAD vs EA |
+|---|---|---|---|
+| Before the role work | 25 | 20 | 2.69 |
+| v0.8.0 (role curve + spread) | 15 | 27 | 2.74 |
+| **v0.8.1 (plus this cap)** | **8** | **32** | **2.68** |
+| EA's own roster | 9 | 25 | — |
+
+Better on every measure at once, including the curve fit the previous two
+changes had each cost a little. The pile of fifteen freshmen on 68 was this cap,
+not the spread.
+
+Still unlike the game at the bottom: 28 players under 70 against EA's 16, and 25
+in the 70–74 band against 32.
+
 ## v0.8.0-alpha — Recreated players get a body, and a roster gets a curve
 
 Ratings move for every user in this release. Seven commits, two themes.
