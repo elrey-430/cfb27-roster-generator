@@ -1328,6 +1328,32 @@
       "lowConfidenceOverallCap": 80
     }
   },
+  "lowConfidenceCapByRole": {
+    "starter": {
+      "Freshman": 82,
+      "Sophomore": 84,
+      "Junior": 87,
+      "Senior": 87
+    },
+    "backup": {
+      "Freshman": 78,
+      "Sophomore": 77,
+      "Junior": 77,
+      "Senior": 77
+    },
+    "reserve": {
+      "Freshman": 73,
+      "Sophomore": 73,
+      "Junior": 73,
+      "Senior": 73
+    },
+    "walk-on": {
+      "Freshman": 68,
+      "Sophomore": 68,
+      "Junior": 68,
+      "Senior": 67
+    }
+  },
   "redshirtExperienceBonus": 3,
   "experienceAttributes": [
     "AwarenessRating",

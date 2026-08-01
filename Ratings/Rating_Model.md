@@ -230,6 +230,41 @@ Result on the 2023 Florida State roster:
 The 15 that remain are freshmen sitting on the Low-confidence class cap of 68,
 which is a different rule doing its job.
 
+#### The Low-confidence cap reads role first, class second
+
+A player the file says little about is held to what the game carries for that
+*kind* of player. That cap used to read class year alone, which conflated
+"young" with "unknown" — and the measurement says class is the weaker of the
+two by a long way. The 90th percentile of overall, by role and class, across
+11,730 players on 138 teams (`lowConfidenceCapByRole`):
+
+| | Freshman | Sophomore | Junior | Senior |
+|---|---|---|---|---|
+| Starter | 82 | 84 | 87 | 87 |
+| Backup | 78 | 77 | 77 | 77 |
+| Reserve | 73 | 73 | 73 | 73 |
+| Walk-on | 68 | 68 | 68 | 67 |
+
+**Class barely registers below the starting eleven.** Backups run 78/77/77/77
+and reserves 73/73/73/73 whatever their year; only starters show a real class
+effect, and even there it is five points across four years.
+
+The old per-class cap — 68, 74, 78, 82 — was therefore wrong in both directions
+at once. It held a freshman backup **ten points under** where the game puts
+one, and let a senior reserve **nine points over**. It falls back to the old
+value when the roster file names no role.
+
+Fixing it did what widening the role curve alone could not:
+
+| | Biggest pile | Distinct overalls | MAD vs EA |
+|---|---|---|---|
+| Before the role work | 25 | 20 | 2.69 |
+| Role curve + spread | 15 | 27 | 2.74 |
+| **Plus this cap** | **8** | **32** | **2.68** |
+| EA's own roster | 9 | 25 | — |
+
+The pile of freshmen stacked on 68 was this cap, not the spread.
+
 ### 2. Confidence
 
 Confidence is the fraction of total signal weight that had data:

@@ -1,8 +1,53 @@
 # Project Status
 
-_Last updated: 2026-08-01 — the role is a curve too._
+_Last updated: 2026-08-01 — the Low-confidence cap reads role, not just class._
 
 ## Current status
+
+**The cap on a player the file says little about now reads role first and class
+second.** It used to read class alone, which conflated "young" with "unknown" —
+and measuring says class is much the weaker of the two.
+
+The 90th percentile of overall by role and class, across 11,730 players on 138
+teams:
+
+| | Freshman | Sophomore | Junior | Senior |
+|---|---|---|---|---|
+| Starter | 82 | 84 | 87 | 87 |
+| Backup | 78 | 77 | 77 | 77 |
+| Reserve | 73 | 73 | 73 | 73 |
+| Walk-on | 68 | 68 | 68 | 67 |
+
+**Class barely registers below the starting eleven.** Backups run 78/77/77/77
+and reserves 73/73/73/73 whatever their year. Only starters show a class
+effect, and even there it is five points across four years.
+
+So the old cap — 68, 74, 78, 82 by class — was wrong in **both directions at
+once**: it held a freshman backup ten points under where the game puts one, and
+let a senior reserve nine points over. It falls back to the old per-class value
+when a roster file names no role at all.
+
+**This is the change that did what widening the role curve could not.**
+
+| | Biggest pile | Distinct overalls | MAD vs EA |
+|---|---|---|---|
+| Before the role work | 25 | 20 | 2.69 |
+| Role curve + spread | 15 | 27 | 2.74 |
+| **Plus this cap** | **8** | **32** | **2.68** |
+| EA's own roster | 9 | 25 | — |
+
+Better on every measure at once, including the curve fit that the previous two
+changes had each cost a little. The pile of fifteen freshmen stacked on 68 was
+this cap all along, not the spread. The low 80s are now spread across 80, 81,
+82 and 84 rather than stacked on 80.
+
+What is still unlike the game is the bottom: 28 players under 70 against EA's
+16, and 25 in the 70–74 band against 32. That is the filler and reserve
+population, and it is the next thing worth measuring.
+
+Tests: 522/522.
+
+## Previously
 
 **A generated roster was coming out in spikes where the game's is a curve.**
 Asked to widen the role and production curves. Measuring first showed the
@@ -54,8 +99,6 @@ already the answer, and applying those on top would move it back off — and
 before every cap, which are about what the game can hold.
 
 Tests: 514/514.
-
-## Previously
 
 **The draft curve now spans the whole drafted band.** `draftScores` runs 99 at
 pick 1 down to 85 at pick 256, so a pick number is a rough statement of overall

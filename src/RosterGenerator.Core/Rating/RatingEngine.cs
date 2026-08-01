@@ -228,13 +228,22 @@ public sealed class RatingEngine
         var classModel = classYear is not null && _model.ClassYearExperience.TryGetValue(classYear, out var cm)
             ? cm
             : null;
-        if (classModel is not null && talent.Confidence == RatingConfidence.Low &&
-            target > classModel.LowConfidenceOverallCap)
+        // The cap reads role first and class second, because that is the order
+        // the game's own rosters put them in: its backups reach 78/77/77/77 by
+        // class and its reserves 73/73/73/73, while its starters run
+        // 82/84/87/87. A cap on class alone was wrong in both directions — a
+        // freshman backup held ten points under where the game puts one, a
+        // senior reserve let nine points over.
+        var lowConfidenceCap = _model.LowConfidenceCap(normalized.Role, classYear, classModel);
+        if (lowConfidenceCap is double capValue && talent.Confidence == RatingConfidence.Low &&
+            target > capValue)
         {
+            var capped = (int)Math.Round(capValue);
             adjustments.Add(
-                $"Target overall reduced {target} -> {classModel.LowConfidenceOverallCap}: " +
-                $"{classYear} with Low confidence evidence.");
-            target = classModel.LowConfidenceOverallCap;
+                $"Target overall reduced {target} -> {capped}: " +
+                $"{normalized.Role ?? "a player"} in the {classYear} class with Low confidence evidence " +
+                $"tops out there in the game's own rosters.");
+            target = capped;
         }
 
         // 2b. Position ceiling. Award and draft scores share one scale across

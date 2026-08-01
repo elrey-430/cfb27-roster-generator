@@ -201,6 +201,41 @@ public sealed class RatingModelSet
     /// </summary>
     public Dictionary<string, double[][]> RoleSpread { get; init; } = new();
 
+    /// <summary>
+    /// The overall a Low-confidence player may not exceed, by depth-chart role
+    /// and then class year — the 90th percentile of what the game itself
+    /// carries for that kind of player, measured across 11,730 players on 138
+    /// teams.
+    ///
+    /// <para>It replaces a cap that read class year alone, which conflated
+    /// "young" with "unknown". The measurement says role dominates and class
+    /// barely registers below the starting eleven: the game's backups reach 78,
+    /// 77, 77, 77 by class and its reserves 73, 73, 73, 73, while its starters
+    /// run 82, 84, 87, 87. A per-class cap was therefore wrong in both
+    /// directions at once — it held a freshman backup ten points under where
+    /// the game puts one, and let a senior reserve nine points over.</para>
+    ///
+    /// <para>Falls back to <c>classYearExperience</c>'s own value when the
+    /// roster file names no role, or names one this table does not carry.</para>
+    /// </summary>
+    public Dictionary<string, Dictionary<string, double>> LowConfidenceCapByRole { get; init; } = new();
+
+    /// <summary>
+    /// The Low-confidence overall cap for a role and class, or null when
+    /// neither this table nor the class model has one.
+    /// </summary>
+    public double? LowConfidenceCap(string? role, string? classYear, ClassYearExperienceModel? classModel)
+    {
+        if (role is { Length: > 0 } && classYear is { Length: > 0 } &&
+            LowConfidenceCapByRole.TryGetValue(role.Trim().ToLowerInvariant(), out var byClass) &&
+            byClass.TryGetValue(classYear, out var cap))
+        {
+            return cap;
+        }
+
+        return classModel?.LowConfidenceOverallCap;
+    }
+
     /// <summary>Signal-coverage thresholds for High/Medium confidence.</summary>
     public Dictionary<string, double> ConfidenceThresholds { get; init; } = new();
 
