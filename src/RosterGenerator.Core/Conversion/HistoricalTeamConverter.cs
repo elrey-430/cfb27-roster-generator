@@ -394,6 +394,22 @@ public sealed class HistoricalTeamConverter
             byPlayer[historical] = (slot, entry);
         }
 
+        // Roster-level rule: players the file gives nothing but a role are
+        // spread across the range the game itself carries for that role,
+        // instead of every one of them landing on the same number. Runs before
+        // the depth check so that check sees the ratings the roster will
+        // actually carry.
+        foreach (var (player, overall, reason) in RoleSpread.Plan(rated, engine.Model))
+        {
+            var (slot, entry) = byPlayer[player.Player];
+            var regenerated = engine.Generate(
+                slot.Position, slot.GetRaw(PlayerTypeColumn), player.Player, player.Player.Evidence,
+                programAdjustment: programAdjustment, overallOverride: overall);
+            var index = rated.FindIndex(r => ReferenceEquals(r.Player, player.Player));
+            rated[index] = player with { Ratings = regenerated };
+            entry.Warnings.Add(reason);
+        }
+
         // Roster-level rule: a backup must not out-rate the starter without
         // strong individual evidence. Violators are regenerated under a cap.
         foreach (var (violator, ceiling, reason) in DepthConsistency.FindViolations(rated))

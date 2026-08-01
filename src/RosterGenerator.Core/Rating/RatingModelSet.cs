@@ -191,6 +191,16 @@ public sealed class RatingModelSet
     /// </summary>
     public Dictionary<string, double> SignalFloors { get; init; } = new();
 
+    /// <summary>
+    /// Per role, the overall the game itself carries at each percentile of
+    /// that role's own range — measured across 11,730 players on 138 teams.
+    ///
+    /// <para>A single role score cannot reproduce a roster's shape, because the
+    /// game spreads 14 points inside its starters and 8 to 9 inside every other
+    /// role. See <see cref="RoleSpread"/> for what is done with it.</para>
+    /// </summary>
+    public Dictionary<string, double[][]> RoleSpread { get; init; } = new();
+
     /// <summary>Signal-coverage thresholds for High/Medium confidence.</summary>
     public Dictionary<string, double> ConfidenceThresholds { get; init; } = new();
 

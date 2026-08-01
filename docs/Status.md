@@ -1,8 +1,61 @@
 # Project Status
 
-_Last updated: 2026-08-01 — the draft is a curve from 85 to 99, and a floor._
+_Last updated: 2026-08-01 — the role is a curve too._
 
 ## Current status
+
+**A generated roster was coming out in spikes where the game's is a curve.**
+Asked to widen the role and production curves. Measuring first showed the
+production curves were not the problem — they already span 56 to 96, and a
+starter with no draft slot and no award runs 73 to 86 across a plausible range
+of seasons. The role scores were, in two separate ways.
+
+**They were three to five points low.** `roleScores` is now the median overall
+the game itself carries at the roster ranks each role occupies, read straight
+out of `medianOverallByRank`: starter 78 (was 76), backup 73 (69), reserve 68
+(64), walk-on 64 (61). Against EA's own Florida State the 75–79 band held 3
+players where the game holds 21; it now holds 18.
+
+**And a single score cannot do the job at all.** 64 of the 2023 Florida State
+file's 75 rows carry no stats, no award and no draft slot — eleven of them the
+identical "Reserve, redshirt freshman". Every one of those blended to the same
+number: **18 players on exactly 78, 25 on exactly 68.**
+
+The game spreads 14 points inside its starters (73 at the 10th percentile, 87
+at the 90th) and 8 to 9 inside every other role. Class year does not explain
+it: across 11,730 players on 138 teams, class moves the median within a role by
+one point, four for starters. It is variation the roster file gives no evidence
+about.
+
+**So `RoleSpread` reproduces the distribution without claiming to know which
+player is which.** Within a role, players whose entire record is that role are
+ordered by what evidence they do have — blended overall, then class seniority,
+then name — and laid along the measured percentile curve. This is what
+`RosterFiller` has always done for empty slots, and for the same reason. One
+stat, award or draft slot and a player keeps their own number; a single player
+in a role is left alone; the ordering never uses chance, so the same file
+always produces the same roster.
+
+| | Biggest pile | Distinct overalls | MAD vs EA |
+|---|---|---|---|
+| Before | 25 | 20 | 2.69 |
+| After | 15 | 27 | 2.74 |
+| EA's own | 9 | 25 | — |
+
+The 15 remaining are freshmen on the Low-confidence class cap of 68, which is a
+different rule doing its job. Mean absolute deviation moves 2.69 → 2.74 against
+a 3.00 bar: the curve fit is a hair worse, the shape a great deal better, and
+shape was the ask.
+
+**One engine change was needed.** `Generate` gained `overallOverride`, because
+a roster-level pass can see something scoring players one at a time cannot. It
+lands after the program and secondary adjustments — the measured curve is
+already the answer, and applying those on top would move it back off — and
+before every cap, which are about what the game can hold.
+
+Tests: 514/514.
+
+## Previously
 
 **The draft curve now spans the whole drafted band.** `draftScores` runs 99 at
 pick 1 down to 85 at pick 256, so a pick number is a rough statement of overall
@@ -52,8 +105,6 @@ the manual human recreation scores. Eight players moved, all drafted, all
 upward — Verse 92→95, Fiske 88→92, Green 86→91.
 
 Tests: 508/508.
-
-## Previously
 
 **Every drafted player is now rated at least 85 overall.** Requested, and the
 numbers show why. Draft is one signal of five in the weighted blend, and the

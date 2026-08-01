@@ -73,7 +73,7 @@ whichever signals had data.
 | Awards | 0.26 | `awardScores` (Heisman 98, consensus All-American 93, first-team all-conference 86) |
 | Production | 0.22 | `production` curves per position group |
 | Recruiting stars | 0.10 | `recruitingStarScores` (5★ 86 … 1★ 62) |
-| Depth-chart role | 0.08 | `roleScores` (starter 76, backup 69, reserve 64) |
+| Depth-chart role | 0.08 | `roleScores` (starter 78, backup 73, reserve 68, walk-on 64) |
 
 Only the **best** award counts; extras are noted but never stacked, so a
 long honours list cannot inflate a player past its ceiling. Partial stat
@@ -166,6 +166,69 @@ empty column is a gap in the record. Both stay where they were.
 The cost is measured: mean absolute deviation from EA's own Florida State
 curve moves from **2.12 to 2.29**, against a 3.00 bar and the 3.02 the manual
 human recreation of that roster scores.
+
+#### Role scores are the game's own roster, by rank
+
+`roleScores` is not a judgement about what a backup is worth. Each value is the
+**median overall the game itself carries at the roster ranks that role
+occupies**, taken from `medianOverallByRank` in `data/RosterDepth.json`:
+
+| Role | Roster ranks | Median | Was |
+|---|---|---|---|
+| Starter | 1–22 | **78** | 76 |
+| Backup | 23–44 | **73** | 69 |
+| Reserve | 45–70 | **68** | 64 |
+| Walk-on | 71–85 | **64** | 61 |
+
+The old values were three to five points low across the board, and it showed in
+the middle of a generated roster: against EA's own Florida State, the 75–79
+band held 3 players where the game holds 21.
+
+#### The role spread — a curve, not a number
+
+Even with the right median, every player whose file gives *only* a role came
+out on that one number. On the 2023 Florida State file — 64 of whose 75 rows
+carry no stats, no award and no draft slot — that meant **18 players on exactly
+78 and 25 on exactly 68**, where EA's own roster puts three to nine players on
+each value from 69 to 84.
+
+No single score can fix that, because the game spreads a long way *inside* each
+role (`roleSpread`, measured across 11,730 players on 138 teams):
+
+| Role | p10 | p25 | median | p75 | p90 | spread |
+|---|---|---|---|---|---|---|
+| Starter | 73 | 75 | 79 | 83 | 87 | 14 |
+| Backup | 69 | 70 | 73 | 75 | 77 | 8 |
+| Reserve | 65 | 66 | 68 | 71 | 73 | 8 |
+| Walk-on | 59 | 61 | 64 | 66 | 68 | 9 |
+
+Class year does not explain that spread either — measured on the same 11,730
+players it moves the median within a role by one point, four for starters.
+
+So `RoleSpread` reproduces the *distribution* without claiming to know which
+player is which: within one role, the players whose whole record is that role
+are ordered by what evidence they do have — blended overall, then class
+seniority, then name — and laid along the measured percentile curve. This is
+the same thing `RosterFiller` has always done for slots no historical player
+fills, and for the same reason: a roster's shape is measurable even when its
+individuals are not.
+
+**It only ever moves a player the file says nothing about.** One stat, one
+award or one draft slot and the player keeps their own number. A single player
+in a role is not a pile and is left alone. The order is decided by evidence and
+then by name, never by chance, so the same file always produces the same
+roster.
+
+Result on the 2023 Florida State roster:
+
+| | Biggest pile | Distinct overalls |
+|---|---|---|
+| Before | 25 players | 20 |
+| After | 15 players | 27 |
+| EA's own | 9 players | 25 |
+
+The 15 that remain are freshmen sitting on the Low-confidence class cap of 68,
+which is a different rule doing its job.
 
 ### 2. Confidence
 

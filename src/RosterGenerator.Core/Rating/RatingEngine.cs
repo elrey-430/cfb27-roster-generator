@@ -31,6 +31,9 @@ namespace RosterGenerator.Core.Rating;
 public sealed class RatingEngine
 {
     private readonly RatingModelSet _model;
+
+    /// <summary>The model this engine was built from, for roster-level passes.</summary>
+    public RatingModelSet Model => _model;
     private readonly OverallFormulaSet _formulas;
     private readonly TalentScorer _scorer;
     private readonly ArchetypeProfileSet? _profiles;
@@ -107,13 +110,20 @@ public sealed class RatingEngine
     /// when the evidence is thin — a player with a draft slot and a stat line
     /// is rated on their own record, not their school's.
     /// </param>
+    /// <param name="overallOverride">
+    /// An exact overall to generate at, replacing the blend. Used by the
+    /// roster-level passes, which can see the whole team and so know something
+    /// about a player that scoring them one at a time cannot — see
+    /// <see cref="RoleSpread"/>. Every ceiling below still applies.
+    /// </param>
     public GeneratedRatings Generate(
         string cfb27Position,
         string? playerType,
         HistoricalPlayer player,
         RatingEvidence evidence,
         int? overallCeiling = null,
-        int programAdjustment = 0)
+        int programAdjustment = 0,
+        int? overallOverride = null)
     {
         var group = _model.ResolveGroup(cfb27Position);
         var positionModel = _model.GetModel(group);
@@ -162,6 +172,19 @@ public sealed class RatingEngine
             adjustments.Add(
                 $"Target overall moved {target} -> {target + secondaryPoints}: {secondaryNote}");
             target += secondaryPoints;
+        }
+
+        // 1c-bis. A roster-level pass has already decided this player's
+        //     overall from something only the whole team shows, and it decided
+        //     it against the game's own measured curve — so it lands after the
+        //     program and secondary adjustments rather than before them, or
+        //     those would move it back off the curve. Every cap below still
+        //     applies: they are about what the game can hold.
+        if (overallOverride is int decided)
+        {
+            adjustments.Add(
+                $"Target overall set to {decided} rather than the blended {target} by a roster-level rule.");
+            target = decided;
         }
 
         // 1d. The drafted floor. Being drafted at all is the strongest single
