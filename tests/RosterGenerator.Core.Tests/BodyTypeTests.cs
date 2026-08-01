@@ -116,18 +116,34 @@ public sealed class BodyTypeTests
     }
 
     [Theory]
-    [InlineData(69, 170, Lean)]        // 5'9"  under 175
-    [InlineData(69, 190, "Standard")]  // 5'9"  over 175
-    [InlineData(70, 175, Lean)]        // 5'10" under 180
-    [InlineData(70, 200, "Standard")]  // 5'10" 180-219
-    [InlineData(72, 180, Lean)]        // 6'0"  under 185
-    [InlineData(72, 200, "Standard")]  // 6'0"  185-219
-    [InlineData(74, 190, Lean)]        // 6'2"  under 195
-    [InlineData(76, 200, Lean)]        // 6'4"  under 205
-    [InlineData(76, 210, "Standard")]  // 6'4"  205-219
+    [InlineData(69, 165, Lean)]
+    [InlineData(69, 190, "Standard")]
+    [InlineData(70, 169, Lean)]
+    [InlineData(70, 200, "Standard")]
+    [InlineData(72, 160, Lean)]
+    [InlineData(72, 200, "Standard")]
+    [InlineData(74, 190, "Standard")]
+    [InlineData(76, 200, "Standard")]
+    [InlineData(76, 210, "Standard")]
     public void TheBuilderTableDecidesForASkillPlayer(int height, int weight, string expected)
     {
         Assert.Equal(expected, Model.For("WR", height, weight));
+    }
+
+    [Theory]
+    [InlineData(69)]
+    [InlineData(72)]
+    [InlineData(75)]
+    [InlineData(78)]
+    public void LeanIsAFlatCutoffAt170PoundsRatherThanTheBuildersSlidingOne(int height)
+    {
+        // A deliberate departure from the source table, which wants anywhere
+        // from 175 lb at 5'9" to 210 lb at 6'5" before Standard is available.
+        // The game's own rosters run Standard down to 160 at every height; 170
+        // is the line drawn between the two, and it moved agreement with the
+        // game from 76.5% to 82.6%.
+        Assert.Equal(Lean, Model.For("WR", height, 169));
+        Assert.Equal("Standard", Model.For("WR", height, 170));
     }
 
     [Theory]
