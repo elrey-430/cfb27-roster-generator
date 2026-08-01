@@ -131,19 +131,41 @@ public sealed class BodyTypeTests
     }
 
     [Theory]
-    [InlineData(69)]
-    [InlineData(72)]
-    [InlineData(75)]
-    [InlineData(78)]
-    public void LeanIsAFlatCutoffAt170PoundsRatherThanTheBuildersSlidingOne(int height)
+    [InlineData(69, 170)]   // 5'9"
+    [InlineData(71, 170)]   // 5'11"
+    [InlineData(72, 170)]   // 6'0"  — the floor holds to here
+    [InlineData(73, 175)]   // 6'1"
+    [InlineData(74, 180)]   // 6'2"
+    [InlineData(75, 185)]   // 6'3"
+    [InlineData(76, 190)]   // 6'4"
+    [InlineData(77, 195)]   // 6'5"
+    [InlineData(80, 195)]   // taller still: the table's last row covers it
+    public void LeanRunsToAFlat170ThenFivePoundsAnInch(int height, int cutoff)
     {
-        // A deliberate departure from the source table, which wants anywhere
-        // from 175 lb at 5'9" to 210 lb at 6'5" before Standard is available.
-        // The game's own rosters run Standard down to 160 at every height; 170
-        // is the line drawn between the two, and it moved agreement with the
-        // game from 76.5% to 82.6%.
-        Assert.Equal(Lean, Model.For("WR", height, 169));
-        Assert.Equal("Standard", Model.For("WR", height, 170));
+        // A deliberate departure from the source table, whose own cutoff climbs
+        // from 175 lb at 5'9" to 210 lb at 6'5". Two separate decisions:
+        //
+        //   the 170 floor  — the project owner's call, worth six points of
+        //                    agreement over EA's table.
+        //   the +5 slope   — the game's own. Among skill players a 6'2"-6'3"
+        //                    man at 170-179 lb is Lean 46-55% of the time
+        //                    where a 5'10"-5'11" man at the same weight is
+        //                    Lean 19-25%. Tall and light reads as lanky in the
+        //                    game's data, not just to the eye.
+        //
+        // The slope is free: 82.5% agreement with or without it, and it takes
+        // the count of Lean players written from 437 to 730 against the 1,007
+        // the game itself writes.
+        Assert.Equal(Lean, Model.For("WR", height, cutoff - 1));
+        Assert.Equal("Standard", Model.For("WR", height, cutoff));
+    }
+
+    [Fact]
+    public void ALankyTallPlayerStaysLeanWhereAShortOneWouldNot()
+    {
+        // The case this exists for. Same weight, different frames.
+        Assert.Equal(Lean, Model.For("WR", 77, 190));       // 6'5", 190 lb
+        Assert.Equal("Standard", Model.For("WR", 70, 190)); // 5'10", 190 lb
     }
 
     [Theory]

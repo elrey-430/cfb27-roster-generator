@@ -677,11 +677,22 @@ Two sources, answering different questions.
 That is what stops a 6'0" 240 lb receiver being written as Standard, and it is
 transcribed into `data/BodyTypeRules.json`.
 
-One deliberate departure: **the Lean cutoff is a flat 170 lb**. The builder's
-own rises with height — 175 lb at 5'9" through 210 lb at 6'5" before Standard
-becomes available — while the game's rosters carry Standard players down to
-160 lb at every height. 170 splits the difference, and it is a choice rather
-than a measurement.
+One deliberate departure: **the Lean cutoff is 170 lb at 6'0" and below, then
++5 lb per inch** — 175 at 6'1", 180 at 6'2", 185 at 6'3", 190 at 6'4", 195 at
+6'5" and above. The builder's own climbs much harder, 175 lb at 5'9" through
+210 lb at 6'5", while the game's rosters carry Standard players down to 160 lb.
+
+The floor and the slope come from different places:
+
+- **170 is a choice**, not a measurement — worth six points of agreement over
+  EA's table.
+- **The slope is the game's own.** Among skill players, a 6'2"–6'3" man at
+  170–179 lb is Lean 46–55% of the time where a 5'10"–5'11" man at the same
+  weight is Lean 19–25%. Tall and light reads as lanky in the game's data, not
+  only to the eye. It costs nothing measurable — 82.5% either way — and takes
+  the number of Lean players written from 437 to 730 against the 1,007 the game
+  itself writes. Steeper slopes do start costing: +6 lb/inch gives up half a
+  point, +8 gives up 1.7.
 
 **The base save's own census** says what the game puts on each position:
 
@@ -705,16 +716,15 @@ builds the builder permits at their height and weight.
 
 ### How well it reproduces the game
 
-**82.6% agreement across 16,255 players**, against a **ceiling of 86.8%** — the
+**82.5% agreement across 16,255 players**, against a **ceiling of 86.8%** — the
 best any rule reading only position, height and weight could achieve, because
 the game's own assignment varies within a cell. Every position that takes its
 build outright sits exactly on its own ceiling.
 
-Moving the Lean cutoff to a flat 170 lb is worth 6.1 points of that on its own
-(76.5% → 82.6%). What is left is mostly irreducible: halfbacks split 53/47
-between Standard and Muscular at every weight, and defensive tackles 76/23
-between Heavy and Muscular, so no rule reading these three fields can do
-better.
+Moving the Lean cutoff off EA's table is worth six points of that on its own.
+What is left is mostly irreducible: halfbacks split 53/47 between Standard and
+Muscular at every weight, and defensive tackles 76/23 between Heavy and
+Muscular, so no rule reading these three fields can do better.
 
 Re-measure with `python3 tools/measure_body_types.py <export-dir>`.
 

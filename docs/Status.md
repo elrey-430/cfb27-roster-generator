@@ -22,18 +22,25 @@ question — ends and tackles Muscular at 81–97%, interior line and defensive
 tackle Heavy at 76–90% — the position decides outright; everyone else chooses
 among the light builds the builder permits.
 
-**One deliberate departure from the builder: the Lean cutoff is a flat 170 lb.**
-The builder's own rises with height — 175 lb at 5'9" through 210 lb at 6'5"
-before Standard is available — while the game's rosters run Standard down to
-160 at every height. 170 splits the difference, at the project owner's call.
+**One deliberate departure from the builder: the Lean cutoff.** EA's climbs
+from 175 lb at 5'9" to 210 lb at 6'5" before Standard is available; the game's
+own rosters run Standard down to 160 at every height. It is set to 170 lb at
+6'0" and below, then +5 lb per inch — 195 by 6'5".
 
-**82.6% agreement across 16,255 players, against a ceiling of 86.8%** — the
+The floor and the slope come from different places. **170 is the project
+owner's call**, worth six points of agreement over EA's table. **The slope is
+the game's own**: among skill players a 6'2"–6'3" man at 170–179 lb is Lean
+46–55% of the time where a 5'10"–5'11" man at the same weight is Lean 19–25%,
+so a tall light player really does read as lanky in the data. It is free —
+82.5% agreement with or without it — and takes the count of Lean players
+written from 437 to 730, against the 1,007 the game itself writes.
+
+**82.5% agreement across 16,257 players, against a ceiling of 86.8%** — the
 best any rule reading those three fields could do, since the game's own choice
 varies within a cell. Every position that takes its build outright sits exactly
-on its ceiling, and the flat 170 cutoff is worth 6.1 points of the total on its
-own. What is left is mostly irreducible: halfbacks split 53/47 between Standard
-and Muscular at every weight, defensive tackles 76/23 between Heavy and
-Muscular.
+on its ceiling. What is left is mostly irreducible: halfbacks split 53/47
+between Standard and Muscular at every weight, defensive tackles 76/23 between
+Heavy and Muscular.
 
 **Confirmed end to end on a real save.** Generating 2023 FSU into the supplied
 dynasty and reading the result back moved 26 builds, all on Florida State and
