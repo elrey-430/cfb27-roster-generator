@@ -250,6 +250,30 @@ public sealed class RosterEditSession
     }
 
     /// <summary>
+    /// Sets the player's body build — see
+    /// <see cref="PlayerColumns.CharacterBodyType"/>, and note that the build
+    /// the game calls Lean is stored as <c>Freshman</c>.
+    ///
+    /// <para>Written for every generated player, because the slot's build
+    /// belongs to whoever held it. A 175 lb receiver recreated onto a nose
+    /// tackle's slot would otherwise take the field as a 320 lb man carrying a
+    /// receiver's ratings.</para>
+    ///
+    /// <para>Silently skipped when the export has no such column.</para>
+    /// </summary>
+    public void SetBodyType(Player player, string bodyType)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(bodyType);
+        if (!player.HasColumn(PlayerColumns.CharacterBodyType))
+        {
+            return;
+        }
+
+        player.SetRaw(PlayerColumns.CharacterBodyType, bodyType);
+        Record(player, EditIntent.AttributeChange, $"Set body build of {player} to {bodyType}");
+    }
+
+    /// <summary>
     /// Sets the home town (free text) and home state (51-value enum).
     /// </summary>
     public void SetHometown(Player player, string town, string state)

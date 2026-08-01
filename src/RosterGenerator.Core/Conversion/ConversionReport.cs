@@ -50,6 +50,9 @@ public sealed class PlayerConversionEntry
     /// nothing here names an ability, because the save does not store one.
     /// </summary>
     public Rating.PlayerAbilities Abilities { get; set; } = Rating.PlayerAbilities.None;
+
+    /// <summary>The body build this player was given, or null when untouched.</summary>
+    public string? BodyType { get; set; }
 }
 
 /// <summary>

@@ -1,8 +1,44 @@
 # Project Status
 
-_Last updated: 2026-07-31 — recreated players are not marked as real people._
+_Last updated: 2026-08-01 — recreated players get their own body._
 
 ## Current status
+
+**Body build is chosen from position, height and weight.** Requested, with no
+new input from the user — and the tool already has all three.
+
+**The field is `CharacterBodyType` on the Player table, and `Freshman` is the
+stored name for the build the game's editor calls Lean.** Nothing in the schema
+says so; it was read out of a save in which five named Florida State players
+were each given a different build in-game. The `CharacterVisuals` blob also
+carries a `bodyType` integer and it is *not* this field — only one of the five
+had the key, and its value did not track the build that was set.
+
+**Two sources decide it, and they answer different questions.** EA's own player
+builder says which builds a given height and weight can carry, which is what
+stops a 175 lb receiver being written as Muscular. The base save's census says
+what the game puts on each position. Where a position's build is not in
+question — ends and tackles Muscular at 81–97%, interior line and defensive
+tackle Heavy at 76–90% — the position decides outright; everyone else chooses
+among the light builds the builder permits.
+
+**76.5% agreement across 16,255 players, against a ceiling of 86.8%** — the
+best any rule reading those three fields could do, since the game's own choice
+varies within a cell. Every position that takes its build outright sits exactly
+on its ceiling. The whole remaining gap is the builder's Lean band, which wants
+185 lb at 6'0" before Standard is available while the game's rosters run
+Standard down to 160. Following the builder is deliberate and is one line of
+`data/BodyTypeRules.json` to change.
+
+**Confirmed end to end on a real save.** Generating 2023 FSU into the supplied
+dynasty and reading the result back moved 26 builds, all on Florida State and
+none anywhere else — including a 310 lb guard who had been *Thin*, a 290 lb
+defensive tackle who had been *Thin*, and a 305 lb defensive tackle who had
+been *Standard*.
+
+Tests: 489/489.
+
+## Previously
 
 **A generated player no longer inherits the slot's `IsNIL` flag.** Requested:
 everyone the tool writes should default to false.
@@ -36,8 +72,6 @@ The donor fixture holds `false` throughout, so a test asserting the output is
 `true` first; two of the seven fail against the old code.
 
 Tests: 456/456.
-
-## Previously
 
 **Writing a dynasty save from the app has never worked in a shipped build.**
 Reported against v0.7.2-alpha, generating a full FBS roster:

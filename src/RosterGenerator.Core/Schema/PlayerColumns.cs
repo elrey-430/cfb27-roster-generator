@@ -210,4 +210,21 @@ public static class PlayerColumns
     /// <see cref="BaseNilValue"/>.</para>
     /// </summary>
     public const string IsNil = "IsNIL";
+
+    // -- Group 10: body build ------------------------------------------------
+
+    /// <summary>
+    /// The player's body build, as one of five strings.
+    ///
+    /// <para><b><c>Freshman</c> is the stored name for the build the game's own
+    /// editor calls Lean.</b> The other four — <c>Thin</c>, <c>Standard</c>,
+    /// <c>Muscular</c>, <c>Heavy</c> — say what they mean. Confirmed by a save
+    /// in which five named Florida State players were each given a different
+    /// build in-game and read back out.</para>
+    ///
+    /// <para>Chosen from position, height and weight by
+    /// <see cref="Appearance.BodyTypeModel"/>. Base-save shares: Muscular
+    /// 38.8%, Standard 35.5%, Heavy 16.1%, Freshman 6.1%, Thin 3.5%.</para>
+    /// </summary>
+    public const string CharacterBodyType = "CharacterBodyType";
 }

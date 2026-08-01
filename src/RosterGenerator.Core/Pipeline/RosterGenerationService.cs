@@ -333,10 +333,18 @@ public sealed class RosterGenerationService
             : null;
         var abilityModel = abilityPath is null ? null : AbilityModel.Load(abilityPath);
 
+        // Body build needs no rating engine: it reads position, height and
+        // weight, which every roster carries whether or not ratings are being
+        // generated.
+        var bodyTypePath = FindOptionalDataFile(data, "BodyTypeRules.json");
+        var bodyTypes = bodyTypePath is null
+            ? null
+            : Appearance.BodyTypeModel.Load(bodyTypePath);
+
         var converter = new HistoricalTeamConverter(
             teamMappings, positionMappings, ratingEngine, archetypeSelector, filler, depth,
             export.BuildPreviousSchoolMappings(teamAliases), request.ReplaceRealPersonFaces,
-            visuals, commentaryIds, abilityModel);
+            visuals, commentaryIds, abilityModel, bodyTypes);
 
         // One file can carry a whole season. Each team's slots are disjoint, so
         // they convert one after another into the same session and the single

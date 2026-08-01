@@ -644,6 +644,77 @@ included, and does not touch a slot it did not generate.
 
 ---
 
+## Group 10 — `CharacterBodyType` is the body build (confirmed by named edit)
+
+**`Freshman` is the stored name for the build the game's own editor calls
+Lean.** Nothing in the schema hints at that, and a tool writing `"Lean"` would
+be writing a value no player has ever held.
+
+Confirmed by a save in which five named Florida State players were each given a
+different build in-game and read back out:
+
+| Player | Set in-game to | Stored as |
+|---|---|---|
+| Ashton Daniels | Lean | `Freshman` |
+| Shane Willow | Thin | `Thin` |
+| Kevin Sperry | Standard | `Standard` |
+| Tanner Applewhite | Muscular | `Muscular` |
+| Jelani Washington | Heavy | `Heavy` |
+
+Base-save shares across 16,257 live players: Muscular 38.8%, Standard 35.5%,
+Heavy 16.1%, Freshman 6.1%, Thin 3.5%.
+
+> The `CharacterVisuals` blob also carries a `bodyType` integer, and it is
+> **not** this field. Only one of the five edited players had the key at all,
+> and its value did not track the build that was set. The Player column is what
+> the game reads.
+
+### What decides it
+
+Two sources, answering different questions.
+
+**EA's player builder** says which builds a given height and weight can carry.
+That is what stops a 6'0" 175 lb receiver being written as Muscular, and it is
+transcribed verbatim into `data/BodyTypeRules.json`.
+
+**The base save's own census** says what the game puts on each position:
+
+| Position | Build | Share |
+|---|---|---|
+| LE / RE | Muscular | 95.0% / 97.3% |
+| LT / RT | Muscular | 81.2% / 81.5% |
+| LOLB / MLB / ROLB | Muscular | 94.5% / 97.4% / 95.4% |
+| FB / TE | Muscular | 98.9% / 79.2% |
+| DT | Heavy | 76.1% |
+| LG / RG / C | Heavy | 87.3% / 86.8% / 90.2% |
+| QB / WR / CB / FS / SS / HB | Standard | 79.8% / 77.0% / 86.0% / 93.8% / 94.7% / 53.0% |
+| K / P | Thin | 68.6% / 72.5% |
+
+Where a position's build is not in question the position decides outright and
+the builder is not consulted — the table describes the *light* builds, and its
+"Standard/Thin only" band below 220 lb would make a 215 lb linebacker Standard,
+which the game itself never does. Measured: gating those positions costs six
+points of agreement and buys nothing. Everyone else chooses among the light
+builds the builder permits at their height and weight.
+
+### How well it reproduces the game
+
+**76.5% agreement across 16,255 players**, against a **ceiling of 86.8%** — the
+best any rule reading only position, height and weight could achieve, because
+the game's own assignment varies within a cell. Every position that takes its
+build outright sits exactly on its own ceiling.
+
+The remaining gap is one thing: the builder's Lean band. It requires 185 lb at
+6'0" before Standard becomes available, while the game's own rosters carry
+Standard players down to 160 lb at every height. Following the builder is a
+deliberate choice — it produces builds a user could have made in the editor,
+and a light Lean receiver is the right look for the eras this tool recreates —
+and it is one line of `data/BodyTypeRules.json` to change.
+
+Re-measure with `python3 tools/measure_body_types.py <export-dir>`.
+
+---
+
 ## Appendix — remaining columns (unconfirmed observations)
 
 Statistical profile of every other column across the 16,257 live rows of
@@ -721,7 +792,6 @@ of them are validated or written by the Milestone 1 tool.** Types:
 | `CatchingRating` | int 0–97 |  |
 | `LongSnapRating` | int 0–99 |  |
 | `CatchInTrafficRating` | int 0–97 |  |
-| `CharacterBodyType` | enum | `Freshman`, `Heavy`, `Muscular`, `Standard`, `Thin` |
 | `KickReturnRating` | int 0–99 |  |
 | `HitPowerRating` | int 0–97 |  |
 | `CarryingRating` | int 0–96 |  |

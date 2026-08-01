@@ -30,6 +30,7 @@ public sealed class HistoricalTeamConverter
     private readonly RatingEngine? _ratingEngine;
     private readonly ArchetypeSelector? _archetypeSelector;
     private readonly AbilityModel? _abilities;
+    private readonly Appearance.BodyTypeModel? _bodyTypes;
     private readonly RosterFiller? _rosterFiller;
     private readonly bool _replaceRealPersonFaces;
     private readonly Equipment.CharacterVisualsTable? _characterVisuals;
@@ -90,6 +91,11 @@ public sealed class HistoricalTeamConverter
     /// somebody else's gold, so the pipeline supplies this whenever ratings are
     /// generated.
     /// </param>
+    /// <param name="bodyTypes">
+    /// Chooses each player's body build from their position, height and weight.
+    /// Null leaves the build the replaced player had, which on a slot swap is
+    /// somebody else's body.
+    /// </param>
     public HistoricalTeamConverter(
         TeamMappingSet teamMappings,
         PositionMappingSet positionMappings,
@@ -101,8 +107,10 @@ public sealed class HistoricalTeamConverter
         bool replaceRealPersonFaces = true,
         Equipment.CharacterVisualsTable? characterVisuals = null,
         CommentaryIdSet? commentaryIds = null,
-        AbilityModel? abilities = null)
+        AbilityModel? abilities = null,
+        Appearance.BodyTypeModel? bodyTypes = null)
     {
+        _bodyTypes = bodyTypes;
         _abilities = abilities;
         _commentaryIds = commentaryIds ?? CommentaryIdSet.Empty;
         _replaceRealPersonFaces = replaceRealPersonFaces;
@@ -164,6 +172,14 @@ public sealed class HistoricalTeamConverter
         report.GlobalAssumptions.Add(
             "Slot assignment prefers a donor slot at the same position (or an interchangeable one, e.g. " +
             "LE/RE); players placed in an unrelated slot get an explicit position change.");
+        report.GlobalAssumptions.Add(_bodyTypes is null
+            ? "Body build (CharacterBodyType) keeps whatever the replaced player had, so a recreated " +
+              "player can be standing in somebody else's body."
+            : "Body build (CharacterBodyType) is chosen from position, height and weight — no input is " +
+              "asked of you. Positions whose build is not in question take it outright (ends and tackles " +
+              "Muscular, interior line and defensive tackle Heavy, measured from a base save); the rest " +
+              "choose among the builds EA's own player builder allows at that height and weight. The " +
+              "build the game calls Lean is stored as 'Freshman'.");
         report.GlobalAssumptions.Add(
             "Every generated player is written with IsNIL = false. That flag marks a real person who " +
             "signed an NIL agreement to appear under their own name, and the game will not let such a " +
@@ -278,6 +294,7 @@ public sealed class HistoricalTeamConverter
             }
 
             session.SetNilStatus(player, false);
+            ApplyBodyType(session, player, entry: null);
             if (_abilities is not null)
             {
                 session.SetAbilities(player, _abilities.For(
@@ -546,6 +563,32 @@ public sealed class HistoricalTeamConverter
     }
 
     /// <summary>
+    /// Writes the body build for a slot that has already been given its final
+    /// position, height and weight.
+    ///
+    /// <para>A build is never guessed from position alone: with no usable
+    /// height or weight the slot keeps what it had, which is at least a build
+    /// the game itself put on a player of that size.</para>
+    /// </summary>
+    private void ApplyBodyType(RosterEditSession session, Player slot, PlayerConversionEntry? entry)
+    {
+        if (_bodyTypes?.For(slot.Position, slot.HeightInches, slot.WeightPounds) is not { } build)
+        {
+            return;
+        }
+
+        if (!string.Equals(slot.GetRaw(PlayerColumns.CharacterBodyType), build, StringComparison.Ordinal))
+        {
+            session.SetBodyType(slot, build);
+        }
+
+        if (entry is not null)
+        {
+            entry.BodyType = build;
+        }
+    }
+
+    /// <summary>
     /// The skin tone the roster slot already has, so a face swap does not
     /// change a player's appearance as a side effect.
     ///
@@ -708,6 +751,12 @@ public sealed class HistoricalTeamConverter
         {
             session.SetWeightPounds(slot, weight);
         }
+
+        // Body build comes last of the physical fields, because it is read off
+        // the height, weight and position this player has just been given
+        // rather than the ones the donor slot arrived with. Reading the slot
+        // would describe whoever used to stand there.
+        ApplyBodyType(session, slot, entry);
 
         if (historicalPlayer.ClassYear is string classYear)
         {
