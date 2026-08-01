@@ -1,5 +1,60 @@
 # Release notes
 
+## v0.8.0-alpha — Recreated players get a body, and a roster gets a curve
+
+Ratings move for every user in this release. Seven commits, two themes.
+
+### Body build (new)
+
+Every generated player gets a `CharacterBodyType` from position, height and
+weight, with no new input. **`Freshman` is the stored name for the build the
+game's editor calls Lean** — read out of a save in which five named Florida
+State players were each given a different build in-game. The
+`CharacterVisuals` blob also carries a `bodyType` integer and it is *not* this
+field.
+
+EA's player builder gates the light builds; the base save's census decides the
+positions whose build is not in question (ends and tackles Muscular at 81–97%,
+interior line and defensive tackle Heavy at 76–90%). 82.5% agreement against an
+86.8% ceiling. The Lean cutoff is 170 lb at 6'0" and below, then +5 lb per inch
+— the floor is a project decision, the slope is the game's own.
+
+Confirmed end to end: 26 builds changed on a real save, all on the target team,
+including a 310 lb guard who had been Thin.
+
+### The draft band
+
+`draftScores` spans 99 at pick 1 to 85 at pick 256, and `signalFloors.draft` is
+0, so a pick floors at exactly what it implies. `draftedOverallFloor` (85) is
+the backstop under it. `undraftedOverallCeiling` (85) caps an explicit `UDFA`
+and never a blank column.
+
+The award tolerance went 6 → 2 so a season can outrun a draft slot: a Heisman
+winner is 96 whether taken 45th or 240th, against 92 and 85 for an ordinary
+player at those picks. At 6 a Heisman floored at 92 — exactly what pick 45
+implies — so the draft slot had quietly become the verdict on the season.
+
+### Roster shape
+
+`roleScores` are now the median the game carries at each role's roster ranks
+(78/73/68/64, up from 76/69/64/61), which took the 75–79 band from 3 players to
+18 against EA's 21.
+
+`RoleSpread` lays players whose entire record is a role along the measured
+percentile curve for that role, because the game spreads 14 points inside its
+starters and 8–9 inside every other role, and class year explains one point of
+it. Biggest stack 25 → 15, distinct ratings 20 → 27, against EA's 9 and 25.
+`Generate` gained `overallOverride` for it.
+
+MAD against EA's own Florida State curve: 2.29 → 2.74, bar 3.00.
+
+### IsNIL
+
+Corrected: it marks a real, NIL-signed person and the game gates editing on it
+— not a compensation field. Every generated player is written with it off, so a
+recreated roster is editable in-game. The NIL money fields are separate and are
+left alone.
+
 ## v0.7.3-alpha — Writing a save actually writes a save
 
 **"Write a new dynasty save" has never worked in a released build.** Turning it
