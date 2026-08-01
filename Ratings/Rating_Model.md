@@ -106,6 +106,43 @@ When a floor is applied it is stated in the player's reasons — e.g.
 *"Raised to 95 (floor from draft: Drafted #5 overall) — the weighted blend
 of 90 understated a player with this record."*
 
+#### The drafted floor — being drafted at all is the fact
+
+The per-signal floor above is proportional: it tracks the draft curve down,
+so a late pick floors at a late-pick number. That still let the bottom of the
+draft fall through. A seventh-round pick generated at **77**, and a
+sixth-rounder at **80** — the same 80 as a player whose roster row said
+nothing about the draft whatsoever.
+
+That is the wrong shape for the fact. Roughly 250 players are drafted out of
+some ten thousand in FBS, and a weighted mean cannot express it, because the
+draft is one signal of five and the other four are all about a single season.
+
+So `draftedOverallFloor` (**85**) is a flat minimum for anyone with a pick or
+a round, applied after the program and secondary-production adjustments and
+before every ceiling — a position cap still wins.
+
+| Pick | Before | Now |
+|---|---|---|
+| 1 | 97 | 97 |
+| 32 | 91 | 91 |
+| 64 | 85 | 85 |
+| 100 | 84 | **85** |
+| 200 | 80 | **85** |
+| 256 | 77 | **85** |
+
+Above the floor the draft slot still does all its work and the order is
+strict. Below it the order flattens, deliberately — a third-rounder and a
+seventh-rounder meet at 85.
+
+**Undrafted is not the same as unknown, and neither gets the floor.** `UDFA`
+in the `DraftPick` column is a statement about the player (scored 67); an
+empty column is a gap in the record. Both stay where they were.
+
+The cost is measured: mean absolute deviation from EA's own Florida State
+curve moves from **2.12 to 2.29**, against a 3.00 bar and the 3.02 the manual
+human recreation of that roster scores.
+
 ### 2. Confidence
 
 Confidence is the fraction of total signal weight that had data:

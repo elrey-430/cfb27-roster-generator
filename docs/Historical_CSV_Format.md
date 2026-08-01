@@ -490,6 +490,17 @@ this player's awards (conference player of the year). A draft slot records
 where the NFL took someone months later, not how they played in this season.
 ```
 
+There is a floor underneath all of it: **any player you give a draft round or
+pick is rated at least 85 overall.** Being drafted at all is the strongest
+single fact a college career leaves behind — about 250 players a year out of
+ten thousand in FBS — and before this a seventh-round pick came out at 77,
+below players the file said nothing about. Above 85 the draft slot still
+separates picks normally; below it, everyone drafted meets at 85.
+
+Putting `UDFA` in `DraftPick` does **not** get the floor, and neither does
+leaving the column empty: one says the player went undrafted, the other says
+you do not know, and neither one is a draft slot.
+
 The draft slot is not ignored — a late pick is still information — it just
 stops outvoting the season itself. **This is the case `AwardContender` is
 for:** if a player's season ended early, what they were in contention for

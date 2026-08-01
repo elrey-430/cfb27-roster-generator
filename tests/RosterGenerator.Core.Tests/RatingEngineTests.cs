@@ -266,10 +266,85 @@ public sealed class RatingEngineTests
             Player("CB", 73, 195, "Junior"),
             new RatingEvidence { DraftPickOverall = pick, Role = "Starter", StarRating = 3 }).Overall;
 
-        Assert.True(Overall(1) >= Overall(10));
-        Assert.True(Overall(10) >= Overall(32));
+        // Above the drafted floor the order is strict, and that is where the
+        // draft slot is still doing work: 97, 94, 91 for picks 1, 10 and 32.
+        Assert.True(Overall(1) > Overall(10));
+        Assert.True(Overall(10) > Overall(32));
         Assert.True(Overall(32) > Overall(64), "A late first-rounder must outrank a second-round pick.");
-        Assert.True(Overall(64) > Overall(200));
+
+        // Below it the order flattens, deliberately: every drafted player is
+        // rated at least the floor, so a third-rounder and a seventh-rounder
+        // meet there. Ordering is preserved as non-increasing, never inverted.
+        foreach (var (better, worse) in new[] { (64, 100), (100, 200), (200, 256) })
+        {
+            Assert.True(Overall(better) >= Overall(worse),
+                $"pick {better} came out below pick {worse}.");
+        }
+    }
+
+    [Fact]
+    public void EveryDraftedPlayerClearsTheFloorHoweverLateTheyWent()
+    {
+        // The point of the floor: a few hundred players out of ten thousand in
+        // FBS are drafted at all, and the weighted blend cannot say so, because
+        // draft is one signal of five. Before this a seventh-round pick landed
+        // at 77 and a sixth-rounder at 80 — the same 80 as a player the roster
+        // file says nothing whatever about.
+        foreach (var pick in new[] { 64, 100, 160, 200, 256 })
+        {
+            var overall = Engine.Generate("CB", "CB_MantoMan",
+                Player("CB", 73, 195, "Junior"),
+                new RatingEvidence { DraftPickOverall = pick, Role = "Starter", StarRating = 3 }).Overall;
+
+            Assert.True(overall >= 85, $"pick {pick} generated at {overall}, below the drafted floor.");
+        }
+    }
+
+    [Fact]
+    public void ARoundOnItsOwnIsStillBeingDrafted()
+    {
+        // Roster files often carry the round and not the pick number.
+        var overall = Engine.Generate("CB", "CB_MantoMan", Player("CB", 73, 195, "Junior"),
+            new RatingEvidence { DraftRound = 7, Role = "Starter", StarRating = 3 }).Overall;
+
+        Assert.True(overall >= 85, $"a seventh-round pick generated at {overall}.");
+    }
+
+    [Fact]
+    public void AnUndraftedPlayerIsNotLiftedByIt()
+    {
+        // The floor is a fact about being drafted, and both of these players
+        // were not. "Undrafted" is a statement; a blank column is a gap; and
+        // neither is a draft slot.
+        var undrafted = Engine.Generate("CB", "CB_MantoMan", Player("CB", 73, 195, "Junior"),
+            new RatingEvidence { UndraftedFreeAgent = true, Role = "Starter", StarRating = 3 }).Overall;
+        var unknown = Engine.Generate("CB", "CB_MantoMan", Player("CB", 73, 195, "Junior"),
+            new RatingEvidence { Role = "Starter", StarRating = 3 }).Overall;
+
+        Assert.True(undrafted < 85, $"an undrafted free agent was raised to {undrafted}.");
+        Assert.True(unknown < 85, $"a player with no draft column was raised to {unknown}.");
+    }
+
+    [Fact]
+    public void TheFloorSaysSoInTheReasons()
+    {
+        var ratings = Engine.Generate("CB", "CB_MantoMan", Player("CB", 73, 195, "Junior"),
+            new RatingEvidence { DraftPickOverall = 200, Role = "Starter", StarRating = 3 });
+
+        Assert.Contains(ratings.Adjustments, a => a.Contains("every drafted player is rated at least"));
+    }
+
+    [Fact]
+    public void APositionCapStillWinsOverTheFloor()
+    {
+        // The floor raises; it does not lift anyone past what the game's own
+        // best at their position carries. The punter cap is 86, which is above
+        // the floor — so what is checked is that the cap is still respected
+        // rather than bypassed.
+        var punter = Engine.Generate("P", null, Player("P", 73, 195, "Junior"),
+            new RatingEvidence { DraftPickOverall = 250, Role = "Starter", StarRating = 3 });
+
+        Assert.InRange(punter.Overall, 85, 86);
     }
 
     [Fact]

@@ -1002,6 +1002,7 @@
   "awardContenderDiscount": 5,
   "draftDisagreementTolerance": 6,
   "draftDisagreementWeightFactor": 0.35,
+  "draftedOverallFloor": 85,
   "undraftedFreeAgentScore": 67,
   "recruitingStarScores": {
     "5": 86,

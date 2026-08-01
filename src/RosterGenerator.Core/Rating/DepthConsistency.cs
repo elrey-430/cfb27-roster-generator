@@ -85,9 +85,22 @@ public static class DepthConsistency
     /// <summary>
     /// True when strong individual evidence explains a backup out-rating the
     /// starter (a drafted player or a major award winner behind a veteran).
+    ///
+    /// <para>A draft slot justifies it on its own, at any confidence. That is
+    /// the case this rule's own description names — "a future first-round pick
+    /// genuinely can sit behind a senior starter" — and a player whose roster
+    /// row carries nothing but a draft pick reaches only Medium confidence, so
+    /// requiring High would have caught exactly the player the exemption is
+    /// for. It would also fight the drafted floor: the engine would raise them
+    /// to it and this pass would pull them back under.</para>
     /// </summary>
     private static bool IsJustified(RatedPlayer candidate)
     {
+        if (candidate.Player.Evidence.WasDrafted)
+        {
+            return true;
+        }
+
         if (candidate.Ratings.Confidence != RatingConfidence.High)
         {
             return false;

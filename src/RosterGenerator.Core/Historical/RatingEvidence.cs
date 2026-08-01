@@ -43,6 +43,14 @@ public sealed record RatingEvidence
     /// <summary>Draft round, used only to estimate a pick when the overall pick is unknown.</summary>
     public int? DraftRound { get; init; }
 
+    /// <summary>
+    /// True when this player was drafted at all — a pick number, a round, or
+    /// both. Explicitly false for an undrafted free agent, which is a fact
+    /// about the player rather than a gap in what is known about them.
+    /// </summary>
+    public bool WasDrafted =>
+        !UndraftedFreeAgent && (DraftPickOverall is not null || DraftRound is not null);
+
     /// <summary>True when the player went undrafted but signed as a free agent.</summary>
     public bool UndraftedFreeAgent { get; init; }
 

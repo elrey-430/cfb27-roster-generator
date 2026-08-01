@@ -1,8 +1,45 @@
 # Project Status
 
-_Last updated: 2026-08-01 — recreated players get their own body._
+_Last updated: 2026-08-01 — a drafted player is rated like one._
 
 ## Current status
+
+**Every drafted player is now rated at least 85 overall.** Requested, and the
+numbers show why. Draft is one signal of five in the weighted blend, and the
+existing per-signal floor is proportional — it tracks the draft curve down, so
+a late pick floored at a late-pick number. A seventh-round pick generated at
+**77**; a sixth-rounder at **80**, which is exactly what a player whose roster
+row says nothing about the draft also gets.
+
+That is the wrong shape for the fact. About 250 players are drafted out of some
+ten thousand in FBS, and no weighting of a single season's evidence can express
+that.
+
+`draftedOverallFloor` (85) is applied after the program and secondary
+adjustments and before every ceiling, so a position cap still wins. Above the
+floor the draft slot does all its usual work and the order stays strict — picks
+1, 10 and 32 come out 97, 94, 91. Below it the order flattens on purpose: a
+third-rounder and a seventh-rounder meet at 85.
+
+**Undrafted is not unknown, and neither gets the floor.** `UDFA` in the
+`DraftPick` column is a statement about the player; an empty column is a gap in
+the record. Both stay where they were.
+
+**One rule had to give way.** The depth-consistency pass pulls a backup rated
+above the starter back under them, unless the evidence is High confidence *and*
+carries a draft or award signal. A player whose row holds only a draft pick
+reaches Medium — so the rule would have caught precisely the player its own
+description names, "a future first-round pick genuinely can sit behind a senior
+starter", and undone the floor a moment after the engine applied it. A draft
+slot now justifies it on its own.
+
+**The cost is measured.** Mean absolute deviation from EA's own Florida State
+curve moves from 2.12 to 2.29, against a 3.00 bar and the 3.02 that the manual
+human recreation of that roster scores.
+
+Tests: 504/504.
+
+## Previously
 
 **Body build is chosen from position, height and weight.** Requested, with no
 new input from the user — and the tool already has all three.
@@ -49,8 +86,6 @@ defensive tackle who had been *Thin*, and a 305 lb defensive tackle who had
 been *Standard*.
 
 Tests: 489/489.
-
-## Previously
 
 **A generated player no longer inherits the slot's `IsNIL` flag.** Requested:
 everyone the tool writes should default to false.

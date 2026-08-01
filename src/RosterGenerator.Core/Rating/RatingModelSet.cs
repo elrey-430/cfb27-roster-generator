@@ -197,6 +197,23 @@ public sealed class RatingModelSet
     /// <summary>[overallPick, score] points for the draft signal.</summary>
     public double[][] DraftScores { get; init; } = Array.Empty<double[]>();
 
+    /// <summary>
+    /// The lowest overall a drafted player may be generated at, whatever the
+    /// rest of their record looks like.
+    ///
+    /// <para>Being drafted at all is the strongest single fact a college
+    /// career can leave behind: a few hundred players out of some ten thousand
+    /// in FBS. The weighted blend does not see it that way — draft is one
+    /// signal of five, so a seventh-round pick with a thin stat line was
+    /// landing at 77, and a sixth-round pick at 80, the same as a player the
+    /// roster file says nothing at all about.</para>
+    ///
+    /// <para>Position caps still win: this raises a floor, it does not lift a
+    /// player past what the game's own best at their position carries. Zero
+    /// disables it.</para>
+    /// </summary>
+    public double DraftedOverallFloor { get; init; }
+
     /// <summary>Talent score for an undrafted free agent.</summary>
     public double UndraftedFreeAgentScore { get; init; } = 67;
 

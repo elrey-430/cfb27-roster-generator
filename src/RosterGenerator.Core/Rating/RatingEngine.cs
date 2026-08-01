@@ -164,6 +164,24 @@ public sealed class RatingEngine
             target += secondaryPoints;
         }
 
+        // 1d. The drafted floor. Being drafted at all is the strongest single
+        //     fact a college career leaves behind — a few hundred players out
+        //     of ten thousand — and the weighted blend cannot express that,
+        //     because draft is one signal of five. Applied before every
+        //     ceiling below, so a cap always still wins.
+        if (_model.DraftedOverallFloor > 0 && normalized.WasDrafted)
+        {
+            var floor = (int)Math.Round(_model.DraftedOverallFloor);
+            if (target < floor)
+            {
+                adjustments.Add(
+                    $"Target overall raised {target} -> {floor}: every drafted player is rated at least " +
+                    $"{floor}. Being drafted is the strongest single fact a college career leaves behind, " +
+                    "and it is one signal of five in the blend.");
+                target = floor;
+            }
+        }
+
         // 2. Class-year ceiling when the evidence is thin. A true freshman
         //    with no record must not be handed veteran ratings; a freshman
         //    with a Heisman (High confidence) is left alone.
