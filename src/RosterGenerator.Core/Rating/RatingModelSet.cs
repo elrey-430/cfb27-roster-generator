@@ -214,6 +214,22 @@ public sealed class RatingModelSet
     /// </summary>
     public double DraftedOverallFloor { get; init; }
 
+    /// <summary>
+    /// The highest overall an <em>explicitly</em> undrafted player may reach.
+    ///
+    /// <para>The draft is the boundary: drafted players occupy 85 and up
+    /// (<see cref="DraftedOverallFloor"/>), undrafted players 85 and down. The
+    /// two meet rather than overlap, so where a player sits relative to 85 says
+    /// what happened to them.</para>
+    ///
+    /// <para>This applies only to <c>UDFA</c> in the roster file's
+    /// <c>DraftPick</c> column, never to a blank one. "Undrafted" is a
+    /// statement about the player; an empty column is a gap in the record, and
+    /// most all-time rosters have no draft data at all. Capping those would be
+    /// asserting something nobody said. Zero disables it.</para>
+    /// </summary>
+    public double UndraftedOverallCeiling { get; init; }
+
     /// <summary>Talent score for an undrafted free agent.</summary>
     public double UndraftedFreeAgentScore { get; init; } = 67;
 

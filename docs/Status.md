@@ -1,8 +1,59 @@
 # Project Status
 
-_Last updated: 2026-08-01 — a drafted player is rated like one._
+_Last updated: 2026-08-01 — the draft is a curve from 85 to 99, and a floor._
 
 ## Current status
+
+**The draft curve now spans the whole drafted band.** `draftScores` runs 99 at
+pick 1 down to 85 at pick 256, so a pick number is a rough statement of overall
+on its own — 93 at the end of round one, 90 at the end of round two, 88 through
+round three, high 80s after. Measured on a receiver, whose position cap is 99:
+
+```
+pick    1    5   10   20   32   64  100  160  256
+OVR    99   97   96   95   93   90   88   86   85
+```
+
+A halfback tops out at 96 rather than 99, because 96 is the best halfback the
+game itself carries. Position caps were measured from the game and this does
+not overrule them.
+
+**A draft slot is a floor and never a ceiling.** `signalFloors.draft` is 0, so
+a pick floors at exactly what it implies and better evidence lifts from there.
+The case that was asked for:
+
+| | Heisman season | Ordinary season |
+|---|---|---|
+| Taken 45th | **96** | 92 |
+| Taken 240th | **96** | 85 |
+
+Getting there needed the *award* tolerance tightened from 6 to 2. At 6 a
+Heisman floored at 92 — exactly what pick 45 implies — so Derrick Henry came
+out 92 either way and his draft slot had quietly become the verdict on his
+season, which is the thing the change exists to prevent.
+
+**Undrafted players are capped at 85**, where the drafted band begins, so the
+two meet rather than overlap. This applies to an explicit `UDFA` only, never to
+a blank draft column: "undrafted" is a statement about the player, an empty
+column is a gap in the record, and most all-time rosters carry no draft data at
+all.
+
+**The low-80s diversity did not follow, and it is worth saying so.** On the
+2023 Florida State roster the 80–84 band holds 8 players before and after,
+because 64 of its 75 rows carry no draft data and exactly one says `UDFA` — so
+neither the floor nor the cap reaches them. The undrafted cap can only spread a
+band the file actually populates. Raising `undraftedFreeAgentScore` was tried
+and makes it worse, not better: at 67 the undrafted profiles spread 69–85, at
+80 they collapse onto 80–85, because the signal becomes a floor of its own.
+
+**Cost against the game's own roster:** mean absolute deviation from EA's
+Florida State curve moves from 2.29 to 2.69, against a 3.00 bar and the 3.02
+the manual human recreation scores. Eight players moved, all drafted, all
+upward — Verse 92→95, Fiske 88→92, Green 86→91.
+
+Tests: 508/508.
+
+## Previously
 
 **Every drafted player is now rated at least 85 overall.** Requested, and the
 numbers show why. Draft is one signal of five in the weighted blend, and the
@@ -38,8 +89,6 @@ curve moves from 2.12 to 2.29, against a 3.00 bar and the 3.02 that the manual
 human recreation of that roster scores.
 
 Tests: 504/504.
-
-## Previously
 
 **Body build is chosen from position, height and weight.** Requested, with no
 new input from the user — and the tool already has all three.

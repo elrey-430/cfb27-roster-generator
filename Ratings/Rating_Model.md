@@ -69,7 +69,7 @@ whichever signals had data.
 
 | Signal | Weight | Source |
 |---|---|---|
-| Draft slot | 0.34 | `draftScores` (#1 → 99, #32 → 93, #100 → 84, #256 → 75) |
+| Draft slot | 0.34 | `draftScores` (#1 → 99, #32 → 93, #100 → 88, #256 → 85) |
 | Awards | 0.26 | `awardScores` (Heisman 98, consensus All-American 93, first-team all-conference 86) |
 | Production | 0.22 | `production` curves per position group |
 | Recruiting stars | 0.10 | `recruitingStarScores` (5★ 86 … 1★ 62) |
@@ -90,21 +90,41 @@ Real rosters put first-round picks at **91 or above**, high picks higher
 still.
 
 So the strongest retrospective signals also set a **floor** on the target
-(`signalFloors`): the target may not fall more than 2 points below what the
-draft slot implies, or 6 below a major award. The draft curve and that
-tolerance are tuned together so the entire first round floors at 91+:
+(`signalFloors`): a draft slot floors at exactly what it implies (tolerance
+**0**), and a major award within 2 points of what it implies.
 
-| Pick | Implied | Floor | Pick | Implied | Floor |
+**The draft curve spans the whole drafted band, 85 to 99**, so a pick number
+is a rough statement of overall on its own:
+
+| Pick | Implied | Pick | Implied | Pick | Implied |
 |---|---|---|---|---|---|
-| 1 | 99 | 97 | 32 | 93 | **91** |
-| 5 | 97 | 95 | 40 | 90 | 88 |
-| 10 | 96 | 94 | 64 | 87 | 85 |
-| 16 | 95 | 93 | 100 | 84 | 82 |
-| 24 | 94 | 92 | 200 | 78 | 76 |
+| 1 | **99** | 32 | 93 | 130 | 87 |
+| 5 | 97 | 50 | 91 | 160 | 86 |
+| 10 | 96 | 64 | 90 | 200 | 86 |
+| 20 | 95 | 100 | 88 | 256 | **85** |
+
+Position caps still bind: a receiver taken first overall generates at 99, a
+halfback at 96, because 96 is the best halfback the game itself carries.
 
 When a floor is applied it is stated in the player's reasons — e.g.
 *"Raised to 95 (floor from draft: Drafted #5 overall) — the weighted blend
 of 90 understated a player with this record."*
+
+#### A draft slot is a floor and never a ceiling
+
+Because the draft only ever floors, a season can outrun it. Derrick Henry won
+the Heisman and went 45th; the pick implies 92, the Heisman implies 98, and
+the higher floor wins:
+
+| | Heisman season | Ordinary season |
+|---|---|---|
+| Taken 45th | **96** | 92 |
+| Taken 240th | **96** | 85 |
+
+The award tolerance is what makes that work. At the old value of 6 a Heisman
+floored at 92 — the same number pick 45 implies — so Henry came out 92 either
+way and his draft slot had effectively become the verdict on his year. At 2 he
+clears it, and where he was taken no longer changes what he was.
 
 #### The drafted floor — being drafted at all is the fact
 
@@ -122,18 +142,22 @@ So `draftedOverallFloor` (**85**) is a flat minimum for anyone with a pick or
 a round, applied after the program and secondary-production adjustments and
 before every ceiling — a position cap still wins.
 
-| Pick | Before | Now |
-|---|---|---|
-| 1 | 97 | 97 |
-| 32 | 91 | 91 |
-| 64 | 85 | 85 |
-| 100 | 84 | **85** |
-| 200 | 80 | **85** |
-| 256 | 77 | **85** |
+`draftedOverallFloor` (**85**) is now a backstop rather than the working rule:
+the draft curve bottoms out at 85, so the per-pick floor already holds every
+drafted player there. It stays because it states the invariant independently of
+the curve — a later edit to `draftScores` cannot quietly drop drafted players
+below the band.
 
-Above the floor the draft slot still does all its work and the order is
-strict. Below it the order flattens, deliberately — a third-rounder and a
-seventh-rounder meet at 85.
+#### The undrafted ceiling — the other side of the same line
+
+`undraftedOverallCeiling` (**85**) caps a player marked `UDFA`. The two rules
+meet at 85 rather than overlapping, so where a player sits says what happened
+to them: drafted from 85 up, undrafted from 85 down.
+
+It applies to an explicit `UDFA` only, **never to a blank draft column.**
+"Undrafted" is a statement about the player; an empty column is a gap in the
+record, and most all-time rosters carry no draft data at all — capping those
+would assert something nobody said.
 
 **Undrafted is not the same as unknown, and neither gets the floor.** `UDFA`
 in the `DraftPick` column is a statement about the player (scored 67); an

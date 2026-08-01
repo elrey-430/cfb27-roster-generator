@@ -182,6 +182,22 @@ public sealed class RatingEngine
             }
         }
 
+        // 1e. The undrafted ceiling, the other side of the same boundary. Only
+        //     an explicit UDFA is capped — a blank draft column is a gap in the
+        //     record, not a statement that the player went undrafted, and most
+        //     all-time rosters carry no draft data whatever.
+        if (_model.UndraftedOverallCeiling > 0 && normalized.UndraftedFreeAgent)
+        {
+            var undraftedCap = (int)Math.Round(_model.UndraftedOverallCeiling);
+            if (target > undraftedCap)
+            {
+                adjustments.Add(
+                    $"Target overall reduced {target} -> {undraftedCap}: an undrafted player tops out at " +
+                    $"{undraftedCap}, where the drafted band begins.");
+                target = undraftedCap;
+            }
+        }
+
         // 2. Class-year ceiling when the evidence is thin. A true freshman
         //    with no record must not be handed veteran ratings; a freshman
         //    with a Heisman (High confidence) is left alone.

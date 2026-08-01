@@ -331,7 +331,90 @@ public sealed class RatingEngineTests
         var ratings = Engine.Generate("CB", "CB_MantoMan", Player("CB", 73, 195, "Junior"),
             new RatingEvidence { DraftPickOverall = 200, Role = "Starter", StarRating = 3 });
 
-        Assert.Contains(ratings.Adjustments, a => a.Contains("every drafted player is rated at least"));
+        // The draft curve now bottoms out at 85, so the per-pick floor is what
+        // does the lifting and the flat 85 backstop underneath it never has to
+        // fire. Either way the player is told which rule raised them.
+        Assert.Contains(ratings.Talent.Reasons, r => r.Contains("floor from draft"));
+    }
+
+    [Fact]
+    public void TheDraftCurveRunsFromTheFloorToNinetyNine()
+    {
+        // Asked for: pick 1 tops out at 99 and everyone else sits on a curve
+        // down to the drafted floor. Checked on a receiver, whose position cap
+        // is 99 — a halfback caps at 96, which is the game's own limit and not
+        // this model's business to exceed.
+        int Overall(int pick) => Engine.Generate("WR", "WR_PhysicalReceiver",
+            Player("WR", 75, 200, "Senior"),
+            new RatingEvidence { DraftPickOverall = pick, Role = "Starter", StarRating = 3 }).Overall;
+
+        Assert.Equal(99, Overall(1));
+        Assert.True(Overall(1) > Overall(32), "the first pick must clear the end of round one.");
+        Assert.True(Overall(32) > Overall(100));
+        Assert.True(Overall(100) > Overall(256));
+        Assert.True(Overall(256) >= 85, $"the last pick came out at {Overall(256)}.");
+    }
+
+    [Fact]
+    public void ADraftSlotIsAFloorAndNeverACeiling()
+    {
+        // Derrick Henry won the Heisman and went in the second round. His
+        // season has to be able to outrun his draft slot, or the draft becomes
+        // a verdict on the year rather than a fact about it.
+        HistoricalPlayer Back() => Player("HB", 74, 215, "Senior");
+        RatingEvidence Season(int pick, bool heisman) => new()
+        {
+            DraftPickOverall = pick,
+            Role = "Starter",
+            StarRating = 5,
+            Awards = heisman ? new[] { "Heisman" } : Array.Empty<string>(),
+            Stats = Stats(("RushYards", heisman ? 2219 : 900), ("RushTD", heisman ? 28 : 8),
+                          ("RushAttempts", heisman ? 395 : 180)),
+        };
+
+        var heismanSecondRound = Engine.Generate("HB", "HB_PowerBack", Back(), Season(45, true)).Overall;
+        var ordinarySecondRound = Engine.Generate("HB", "HB_PowerBack", Back(), Season(45, false)).Overall;
+        var heismanSeventhRound = Engine.Generate("HB", "HB_PowerBack", Back(), Season(240, true)).Overall;
+        var ordinarySeventhRound = Engine.Generate("HB", "HB_PowerBack", Back(), Season(240, false)).Overall;
+
+        Assert.True(heismanSecondRound > ordinarySecondRound,
+            "the Heisman winner did not clear an ordinary player taken at the same pick.");
+        Assert.Equal(heismanSecondRound, heismanSeventhRound);
+        Assert.True(heismanSeventhRound > ordinarySeventhRound + 5,
+            $"a Heisman season was worth only {heismanSeventhRound - ordinarySeventhRound} points " +
+            "over an ordinary one at the same late pick.");
+    }
+
+    [Fact]
+    public void AnUndraftedPlayerTopsOutWhereTheDraftedBandBegins()
+    {
+        // The two rules meet at 85: drafted players from there up, undrafted
+        // from there down, so where a player sits says what happened to them.
+        var overall = Engine.Generate("HB", "HB_PowerBack", Player("HB", 74, 215, "Senior"),
+            new RatingEvidence
+            {
+                UndraftedFreeAgent = true, Role = "Starter", StarRating = 5,
+                Awards = new[] { "Heisman" },
+                Stats = Stats(("RushYards", 2219), ("RushTD", 28), ("RushAttempts", 395)),
+            }).Overall;
+
+        Assert.Equal(85, overall);
+    }
+
+    [Fact]
+    public void ABlankDraftColumnIsNotCappedLikeAnUndraftedOne()
+    {
+        // Most all-time rosters carry no draft data at all. Capping those would
+        // be asserting the player went undrafted, which nobody said.
+        var overall = Engine.Generate("HB", "HB_PowerBack", Player("HB", 74, 215, "Senior"),
+            new RatingEvidence
+            {
+                Role = "Starter", StarRating = 5,
+                Awards = new[] { "Heisman" },
+                Stats = Stats(("RushYards", 2219), ("RushTD", 28), ("RushAttempts", 395)),
+            }).Overall;
+
+        Assert.True(overall > 85, $"a player with no draft column was capped at {overall}.");
     }
 
     [Fact]

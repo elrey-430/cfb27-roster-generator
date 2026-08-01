@@ -924,7 +924,7 @@
     ],
     [
       2,
-      99
+      98
     ],
     [
       3,
@@ -948,7 +948,7 @@
     ],
     [
       20,
-      94
+      95
     ],
     [
       26,
@@ -960,50 +960,51 @@
     ],
     [
       40,
-      90
+      92
     ],
     [
       50,
-      89
+      91
     ],
     [
       64,
-      87
+      90
     ],
     [
       80,
-      85
+      89
     ],
     [
       100,
-      84
+      88
     ],
     [
       130,
-      82
+      87
     ],
     [
       160,
-      80
+      86
     ],
     [
       200,
-      78
+      86
     ],
     [
       256,
-      75
+      85
     ]
   ],
   "signalFloors": {
-    "draft": 2,
-    "awards": 6
+    "draft": 0,
+    "awards": 2
   },
   "awardContenderDiscount": 5,
   "draftDisagreementTolerance": 6,
   "draftDisagreementWeightFactor": 0.35,
   "draftedOverallFloor": 85,
   "undraftedFreeAgentScore": 67,
+  "undraftedOverallCeiling": 85,
   "recruitingStarScores": {
     "5": 86,
     "4": 79,

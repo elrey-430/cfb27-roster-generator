@@ -490,16 +490,24 @@ this player's awards (conference player of the year). A draft slot records
 where the NFL took someone months later, not how they played in this season.
 ```
 
-There is a floor underneath all of it: **any player you give a draft round or
-pick is rated at least 85 overall.** Being drafted at all is the strongest
-single fact a college career leaves behind — about 250 players a year out of
-ten thousand in FBS — and before this a seventh-round pick came out at 77,
-below players the file said nothing about. Above 85 the draft slot still
-separates picks normally; below it, everyone drafted meets at 85.
+**A draft pick is a rough statement of overall, running the whole band from 85
+to 99.** The first pick generates at 99, the end of round one around 93, the
+middle of the draft in the high 80s, and the last pick at 85. Every drafted
+player clears 85.
 
-Putting `UDFA` in `DraftPick` does **not** get the floor, and neither does
-leaving the column empty: one says the player went undrafted, the other says
-you do not know, and neither one is a draft slot.
+It is a **floor, never a ceiling** — a season can outrun it. Derrick Henry won
+the Heisman and went 45th: the pick implies 92, the Heisman implies 98, and he
+generates at 96 whether he went 45th or 240th.
+
+Position still binds the top. A receiver taken first overall reaches 99; a
+halfback reaches 96, because 96 is the best halfback the game itself carries.
+
+**`UDFA` in `DraftPick` caps the player at 85** — undrafted players run from 85
+down, drafted from 85 up, and the two bands meet rather than overlap.
+
+**Leaving the column empty does neither.** "Undrafted" is a statement about the
+player; an empty column means you do not know, and most all-time rosters carry
+no draft data at all. Neither the floor nor the cap touches those rows.
 
 The draft slot is not ignored — a late pick is still information — it just
 stops outvoting the season itself. **This is the case `AwardContender` is
