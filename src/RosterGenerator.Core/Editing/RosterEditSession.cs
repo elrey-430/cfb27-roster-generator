@@ -215,20 +215,20 @@ public sealed class RosterEditSession
     }
 
     /// <summary>
-    /// Sets whether the player carries an NIL deal.
+    /// Sets whether the slot holds a real, NIL-signed person — see
+    /// <see cref="PlayerColumns.IsNil"/>. The game gates editing on it: a
+    /// player flagged true cannot be edited in-game.
     ///
     /// <para>Written for every generated player, because the alternative is
-    /// inheriting it. The flag belongs to whoever held the slot, and it tracks
-    /// standing rather than money — 100% of the players at 90 overall and above
-    /// carry it — so a recreated 1985 roster built on a modern save would come
-    /// out with NIL deals signed decades before college athletes could sign
-    /// one.</para>
+    /// inheriting it. A recreated player is not the licensed athlete whose slot
+    /// they took, so leaving the flag set would claim they were — and would
+    /// hand the user a roster they cannot edit in the game, which is the
+    /// opposite of what a recreation is for.</para>
     ///
-    /// <para>The two NIL money fields are not touched. They are not companions
-    /// of this flag: 3,473 of the 7,246 players a base save marks
-    /// <c>false</c> still hold a non-zero <c>BaseNILValue</c>, so moving them
-    /// together would be inventing a rule the save does not hold. Where the
-    /// game <em>does</em> tie them together is a transfer, which
+    /// <para>The two NIL money fields are not touched. They are a separate
+    /// thing that does not move with this flag: 3,473 of the 7,246 players a
+    /// base save marks <c>false</c> still hold a non-zero <c>BaseNILValue</c>.
+    /// Where the game <em>does</em> zero them is a transfer, which
     /// <see cref="TransferPlayer"/> already handles.</para>
     ///
     /// <para>Silently skipped when the export has no such column, which is how

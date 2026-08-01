@@ -186,22 +186,28 @@ public static class PlayerColumns
     public const string CurrentNilCompensation = "CurrentNILCompensation";
 
     /// <summary>
-    /// Whether the player carries an NIL deal. A bool, and both values are
-    /// ordinary: a base save holds <c>false</c> for 7,246 players and
-    /// <c>true</c> for 9,011.
+    /// Whether this slot holds a <b>real person</b> — an athlete who signed an
+    /// NIL agreement to appear under their own name and likeness. It marks
+    /// identity, not compensation, and the game gates editing on it: a player
+    /// flagged here cannot be edited in-game.
     ///
-    /// <para>It tracks standing, not money. The flag climbs steeply with
-    /// overall — 1.7% true in the 40s, 42.4% in the 60s, 78.0% in the 70s,
-    /// 100% of the 114 players at 90 and above — which is why a recreated
-    /// player must not inherit it: the slot's flag describes whoever held it,
-    /// and a 1985 walk-on landing on a 95-overall slot would arrive with an
-    /// NIL deal a decade before college athletes could sign one.</para>
+    /// <para>A bool, and both values are ordinary: a base save holds
+    /// <c>false</c> for 7,246 players and <c>true</c> for 9,011.</para>
     ///
-    /// <para>The two money fields above are <em>not</em> companions of this
-    /// one and are deliberately left alone. They move independently in the
-    /// game's own data: 3,473 of the 7,246 <c>false</c> players still carry a
-    /// non-zero <see cref="BaseNilValue"/>, so zeroing them here would be this
-    /// tool inventing a rule the save does not hold.</para>
+    /// <para>The census fits that meaning exactly. The flag climbs with overall
+    /// the way a real-athlete marker should — 1.7% true in the 40s, 42.4% in
+    /// the 60s, 78.0% in the 70s, and 100% of the 114 players at 90 and above.
+    /// The stars are real people; the end of a roster is filler the game
+    /// generated.</para>
+    ///
+    /// <para>So a recreated player is written <c>false</c>. They are not the
+    /// licensed athlete whose slot they took, and inheriting the flag would
+    /// both assert that they were and leave them locked against editing.</para>
+    ///
+    /// <para>The two money fields above are separate and are deliberately left
+    /// alone. They do not move with this flag in the game's own data: 3,473 of
+    /// the 7,246 <c>false</c> players still carry a non-zero
+    /// <see cref="BaseNilValue"/>.</para>
     /// </summary>
     public const string IsNil = "IsNIL";
 }

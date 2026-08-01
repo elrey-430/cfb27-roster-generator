@@ -1,22 +1,29 @@
 # Project Status
 
-_Last updated: 2026-07-31 — no NIL deals on recreated players._
+_Last updated: 2026-07-31 — recreated players are not marked as real people._
 
 ## Current status
 
-**A generated player no longer inherits the roster slot's NIL deal.**
-Requested: everyone the tool writes should default to `IsNIL` false. It is not
-a cosmetic leftover — measured across the 16,257 players of a base save, the
-flag tracks standing rather than money: 1.7% of players in the 40s carry one,
-42.4% in the 60s, 78.0% in the 70s, and **100% of the 114 players at 90 and
-above**. A recreated roster is built on the best slots the save has, so the
-inheritance landed hardest on exactly the players a user looks at first — a
-1985 starting eleven arriving with contracts signed forty years early.
+**A generated player no longer inherits the slot's `IsNIL` flag.** Requested:
+everyone the tool writes should default to false.
 
-**The NIL money fields are deliberately left alone.** They are not companions
-of the flag: 3,473 of the 7,246 players a base save marks `false` still hold a
-non-zero `BaseNILValue`. Moving them together would be inventing a rule the
-game does not follow. Where the game does tie them together is a team change,
+**What the flag means** (corrected — the first pass through this read it as a
+compensation field, which it is not): `IsNIL` marks the slot as holding a
+**real person**, an athlete who signed an NIL agreement to appear under their
+own name and likeness, and **the game will not let such a player be edited.**
+
+That makes the inheritance wrong twice over. A recreated player is not the
+licensed athlete whose slot they took, so the flag asserts something untrue
+about them — and it leaves them locked against editing in the game, which is
+the opposite of what a recreation is for. The census says how much of a roster
+that covers: 1.7% of players in the 40s are flagged, 42.4% in the 60s, 78.0%
+in the 70s, and **100% of the 114 players at 90 and above**. A recreated
+roster is built on the best slots the save has, so it was the whole starting
+eleven arriving locked.
+
+**The NIL money fields are separate and deliberately left alone.** They do not
+move with the flag: 3,473 of the 7,246 players a base save marks `false` still
+hold a non-zero `BaseNILValue`. Where the game does zero them is a team change,
 which `TransferPlayer` has handled since Milestone 1.
 
 Filled depth slots are cleared too, for the same reason their abilities are:

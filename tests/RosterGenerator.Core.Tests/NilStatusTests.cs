@@ -8,29 +8,31 @@ using Xunit;
 namespace RosterGenerator.Core.Tests;
 
 /// <summary>
-/// A generated player carries no NIL deal.
+/// A generated player is not marked as a real person.
 ///
 /// <para>Requested: every generated player should default to <c>IsNIL</c>
-/// false. Left alone the flag is inherited from whoever held the roster slot,
-/// and it is not a harmless leftover — measured across the 16,257 players of a
-/// base save it tracks standing, not money:</para>
+/// false. The flag is not about money — it marks the slot as holding a real
+/// athlete who signed an NIL agreement to appear under their own name, and
+/// <b>the game will not let such a player be edited.</b></para>
+///
+/// <para>So inheriting it is wrong twice: a recreated player is not that
+/// athlete, and they arrive locked. Measured across the 16,257 players of a
+/// base save, the flag follows exactly the shape a real-athlete marker
+/// should:</para>
 ///
 /// <code>
-///   OVR 40-49    1.7% carry a deal
+///   OVR 40-49    1.7% flagged
 ///   OVR 60-69   42.4%
 ///   OVR 70-79   78.0%
 ///   OVR 90-99  100.0%   (all 114 of them)
 /// </code>
 ///
-/// <para>So the inheritance lands hardest exactly where it is most visible: a
-/// recreated 1985 starting eleven, built on the modern save's best slots,
-/// arrives with NIL deals signed some forty years before college athletes
-/// could sign one.</para>
+/// <para>A recreated roster is built on the best slots the save has, so it was
+/// the whole starting eleven arriving locked against editing.</para>
 ///
-/// <para>The two NIL money fields are deliberately <em>not</em> moved with the
-/// flag — 3,473 of the 7,246 players a base save marks false still hold a
-/// non-zero <c>BaseNILValue</c>, so tying them together would be inventing a
-/// rule the game does not follow.</para>
+/// <para>The two NIL money fields are separate and deliberately <em>not</em>
+/// moved with the flag — 3,473 of the 7,246 players a base save marks false
+/// still hold a non-zero <c>BaseNILValue</c>.</para>
 /// </summary>
 public sealed class NilStatusTests
 {
@@ -97,7 +99,7 @@ public sealed class NilStatusTests
     // ---- The ask ------------------------------------------------------------
 
     [Fact]
-    public void ARecreatedPlayerDoesNotInheritTheSlotsNilDeal()
+    public void ARecreatedPlayerIsNotLeftMarkedAsTheRealPerson()
     {
         using var folder = new TempDirectory();
         var donor = DonorWithNilOnEveryPlayer(folder);
@@ -122,8 +124,8 @@ public sealed class NilStatusTests
         }
 
         Assert.True(stillNil.Count == 0,
-            $"{stillNil.Count} generated player(s) kept the slot's NIL deal: " +
-            string.Join(", ", stillNil.Take(5)));
+            $"{stillNil.Count} generated player(s) are still marked as the real person who held the " +
+            $"slot, and cannot be edited in-game: {string.Join(", ", stillNil.Take(5))}");
     }
 
     [Fact]
@@ -174,10 +176,10 @@ public sealed class NilStatusTests
         var result = Generate(folder, donor);
         var after = CsvDocument.Load(result.OutputPath);
 
-        // The donor fixture carries real NIL money on 28 of its 85 players. It
-        // stays: the game's own data has 3,473 non-NIL players holding a
-        // non-zero BaseNILValue, so the two fields do not move together and
-        // zeroing them here would be this tool inventing a rule.
+        // The donor fixture carries NIL money on some of its 85 players, and it
+        // stays. The money is a separate field from the flag: the game's own
+        // data has 3,473 unflagged players holding a non-zero BaseNILValue, so
+        // zeroing it here would be this tool inventing a rule.
         var carried = 0;
         for (var row = 0; row < before.RowCount; row++)
         {

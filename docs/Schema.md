@@ -600,15 +600,21 @@ player carries — Madden-side values in a shared schema.
 
 ---
 
-## Group 9 — `IsNIL` is standing, not money (confirmed by census)
+## Group 9 — `IsNIL` marks a real person, and locks them (confirmed by census)
+
+**`IsNIL` is not a compensation field.** It marks a slot as holding a real
+athlete — someone who signed an NIL agreement to appear under their own name
+and likeness — and the game gates editing on it: **a player flagged `true`
+cannot be edited in-game.**
 
 A bool, and both values are ordinary in a base save: **7,246 `false`,
 9,011 `true`** across the 16,257 live rows. Writing `false` therefore writes a
 value the game itself holds for 7,246 of its own players — reassignment, not
 invention.
 
-**It tracks how good the player is, not what they are paid.** Measured across
-the whole base export:
+**The census fits that meaning.** The flag climbs with overall the way a
+real-athlete marker should: the stars are real people, and the end of a roster
+is filler the game generated.
 
 | Overall | Carry a deal | Of |
 |---|---|---|
@@ -619,18 +625,19 @@ the whole base export:
 | 80–89 | 95.7% | 1,350 |
 | 90–99 | **100%** | 114 |
 
-That shape is why the flag cannot be left to the donor slot. A recreated
-roster is built on the *best* slots the save has, and every slot at 90 and
-above carries a deal — so the players most visible in a 1985 recreation are
-exactly the ones who would arrive holding an NIL contract signed some forty
-years before college athletes could sign one.
+That shape is why the flag cannot be left to the donor slot, and it cuts two
+ways. A recreated player is **not** the licensed athlete whose slot they took,
+so carrying the flag asserts something untrue about them. And because a
+recreated roster is built on the *best* slots the save has — every slot at 90
+and above is flagged — it is the entire starting eleven that would arrive
+locked against editing in the game.
 
-**The money fields are not companions of this flag and are deliberately left
-alone.** They move independently in the game's own data: **3,473 of the 7,246
-`false` players still hold a non-zero `BaseNILValue`** (max 165; the `true`
-side reaches 430). Zeroing them alongside the flag would be inventing a rule
-the save does not follow. Where the game *does* tie them together is a team
-change — see Group 4, which is a different edit.
+**The money fields are separate and are deliberately left alone.** They do not
+move with the flag in the game's own data: **3,473 of the 7,246 `false`
+players still hold a non-zero `BaseNILValue`** (max 165; the `true` side
+reaches 430). Zeroing them alongside it would be inventing a rule the save does
+not follow. Where the game *does* zero them is a team change — see Group 4,
+which is a different edit.
 
 The tool writes `false` for every player it generates, filled depth slots
 included, and does not touch a slot it did not generate.

@@ -165,11 +165,11 @@ public sealed class HistoricalTeamConverter
             "Slot assignment prefers a donor slot at the same position (or an interchangeable one, e.g. " +
             "LE/RE); players placed in an unrelated slot get an explicit position change.");
         report.GlobalAssumptions.Add(
-            "Every generated player is written with no NIL deal (IsNIL = false). The flag belongs to the " +
-            "roster slot and tracks standing rather than money — every player at 90 overall and above " +
-            "carries one in a base save — so inheriting it would put NIL deals on a roster recreated from " +
-            "a season that had none. The NIL money fields are left alone: they move independently of the " +
-            "flag in the game's own data.");
+            "Every generated player is written with IsNIL = false. That flag marks a real person who " +
+            "signed an NIL agreement to appear under their own name, and the game will not let such a " +
+            "player be edited — so a recreated player must not inherit it, both because they are not that " +
+            "person and because it would leave them locked. The separate NIL money fields are not " +
+            "touched; they do not move with the flag in the game's own data.");
 
         // Donor slots for this team, position-preferred assignment.
         var slots = roster.Players
@@ -265,9 +265,10 @@ public sealed class HistoricalTeamConverter
         // Abilities are the case this was first found on: leaving them let the
         // previous occupant's gold survive on a walk-on the filler had just
         // rated at 63, invisible unless somebody diffed the slot against the
-        // save it came from. NIL is the same shape of mistake — a 63-overall
-        // walk-on holding the deal of the 88 who used to be there — and it is
-        // cleared whether or not an ability model was loaded.
+        // save it came from. IsNIL is the same shape of mistake — a re-rated
+        // walk-on still marked as the real person who used to hold the slot,
+        // and locked against editing with them — and it is cleared whether or
+        // not an ability model was loaded.
         var byRowKey = freeSlots.ToDictionary(s => s.RowKey);
         foreach (var slot in filled)
         {
@@ -611,11 +612,11 @@ public sealed class HistoricalTeamConverter
             genericHeadAssetName: face.HeadAssetName,
             portrait: face.Portrait);
 
-        // NIL belongs to the slot, not to the player arriving in it. Left
-        // alone, a recreated roster inherits whatever deals the modern players
-        // holding those slots had — and because the flag tracks standing rather
-        // than money, every slot at 90 overall and above carries one, so it is
-        // precisely the best players on the roster who come out wrong.
+        // IsNIL marks a real, NIL-signed person, and the game will not let one
+        // be edited. A recreated player is not that person, so inheriting the
+        // slot's flag both claims they are and locks them — and it is the best
+        // slots that carry it (100% at 90 overall and above), which is to say
+        // the whole starting eleven of a recreated roster.
         session.SetNilStatus(slot, false);
 
         // Commentary follows the surname, exactly as the game does it on a
