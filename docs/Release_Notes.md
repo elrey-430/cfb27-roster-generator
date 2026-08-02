@@ -1,5 +1,46 @@
 # Release notes
 
+## v0.8.3-alpha — Depth charts are rebuilt
+
+A generated roster took the field in the donor's order. A depth chart points at
+player rows, in the order the dynasty's original players ranked; the tool
+replaced who lives in each row and left the chart alone, so the slot the game
+believed was the starting quarterback held whoever landed there. The game does
+not correct it — which is what proves it honours a stored chart rather than
+re-sorting on load.
+
+Three tables carry it: `Team.DepthChart` names a chart row, the chart's 35 slots
+each name a `Player[]` row, and that row lists up to six players in order. The
+player reference tag is 8496. Team row order is *not* team index — Florida State
+is Team row 38 and team 27 — so the link is followed rather than assumed. Only
+`Player[]` is rewritten, so a rebuild cannot break the structure.
+
+Fifteen of the 35 slots are not positions, and the model for them is measured
+(`tools/measure_depth_charts.py`): GAD is 59% HB and 40% WR, LS is 78% TE, SLCB
+draws on CB, FS and SS; depth is 6 at WR, 5 at CB, 4 at HB, 3 nearly everywhere
+else. Ordering within a slot is by overall descending — 2,634 of 2,731 slots.
+
+The mirrored pairs are one assignment: LT/RT, LG/RG, LE/RE and LOLB/ROLB each
+list both sides, the same player never heads both (0 of 143 teams, all four
+pairs), and the better of the two is on the left 87–92% of the time. So the pool
+is sorted once and dealt alternately, left first.
+
+Verified end to end on a real save — 2023 Florida State read back out of the
+written file:
+
+```
+before  QB  Daniels(77), Willow(76), Sperry(74)
+after   QB  Travis(92), Glenn(77), Rodemaker(70)
+after   LT  Byers(LT 84), Armella(RT 70)
+after   RT  Scott(LT 73), Sapp(RT 65)
+```
+
+No user input. A dynasty carrying no depth chart is skipped in silence, and
+`LockedEntries` — the entries a user pinned — is never rewritten. Extraction
+gains two tables and about 13 seconds.
+
+Twelve new tests, 547 total.
+
 ## v0.8.2-alpha — Read both draft columns
 
 `DraftRound` has been in the template since Milestone 6 and was never read.
