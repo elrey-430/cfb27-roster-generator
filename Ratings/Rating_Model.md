@@ -93,6 +93,13 @@ So the strongest retrospective signals also set a **floor** on the target
 (`signalFloors`): a draft slot floors at exactly what it implies (tolerance
 **0**), and a major award within 2 points of what it implies.
 
+**Both draft columns are read.** `DraftPick` may be an overall number or a
+pick within its round, and `DraftSlot` tells them apart by arithmetic: a pick
+larger than a round holds must be an overall number, and otherwise a round
+makes the pick a position inside it. Round one needs no decision. Before this,
+only the pick was read and always as an overall — so *round 2, pick 1* produced
+the first selection of the draft.
+
 **The draft curve spans the whole drafted band, 85 to 99**, so a pick number
 is a rough statement of overall on its own:
 

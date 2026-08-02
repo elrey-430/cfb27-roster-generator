@@ -135,7 +135,7 @@ from position and class defaults and reported as Low confidence).
 | `Vertical` | `38` | Inches → jumping |
 | `Shuttle` | `4.15` | 20-yard shuttle → agility |
 | `ThreeCone` | `6.95` | Three-cone → change of direction |
-| `DraftRound` / `DraftPick` | `2` / `41` | NFL draft. `DraftPick` is the **overall** pick and the strongest single signal — but see below. Put `UDFA` in `DraftPick` for undrafted free agents |
+| `DraftRound` / `DraftPick` | `2` / `1` **or** `2` / `45` | NFL draft, the strongest single signal — but see below. `DraftPick` may be the **pick within the round** or the **overall** pick; both are read, see "Writing down a draft slot". Put `UDFA` in `DraftPick` for undrafted free agents |
 | `Awards` | `Heisman; Consensus All-American` | **Semicolon-separated.** Only the best award counts |
 | `AwardContender` | `Heisman` | Awards the player was **in contention for** without winning — a finalist, a semifinalist, someone in the conversation. Same names as `Awards`, scored a few points lower. Worth more than winning a smaller award: a Heisman finalist out-rates an all-conference pick. Often the only evidence that survives when an injury ends a season early |
 
@@ -467,6 +467,33 @@ generator measures the team you selected against a typical one and adjusts
 players you gave little evidence for. Players with a draft slot, awards or a
 stat line are rated on their own record and are unaffected. Nothing extra is
 required from you — the adjustment comes from the dynasty you loaded.
+
+## Writing down a draft slot
+
+**Both spellings work.** A second-round pick can be written the way the draft is
+announced or as an overall number, and you get the same player either way:
+
+| `DraftRound` | `DraftPick` | Read as |
+|---|---|---|
+| `2` | `1` | 33rd overall — the first pick of round two |
+| *(blank)* | `33` | 33rd overall |
+| `2` | `45` | 45th overall — which is the 13th pick of round two |
+| `7` | `20` | 212th overall |
+| `2` | *(blank)* | the middle of round two |
+| *(blank)* | `150` | 150th overall |
+
+The tool tells the two apart by arithmetic, not by a setting: **a pick larger
+than a round holds cannot be a position inside one**, so it is an overall
+number. Below that, a round makes the pick a position within it. In round one
+the two readings agree, so nothing has to be decided.
+
+Whichever you write, the report says how it was read —
+*"Drafted #33 overall (round 2, pick 1)"* — so a misunderstanding shows up in
+the output rather than hiding in a rating.
+
+> Before v0.8.2 only `DraftPick` was read, and always as an overall number. A
+> roster written as *round 2, pick 1* produced the first pick of the entire
+> draft. If you have a roster file that names rounds, re-generate it.
 
 ## A note on draft position
 

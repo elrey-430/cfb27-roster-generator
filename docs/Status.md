@@ -1,8 +1,45 @@
 # Project Status
 
-_Last updated: 2026-08-01 — the Low-confidence cap reads role, not just class._
+_Last updated: 2026-08-01 — both draft columns are read._
 
 ## Current status
+
+**`DraftRound` was in the template and unread.** Reported: a player entered as
+the 33rd pick — round 2, pick 1 — came out at 97 or better. The tool read
+`DraftPick` as an overall number and used `DraftRound` only when the pick was
+missing, so *round 2, pick 1* was the first selection of the entire draft.
+
+**Both spellings now work**, and which one the user meant is decided by
+arithmetic rather than by a setting:
+
+| Written | Read as |
+|---|---|
+| round 2, pick 1 | 33rd overall |
+| pick 33, no round | 33rd overall |
+| round 2, pick 45 | 45th overall — the 13th pick of round two |
+| round 7, pick 20 | 212th overall |
+| round 2, no pick | the middle of round two |
+
+The rule: **a pick larger than a round holds cannot be a position inside one**,
+so it is an overall number. Below that, a round makes the pick a position
+within it. Round one needs no decision because the two readings agree there.
+
+A round and a pick that flatly contradict each other — round 2, pick 200 — is
+reported, and the pick is believed as the more specific of the two. A pick one
+round past where the arithmetic puts it is *not* reported: rounds run past 32
+selections when compensatory picks are awarded, and round 7, pick 240 is
+ordinary.
+
+**The reading is always stated** in the player's reasons — "Drafted #33 overall
+(round 2, pick 1)" — because silently reinterpreting somebody's number would be
+worse than the bug.
+
+Verified end to end on the reported case: round 2 pick 1 and a bare pick 33 now
+produce the same player, and both sit below a genuine first-round pick.
+
+Tests: 535/535.
+
+## Previously
 
 **The cap on a player the file says little about now reads role first and class
 second.** It used to read class alone, which conflated "young" with "unknown" —
@@ -46,8 +83,6 @@ What is still unlike the game is the bottom: 28 players under 70 against EA's
 population, and it is the next thing worth measuring.
 
 Tests: 522/522.
-
-## Previously
 
 **A generated roster was coming out in spikes where the game's is a curve.**
 Asked to widen the role and production curves. Measuring first showed the

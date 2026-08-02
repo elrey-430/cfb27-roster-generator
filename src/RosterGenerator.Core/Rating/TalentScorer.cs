@@ -143,16 +143,22 @@ public sealed class TalentScorer
     private void AddDraftSignal(RatingEvidence evidence, List<TalentSignal> signals, List<string> missing)
     {
         var weight = _model.SignalWeights.GetValueOrDefault("draft");
-        var pick = evidence.DraftPickOverall
-                   // A round with no pick number is treated as its midpoint.
-                   ?? (evidence.DraftRound is int round ? (round - 1) * 32 + 16 : (int?)null);
 
-        if (pick is int overallPick)
+        // Both columns are read together: a pick may be an overall number or a
+        // position inside its round, and which one was meant is arithmetic
+        // rather than a setting. See DraftSlot.
+        var slot = DraftSlot.Resolve(evidence.DraftRound, evidence.DraftPickOverall);
+
+        if (slot.OverallPick is int overallPick)
         {
             var score = RatingModelSet.Interpolate(_model.DraftScores, overallPick);
-            signals.Add(new TalentSignal("draft", score, weight,
-                $"Drafted #{overallPick} overall" +
-                (evidence.DraftPickOverall is null ? $" (estimated from round {evidence.DraftRound})" : "")));
+            var explanation = slot.Describe(evidence.DraftRound);
+            if (slot.Note is { } note)
+            {
+                explanation += ". " + note;
+            }
+
+            signals.Add(new TalentSignal("draft", score, weight, explanation));
         }
         else if (evidence.UndraftedFreeAgent)
         {
