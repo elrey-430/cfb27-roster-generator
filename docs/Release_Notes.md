@@ -1,5 +1,39 @@
 # Release notes
 
+## v0.8.2-alpha — Read both draft columns
+
+`DraftRound` has been in the template since Milestone 6 and was never read.
+`DraftPick` was taken as an overall pick number always, and the round used only
+when the pick was missing — so a player entered as *round 2, pick 1* was rated
+as the first selection of the entire draft, coming out in the high nineties
+instead of the low nineties.
+
+Both spellings now work, and `DraftSlot` tells them apart by arithmetic rather
+than by a setting:
+
+| Written | Read as |
+|---|---|
+| round 2, pick 1 | 33rd overall |
+| pick 33, no round | 33rd overall |
+| round 2, pick 45 | 45th overall — the 13th pick of round two |
+| round 7, pick 20 | 212th overall |
+| round 2, no pick | the middle of round two |
+
+A pick larger than a round holds cannot be a position inside one, so it is an
+overall number; below that a round makes the pick a position within it. Round
+one needs no decision because the readings agree there.
+
+A flat contradiction (round 2, pick 200) is reported and the pick believed, as
+the more specific of the two. A pick one round long is not reported —
+compensatory selections push real rounds past 32, so round 7 pick 240 is
+ordinary.
+
+The reading is always stated in the player's reasons, "Drafted #33 overall
+(round 2, pick 1)", because silently reinterpreting a user's number would be
+worse than the bug.
+
+Twelve new tests, 535 total.
+
 ## v0.8.1-alpha — Cap by role first, class second
 
 The Low-confidence overall cap read class year alone, conflating "young" with
