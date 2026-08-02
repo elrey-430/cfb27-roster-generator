@@ -730,6 +730,66 @@ Re-measure with `python3 tools/measure_body_types.py <export-dir>`.
 
 ---
 
+## Group 11 — The depth chart (confirmed by decode)
+
+A recreated roster used to take the field in the donor's order. The chart is
+three tables:
+
+```
+Team.DepthChart  ->  a DepthChart row, one per team, 35 position slots
+                 ->  each slot points at a Player[] row
+                 ->  which holds up to six player references, in depth order
+```
+
+Every cell is the same 32-bit reference the CharacterVisuals link uses: high
+half tags the table, low half is the row. The player tag is **8496**.
+
+**Team row order is not team index** — Florida State is Team row 38 and team 27
+— so the link is followed, never assumed. 143 teams, 143 distinct chart rows.
+
+**Only `Player[]` is ever rewritten.** The chart's slot pointers do not move, so
+rebuilding cannot break the structure.
+
+### What the slots are
+
+Fifteen of the 35 are not positions at all. Measured across all 143 charts:
+
+| Slot | Depth | Drawn from |
+|---|---|---|
+| QB / HB / TE / WR | 3 / 4 / 3 / 6 | own position, ~100% |
+| CB / DT | 5 / 5 | own position |
+| 3DRB, PWHB | 3 | HB 99% |
+| GAD | 3 | HB 59%, WR 40% |
+| KR, PR | 5 | WR ~60%, HB ~30%, CB 6% |
+| SLWR | 3 | WR 91% |
+| SLCB | 3 | CB 54%, FS 23%, SS 21% |
+| NT | 3 | DT 100% |
+| RDT | 3 | DT 78%, LE 14%, RE 6% |
+| RLE, RRE | 3 | RE ~35%, LE ~31%, ROLB 21% |
+| SUBLB | 3 | MLB 45%, ROLB 26%, safeties 19% |
+| LS | 3 | TE 78%, C 13% |
+| K, KOS, P | 3 | K and P interchangeably |
+
+### The ordering rule
+
+Within a slot the game lists players by overall, descending — **2,634 of 2,731
+slots (96.4%)**.
+
+**The mirrored pairs are one assignment, not two picks.** `LT`/`RT`, `LG`/`RG`,
+`LE`/`RE` and `LOLB`/`ROLB` each list both sides of the line, and:
+
+- the same player never heads both — **0 of 143 teams**, for all four pairs;
+- the better of the two is on the **left** 87%, 86%, 88% and 92% of the time;
+- the two starters are the combined pool's top two on 78–85% of teams.
+
+So the pool is sorted once and dealt alternately, left first.
+
+`LockedEntries` points at the entries a user pinned and is never rewritten.
+
+Re-derive all of it with `python3 tools/measure_depth_charts.py <full-export>`.
+
+---
+
 ## Appendix — remaining columns (unconfirmed observations)
 
 Statistical profile of every other column across the 16,257 live rows of

@@ -1,8 +1,58 @@
 # Project Status
 
-_Last updated: 2026-08-01 — both draft columns are read._
+_Last updated: 2026-08-02 — depth charts are rebuilt automatically._
 
 ## Current status
+
+**A recreated roster took the field in the donor's order.** Reported: depth
+charts "way out of alignment" after generating. The cause is exact — a depth
+chart points at player *rows*, in the order the donor's players ranked, and the
+tool replaced who lives in each row while leaving the chart alone. The slot the
+game believed was the starting quarterback held whoever landed there. Nothing in
+the game corrects it, which is also what proves the game honours a stored chart
+rather than re-sorting on load.
+
+**Decoded.** Three tables: `Team.DepthChart` names a chart row, the chart's 35
+slots each name a `Player[]` row, and that row lists up to six players in order.
+Every cell is the 32-bit reference the CharacterVisuals link uses; the player
+tag is 8496. Team row order is *not* team index — Florida State is Team row 38
+and team 27 — so the link is followed rather than assumed. Only `Player[]` is
+ever rewritten, so the structure cannot be broken by a rebuild.
+
+**Fifteen of the 35 slots are not positions**, and none of it is guessable:
+`GAD` is 59% halfbacks and 40% receivers, `LS` is 78% tight ends, `SLCB` draws
+on corners and both safeties, and depth is 6 at receiver, 5 at corner, 4 at
+halfback, 3 nearly everywhere else. All measured by
+`tools/measure_depth_charts.py`.
+
+**The mirrored pairs are one assignment, not two picks.** `LT`/`RT`, `LG`/`RG`,
+`LE`/`RE`, `LOLB`/`ROLB` each list both sides. The same player never heads both
+— 0 of 143 teams, all four pairs — and the better of the two is on the left 87%
+to 92% of the time. So the pool is sorted once and dealt alternately, left
+first.
+
+**Verified end to end on a real save.** Generating 2023 Florida State and
+reading the save back:
+
+```
+before   QB   Daniels(77), Willow(76), Sperry(74)
+after    QB   Travis(92), Glenn(77), Rodemaker(70)
+before   WR   Robinson(92), Danzy(84), Lopez(79), ...
+after    WR   Coleman(93), Wilson(88), Douglas(80), ...
+after    LT   Byers(LT 84), Armella(RT 70)
+after    RT   Scott(LT 73), Sapp(RT 65)
+```
+
+The tackles show the deal working: the pool sorted 84, 73, 70, 65 and went left,
+right, left, right.
+
+**Nothing is asked of the user.** A dynasty with no depth chart — ordinary for a
+folder from the community export tool — is skipped in silence, and
+`LockedEntries`, which points at entries a user pinned, is never rewritten.
+
+Tests: 547/547.
+
+## Previously
 
 **`DraftRound` was in the template and unread.** Reported: a player entered as
 the 33rd pick — round 2, pick 1 — came out at 97 or better. The tool read
@@ -38,8 +88,6 @@ Verified end to end on the reported case: round 2 pick 1 and a bare pick 33 now
 produce the same player, and both sit below a genuine first-round pick.
 
 Tests: 535/535.
-
-## Previously
 
 **The cap on a player the file says little about now reads role first and class
 second.** It used to read class alone, which conflated "young" with "unknown" —

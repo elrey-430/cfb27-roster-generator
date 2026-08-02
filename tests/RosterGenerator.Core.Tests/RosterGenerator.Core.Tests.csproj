@@ -44,6 +44,7 @@
     <None Include="..\..\data\AbilityModel.json" Link="Fixtures\AbilityModel.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\RosterSkeleton.json" Link="Fixtures\RosterSkeleton.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\BodyTypeRules.json" Link="Fixtures\BodyTypeRules.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\data\DepthChartSlots.json" Link="Fixtures\DepthChartSlots.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- The 2023 FSU regression fixtures (input, donor dynasty, expected output). -->
     <None Include="..\..\Tests\**" Link="Tests\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- The shipped templates, so the one users start from stays usable.

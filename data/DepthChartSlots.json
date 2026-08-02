@@ -1,0 +1,304 @@
+{
+  "_comment": [
+    "How the game fills its own depth charts, measured from a base save.",
+    "",
+    "Team.DepthChart -> a DepthChart row -> one Player[] row per slot ->",
+    "up to six player references in depth order.",
+    "",
+    "depth  how many players the game lists there. Not uniform: 6 at WR,",
+    "       5 at CB, 4 at HB, 3 almost everywhere else.",
+    "from   which positions it draws on, most-used first. The specialist",
+    "       slots are not positions at all \u2014 GAD is HB and WR, LS is",
+    "       mostly TE, and the tackle, guard and end slots each list both",
+    "       sides of the line.",
+    "",
+    "Within a slot the order is by overall, descending.",
+    "Re-derive with tools/measure_depth_charts.py."
+  ],
+  "playerTableTag": 8496,
+  "orderedByOverall": 0.964,
+  "mirrored": [
+    [
+      "LT",
+      "RT"
+    ],
+    [
+      "LG",
+      "RG"
+    ],
+    [
+      "LE",
+      "RE"
+    ],
+    [
+      "LOLB",
+      "ROLB"
+    ]
+  ],
+  "_mirroredComment": [
+    "Slot pairs the game fills as one assignment rather than two picks.",
+    "The same player never heads both \u2014 0 of 143 teams, for all four",
+    "pairs \u2014 and the better of the two goes to the LEFT slot 87%, 86%,",
+    "88% and 92% of the time. The two starters are the combined pool's",
+    "top two on 78-85% of teams. So the pool is sorted once and dealt",
+    "alternately, left first."
+  ],
+  "slots": {
+    "3DRB": {
+      "depth": 3,
+      "from": [
+        "HB"
+      ]
+    },
+    "C": {
+      "depth": 3,
+      "from": [
+        "C",
+        "LG",
+        "RG"
+      ]
+    },
+    "CB": {
+      "depth": 5,
+      "from": [
+        "CB"
+      ]
+    },
+    "DT": {
+      "depth": 5,
+      "from": [
+        "DT"
+      ]
+    },
+    "FB": {
+      "depth": 3,
+      "from": [
+        "TE",
+        "HB",
+        "FB"
+      ]
+    },
+    "FS": {
+      "depth": 3,
+      "from": [
+        "FS"
+      ]
+    },
+    "GAD": {
+      "depth": 3,
+      "from": [
+        "HB",
+        "WR"
+      ]
+    },
+    "HB": {
+      "depth": 4,
+      "from": [
+        "HB"
+      ]
+    },
+    "K": {
+      "depth": 3,
+      "from": [
+        "K",
+        "P"
+      ]
+    },
+    "KOS": {
+      "depth": 3,
+      "from": [
+        "K",
+        "P"
+      ]
+    },
+    "KR": {
+      "depth": 5,
+      "from": [
+        "WR",
+        "HB",
+        "CB",
+        "FS"
+      ]
+    },
+    "LE": {
+      "depth": 3,
+      "from": [
+        "LE",
+        "RE"
+      ]
+    },
+    "LG": {
+      "depth": 3,
+      "from": [
+        "LG",
+        "RG"
+      ]
+    },
+    "LOLB": {
+      "depth": 3,
+      "from": [
+        "ROLB",
+        "LOLB",
+        "MLB"
+      ]
+    },
+    "LS": {
+      "depth": 3,
+      "from": [
+        "TE",
+        "C",
+        "RG",
+        "LG"
+      ]
+    },
+    "LT": {
+      "depth": 3,
+      "from": [
+        "LT",
+        "RT"
+      ]
+    },
+    "MLB": {
+      "depth": 4,
+      "from": [
+        "MLB",
+        "ROLB"
+      ]
+    },
+    "NT": {
+      "depth": 3,
+      "from": [
+        "DT"
+      ]
+    },
+    "P": {
+      "depth": 3,
+      "from": [
+        "P",
+        "K"
+      ]
+    },
+    "PR": {
+      "depth": 5,
+      "from": [
+        "WR",
+        "HB",
+        "CB"
+      ]
+    },
+    "PWHB": {
+      "depth": 3,
+      "from": [
+        "HB"
+      ]
+    },
+    "QB": {
+      "depth": 3,
+      "from": [
+        "QB"
+      ]
+    },
+    "RDT": {
+      "depth": 3,
+      "from": [
+        "DT",
+        "LE",
+        "RE"
+      ]
+    },
+    "RE": {
+      "depth": 3,
+      "from": [
+        "LE",
+        "RE"
+      ]
+    },
+    "RG": {
+      "depth": 3,
+      "from": [
+        "RG",
+        "LG"
+      ]
+    },
+    "RLE": {
+      "depth": 3,
+      "from": [
+        "RE",
+        "LE",
+        "ROLB",
+        "LOLB",
+        "MLB"
+      ]
+    },
+    "ROLB": {
+      "depth": 3,
+      "from": [
+        "ROLB",
+        "LOLB",
+        "MLB",
+        "RE"
+      ]
+    },
+    "RRE": {
+      "depth": 3,
+      "from": [
+        "RE",
+        "LE",
+        "ROLB",
+        "LOLB",
+        "MLB"
+      ]
+    },
+    "RT": {
+      "depth": 3,
+      "from": [
+        "LT",
+        "RT"
+      ]
+    },
+    "SLCB": {
+      "depth": 3,
+      "from": [
+        "CB",
+        "FS",
+        "SS"
+      ]
+    },
+    "SLWR": {
+      "depth": 3,
+      "from": [
+        "WR",
+        "HB",
+        "TE"
+      ]
+    },
+    "SS": {
+      "depth": 3,
+      "from": [
+        "SS"
+      ]
+    },
+    "SUBLB": {
+      "depth": 3,
+      "from": [
+        "MLB",
+        "ROLB",
+        "FS",
+        "SS",
+        "LOLB"
+      ]
+    },
+    "TE": {
+      "depth": 3,
+      "from": [
+        "TE"
+      ]
+    },
+    "WR": {
+      "depth": 6,
+      "from": [
+        "WR"
+      ]
+    }
+  }
+}

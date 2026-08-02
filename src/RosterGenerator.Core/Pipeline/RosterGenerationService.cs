@@ -1,4 +1,5 @@
 using RosterGenerator.Core.Conversion;
+using RosterGenerator.Core.Depth;
 using RosterGenerator.Core.Dynasty;
 using RosterGenerator.Core.Editing;
 using RosterGenerator.Core.Equipment;
@@ -72,6 +73,10 @@ public sealed record RosterGenerationRequest
     /// <summary>Where the modified equipment table is written, when one is produced.</summary>
     public string EquipmentOutputPath { get; init; } =
         Path.Combine("Output", "Generated_Equipment.csv");
+
+    /// <summary>Where the rebuilt depth chart goes, when the dynasty carries one.</summary>
+    public string DepthChartOutputPath { get; init; } =
+        Path.Combine("Output", "Generated_DepthChart.csv");
 
     /// <summary>
     /// Write the whole dynasty back out as a single <c>.zip</c> at this path,
@@ -404,6 +409,7 @@ public sealed class RosterGenerationService
         // has validated and been written: a run that refuses to produce a
         // roster must not leave a stray equipment file beside it.
         var (equipment, equipmentPath) = ApplyEquipment(request, export, donor, conversions, data, visuals);
+        var (depthCharts, depthChartPath) = RebuildDepthCharts(request, export, donor, conversions, data);
 
         var markdown = Path.GetExtension(request.ReportPath)
             .Equals(".md", StringComparison.OrdinalIgnoreCase);
@@ -456,6 +462,11 @@ public sealed class RosterGenerationService
                 tables.Add(equipmentPath);
             }
 
+            if (depthChartPath is not null)
+            {
+                tables.Add(depthChartPath);
+            }
+
             saveOutput = package.WriteSave(saveDestination, tables, request.DynastyYear);
         }
 
@@ -463,6 +474,61 @@ public sealed class RosterGenerationService
             conversion, result, request.OutputPath, request.ReportPath,
             roster.Warnings, roster.Corrections, equipment, equipmentPath, packagePath, packaged,
             conversions, saveOutput);
+    }
+
+    /// <summary>
+    /// Puts every converted team's depth chart back in order and writes the
+    /// rebuilt table beside the roster.
+    ///
+    /// <para>Nothing is asked of the user. A depth chart points at player
+    /// <em>rows</em>, in the order the donor's players ranked; recreating a
+    /// roster changes who lives in each row and leaves the chart alone, so the
+    /// slot the game believes is the starting quarterback ends up holding
+    /// whoever landed there. The game does not correct it.</para>
+    ///
+    /// <para>Returns nulls — and writes nothing — when the dynasty carries no
+    /// depth chart, which is ordinary for a folder from the community export
+    /// tool, or when the slot model is not installed.</para>
+    /// </summary>
+    private (IReadOnlyList<DepthChartTeamReport> Reports, string? Path) RebuildDepthCharts(
+        RosterGenerationRequest request,
+        DynastyExport export,
+        PlayerRoster donor,
+        IReadOnlyList<ConversionReport> conversions,
+        string? data)
+    {
+        var none = (IReadOnlyList<DepthChartTeamReport>)Array.Empty<DepthChartTeamReport>();
+        var modelPath = TryFindDataFile(data, "DepthChartSlots.json");
+        if (modelPath is null || conversions.Count == 0)
+        {
+            return (none, null);
+        }
+
+        var charts = DepthChartTable.Open(Path.GetDirectoryName(export.PlayerTablePath) ?? ".");
+        if (charts is null)
+        {
+            return (none, null);
+        }
+
+        var model = DepthChartSlotModel.Load(modelPath);
+        var reports = new List<DepthChartTeamReport>();
+        foreach (var conversion in conversions)
+        {
+            if (charts.Rebuild(conversion.TeamId, donor, model) is { } report)
+            {
+                reports.Add(report);
+            }
+        }
+
+        if (reports.Count == 0)
+        {
+            return (none, null);
+        }
+
+        Progress?.Invoke($"Depth charts rebuilt for {reports.Count} team(s).");
+        CreateParentDirectory(request.DepthChartOutputPath);
+        charts.Save(request.DepthChartOutputPath);
+        return (reports, request.DepthChartOutputPath);
     }
 
     /// <summary>

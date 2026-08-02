@@ -62,8 +62,16 @@ public static class NativeSave
 {
     private static readonly byte[] Magic = "FBCHUNKS"u8.ToArray();
 
-    /// <summary>Tables the generator needs out of a save.</summary>
-    public const string DefaultTables = "Player,Team,CharacterVisuals";
+    /// <summary>
+    /// Tables the generator needs out of a save.
+    ///
+    /// <para><c>DepthChart</c> and <c>Player[]</c> are the depth chart: a chart
+    /// row per team whose slots point at <c>Player[]</c> rows, each holding the
+    /// players listed there in order. Both are small — 145 rows and 5,005 — and
+    /// without them a recreated roster takes the field in whatever order the
+    /// donor's players ranked.</para>
+    /// </summary>
+    public const string DefaultTables = "Player,Team,CharacterVisuals,DepthChart,Player[]";
 
     /// <summary>
     /// True when the file begins with the dynasty save header. Checked by
