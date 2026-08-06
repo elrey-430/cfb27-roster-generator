@@ -303,6 +303,48 @@ public sealed class DepthChartTable
         }
     }
 
+    /// <summary>
+    /// Who a team lists at each slot, in depth order, as player row keys.
+    /// Null when the dynasty has no chart for that team.
+    ///
+    /// <para>Read-only, and the other direction from <see cref="Rebuild"/> —
+    /// this is how an exported roster file learns which players actually
+    /// start.</para>
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<int>>? Listing(int teamIndex)
+    {
+        if (!_chartRowByTeam.TryGetValue(teamIndex, out var chartRow))
+        {
+            return null;
+        }
+
+        var listing = new Dictionary<string, IReadOnlyList<int>>(StringComparer.Ordinal);
+        foreach (var slotName in _slotColumns)
+        {
+            if (TableReference.Row(_charts.GetCell(chartRow, slotName)) is not int entryRow ||
+                entryRow >= _entries.RowCount)
+            {
+                continue;
+            }
+
+            var ordered = new List<int>();
+            foreach (var column in _entryColumns)
+            {
+                if (TableReference.Decode(_entries.GetCell(entryRow, column)) is { } reference)
+                {
+                    ordered.Add(reference.Row);
+                }
+            }
+
+            if (ordered.Count > 0)
+            {
+                listing[slotName] = ordered;
+            }
+        }
+
+        return listing;
+    }
+
     /// <summary>Writes the rebuilt <c>Player[]</c> table.</summary>
     public void Save(string path) => _entries.Save(path);
 }

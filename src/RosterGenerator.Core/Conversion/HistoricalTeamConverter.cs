@@ -733,6 +733,15 @@ public sealed class HistoricalTeamConverter
             {
                 session.SetPreviousSchool(slot, PlayerSchema.NoPrevTeamIdSentinel);
             }
+            else if (string.Equals(
+                         previousSchool.Trim(),
+                         PlayerSchema.PreviousSchoolNotInDynasty,
+                         StringComparison.OrdinalIgnoreCase))
+            {
+                // The tool's own spelling, written by an export. It states a
+                // fact the save already held, so it is not news.
+                session.SetPreviousSchool(slot, PlayerSchema.PrevTeamIdNotInDynasty);
+            }
             else if (_previousSchools.TryResolve(previousSchool, out var schoolId))
             {
                 session.SetPreviousSchool(slot, schoolId);

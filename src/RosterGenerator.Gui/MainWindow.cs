@@ -106,6 +106,15 @@ public sealed class MainWindow : Window
     };
     private readonly Button _checkButton = new() { Content = "Check roster file", IsEnabled = false };
     private readonly Button _generateButton = new() { Content = "Generate", IsEnabled = false };
+
+    /// <summary>
+    /// Writes the loaded dynasty out as a roster file.
+    ///
+    /// <para>Needs no roster file of its own — it is the way to <em>get</em>
+    /// one. A user correcting a single player, or starting a project from a
+    /// real roster rather than a blank template, begins here.</para>
+    /// </summary>
+    private readonly Button _exportButton = new() { Content = "Export roster file", IsEnabled = false };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
     private readonly SelectableTextBlock _output = new()
     {
@@ -156,6 +165,7 @@ public sealed class MainWindow : Window
         };
         _saveOutBox.IsCheckedChanged += (_, _) => UpdateSaveOption();
         _ratingsBox.IsCheckedChanged += (_, _) => OnRatingsToggled();
+        _exportButton.Click += async (_, _) => await ExportAsync();
         _checkButton.Click += async (_, _) => await CheckAsync();
         _generateButton.Click += async (_, _) => await GenerateAsync();
 
@@ -243,7 +253,7 @@ public sealed class MainWindow : Window
             Orientation = Orientation.Horizontal,
             Spacing = 8,
             Margin = new Thickness(0, 6, 0, 0),
-            Children = { _checkButton, _generateButton },
+            Children = { _exportButton, _checkButton, _generateButton },
         });
 
         panel.Children.Add(_blocker);
@@ -633,6 +643,72 @@ public sealed class MainWindow : Window
         return Path.Combine(folder, $"{name}-Recreated");
     }
 
+    /// <summary>
+    /// Writes the loaded dynasty out as a roster file — every team it carries,
+    /// in the template's own shape, ready to edit and feed back in.
+    /// </summary>
+    private async Task ExportAsync()
+    {
+        if (_package is null)
+        {
+            return;
+        }
+
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save the roster file",
+            SuggestedFileName = $"{_package.Name}_Roster.csv",
+            DefaultExtension = "csv",
+            FileTypeChoices = new[] { new FilePickerFileType("Roster file") { Patterns = new[] { "*.csv" } } },
+        });
+
+        if (file?.TryGetLocalPath() is not { Length: > 0 } path)
+        {
+            return;
+        }
+
+        _exportButton.IsEnabled = false;
+        SetStatus("Writing the roster file…", ok: null);
+        try
+        {
+            var export = _package.Export;
+            var slotsPath = Path.Combine(AppContext.BaseDirectory, "data", "DepthChartSlots.json");
+            var report = await Task.Run(() => RosterCsvExporter.Write(
+                export,
+                export.LoadPlayerRoster(),
+                path,
+                teamIndices: null,
+                season: null,
+                export.LoadCharacterVisuals(),
+                slotsPath is not null && File.Exists(slotsPath)
+                    ? RosterGenerator.Core.Depth.DepthChartTable.Open(
+                        Path.GetDirectoryName(export.PlayerTablePath) ?? ".")
+                    : null,
+                slotsPath is not null && File.Exists(slotsPath)
+                    ? RosterGenerator.Core.Depth.DepthChartSlotModel.Load(slotsPath)
+                    : null));
+
+            _output.Text =
+                $"Roster file written to: {Path.GetFullPath(report.Path)}\n\n" +
+                $"  {report.Players} player(s) across {report.Teams.Count} team(s).\n" +
+                (report.RolesFromDepthChart
+                    ? $"  Role filled in from your dynasty's depth chart — {report.Starters} starters.\n"
+                    : "  Role left blank: this dynasty carries no depth chart.\n") +
+                "\nStats, awards, combine numbers and draft slots are empty — a dynasty save has never " +
+                "held them. Fill in what you know and the ratings become yours.";
+            SetStatus($"Done — {report.Players} players written to {Path.GetFileName(path)}.", ok: true);
+        }
+        catch (Exception ex)
+        {
+            _output.Text = ex.Message;
+            SetStatus("The roster file could not be written.", ok: false);
+        }
+        finally
+        {
+            UpdateButtons();
+        }
+    }
+
     private async Task GenerateAsync()
     {
         var request = new RosterGenerationRequest
@@ -869,6 +945,9 @@ public sealed class MainWindow : Window
         var hasDynasty = _dynasty is not null;
         _checkButton.IsEnabled = hasRoster;
         _generateButton.IsEnabled = hasRoster && hasDynasty;
+
+        // Exporting needs no roster file — it is how a user gets one.
+        _exportButton.IsEnabled = hasDynasty;
 
         // A greyed-out button with no explanation is the worst thing this
         // window can do: everything looks fine and nothing says why it will

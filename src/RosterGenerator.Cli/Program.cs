@@ -24,6 +24,14 @@ using RosterGenerator.Core.Validation;
 //   list-teams --dynasty <folder of exported CSVs>
 //   compare    --left <Player.csv> --right <Player.csv> --team <name or id>
 //              [--dynasty <folder of exported CSVs>] [--output <md>]
+//   export     --dynasty <save or folder> [--team <name>] [--season <year>]
+//              [--output <csv>]
+//
+// export writes a team out of a dynasty AS A ROSTER FILE — the same format
+// generate reads. Omit --team to write every team the dynasty carries, which
+// is a whole season in one file. What the save knows is filled in; the
+// evidence columns (stats, awards, combine, draft) are left empty, because a
+// save has never held them.
 //
 // The roster CSV's own Team column decides where each player goes, so one
 // file can carry a whole season. --team is only a fallback for rows that
@@ -42,6 +50,7 @@ try
         "list-teams" => ListTeams(ParseOptions(args[1..])),
         "template" => Template(ParseOptions(args[1..])),
         "compare" => Compare(ParseOptions(args[1..])),
+        "export" => Export(ParseOptions(args[1..])),
         _ => Usage(),
     };
 }
@@ -280,6 +289,58 @@ static int ListTeams(Dictionary<string, string> options)
 
 // Writes the blank roster template for a whole season: every team that played
 // that year, each with its 85 slots, Team/Season/Position already filled in.
+static int Export(Dictionary<string, string> options)
+{
+    int? season = null;
+    if (options.TryGetValue("season", out var seasonText))
+    {
+        if (!int.TryParse(seasonText, out var parsed) || parsed <= 0)
+        {
+            throw new ArgumentException($"--season '{seasonText}' is not a year.");
+        }
+
+        season = parsed;
+    }
+
+    using var package = OpenDynastyPackage(options);
+    var export = package.Export;
+    var roster = export.LoadPlayerRoster();
+
+    IReadOnlyList<int>? teams = null;
+    if (options.TryGetValue("team", out var teamName))
+    {
+        teams = new[] { export.BuildTeamMappings().Resolve(teamName) };
+    }
+
+    // Roles come from the dynasty's own depth chart when it carries one, so an
+    // exported file says who actually starts rather than leaving it to guess.
+    var slotsPath = FindDataFile(options, "depth-chart-slots", "DepthChartSlots.json", required: false);
+    var charts = slotsPath is null
+        ? null
+        : RosterGenerator.Core.Depth.DepthChartTable.Open(
+            Path.GetDirectoryName(export.PlayerTablePath) ?? ".");
+
+    var output = options.TryGetValue("output", out var chosen)
+        ? chosen
+        : Path.Combine("Output", "Exported_Roster.csv");
+
+    var result = RosterCsvExporter.Write(
+        export, roster, output, teams, season, export.LoadCharacterVisuals(),
+        charts,
+        slotsPath is null ? null : RosterGenerator.Core.Depth.DepthChartSlotModel.Load(slotsPath));
+
+    Console.WriteLine();
+    Console.WriteLine($"Roster file: {result.Path}");
+    Console.WriteLine($"  {result.Players} player(s) across {result.Teams.Count} team(s).");
+    Console.WriteLine(result.RolesFromDepthChart
+        ? $"  Roles read from the dynasty's depth chart — {result.Starters} starter(s)."
+        : "  Role left blank: this dynasty carries no depth chart.");
+    Console.WriteLine(
+        "  Stats, awards, combine numbers and draft slots are empty — a save has never held them. " +
+        "Fill them in and the ratings become yours.");
+    return 0;
+}
+
 static int Template(Dictionary<string, string> options)
 {
     var seasonText = Require(options, "season");

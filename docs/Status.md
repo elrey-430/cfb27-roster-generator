@@ -1,8 +1,55 @@
 # Project Status
 
-_Last updated: 2026-08-02 — depth charts are rebuilt automatically._
+_Last updated: 2026-08-02 — the roster file round-trips._
 
 ## Current status
+
+**The tool could read a roster file and not write one.** That asymmetry has been
+the top of the backlog since Milestone 15 and cost users twice: correcting one
+player in ten thousand meant retyping the roster or editing the result in a
+third-party editor, where the correction was invisible here and lost on the next
+run — and every new project started from a blank template rather than from what
+the dynasty already had.
+
+**`RosterCsvExporter` writes a dynasty out as a roster file**, in the template's
+own shape and column order. `export` on the command line, **Export roster file**
+in the app. Omit the team and it writes every team the dynasty carries — a whole
+season in one file, which the generator reads straight back because the `Team`
+column decides where players go.
+
+**The round trip is lossless for identity.** Exporting Florida State out of a
+base save and feeding the file straight back in, compared player by player:
+
+```
+position 85/85   jersey 85/85   height 85/85   weight 85/85
+class    85/85   redshirt 85/85  town 85/85    state 85/85
+prev school 85/85
+```
+
+Compared *by player*, not by row: a recreated player takes whichever donor slot
+fits his position, so what has to survive is the man, not his seat.
+
+**Two things the first attempt got wrong, both caught by measuring:**
+
+- Four players came back as having never transferred. Their `PLYR_PREVTEAMID`
+  was 1009 — "a school the dynasty does not model" — which has an id but no
+  name, and blank read back as "never transferred", a different and untrue
+  thing. `PlayerSchema.PreviousSchoolNotInDynasty` (`Unlisted`) is now written
+  on export and read back silently.
+- Roles are read off the dynasty's own depth chart, which only became possible
+  last release. Heading a slot named for a real position makes a starter; the
+  specialist slots (`3DRB`, `KR`, `SLWR`) describe a package, not a starting
+  job, so leading one does not promote a third receiver.
+
+**The evidence columns are deliberately empty** — statistics, awards, combine
+numbers, draft slots. A save records what a player *is*, never what he *did*, so
+exporting cannot invent a stat line, and pretending otherwise would put made-up
+numbers in somebody's file. An exported roster therefore reproduces identity
+exactly and rates from scratch.
+
+Tests: 556/556.
+
+## Previously
 
 **A recreated roster took the field in the donor's order.** Reported: depth
 charts "way out of alignment" after generating. The cause is exact — a depth
@@ -51,8 +98,6 @@ folder from the community export tool — is skipped in silence, and
 `LockedEntries`, which points at entries a user pinned, is never rewritten.
 
 Tests: 547/547.
-
-## Previously
 
 **`DraftRound` was in the template and unread.** Reported: a player entered as
 the 33rd pick — round 2, pick 1 — came out at 97 or better. The tool read

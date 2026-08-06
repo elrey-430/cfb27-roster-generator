@@ -468,6 +468,37 @@ players you gave little evidence for. Players with a draft slot, awards or a
 stat line are rated on their own record and are unaffected. Nothing extra is
 required from you — the adjustment comes from the dynasty you loaded.
 
+## Starting from your dynasty instead of a blank page
+
+**Export the roster you already have, then edit it.** In the app: load your
+dynasty and press **Export roster file**. On the command line:
+
+```
+export --dynasty <your save> [--team "Florida State"] [--season 2014]
+```
+
+Omit `--team` and you get every team the dynasty carries — a whole season in
+one file.
+
+What comes out is this exact template, with everything your save knows already
+filled in: names, positions, jerseys, heights, weights, classes, hometowns,
+transfers, skin tones, and each player's **Role** read off your dynasty's own
+depth chart.
+
+**Round trip:** feed that file straight back into `generate` and every one of
+those fields comes out identical. Verified player by player, all nine identity
+fields.
+
+**The evidence columns come out empty** — statistics, awards, combine numbers,
+draft slots. A dynasty save has never held them: it records what a player *is*,
+never what he *did*. So an exported file reproduces a player's identity exactly
+and rates him from scratch. Fill in what you know and the ratings become yours.
+
+One value to know: **`Unlisted`** in `PreviousSchool` means "transferred from a
+school your dynasty does not carry". The tool writes it on export and reads it
+back silently, so those players stay transfers instead of quietly becoming
+players who never moved.
+
 ## Writing down a draft slot
 
 **Both spellings work.** A second-round pick can be written the way the draft is

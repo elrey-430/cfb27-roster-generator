@@ -68,6 +68,19 @@ public static class PlayerSchema
     public const int PrevTeamIdNotInDynasty = 1009;
 
     /// <summary>
+    /// What a roster file writes in <c>PreviousSchool</c> to mean
+    /// <see cref="PrevTeamIdNotInDynasty"/> — a transfer from somewhere the
+    /// dynasty does not carry.
+    ///
+    /// <para>It exists so an exported roster round-trips. Left blank, those
+    /// players come back as having never transferred at all, which is a
+    /// different and untrue thing; naming a school the dynasty does not have
+    /// works but warns once per player. This is read back silently, because it
+    /// is the tool's own spelling of a fact the save already held.</para>
+    /// </summary>
+    public const string PreviousSchoolNotInDynasty = "Unlisted";
+
+    /// <summary>
     /// Columns that must be present for a file to be treated as a Player
     /// table export. These are the bookkeeping keys plus every column the
     /// typed layer and the validation rules read.
