@@ -1,5 +1,39 @@
 # Release notes
 
+## v0.8.4-alpha — A dynasty writes out as a roster file
+
+The tool could read a roster file and not write one — top of the backlog since
+Milestone 15. `RosterCsvExporter` writes a dynasty out in the template's own
+shape and column order: `export` on the command line, **Export roster file** in
+the app. Omit the team and it writes every team the dynasty carries, which the
+generator reads straight back because the roster file's `Team` column decides
+where each player goes.
+
+Identity is lossless. Florida State exported out of a base save and generated
+straight back in, compared **by player rather than by row** — a recreated player
+takes whichever donor slot fits his position, so what has to survive is the man,
+not his seat — is 85/85 on position, jersey, height, weight, class, redshirt,
+town, state and previous school.
+
+Two things the first attempt got wrong, both caught by measuring the round trip:
+
+- Four players came back as never having transferred. `PLYR_PREVTEAMID` 1009 is
+  a school the dynasty does not model — an id with no name — and blank read back
+  as "never transferred", a different and untrue thing.
+  `PlayerSchema.PreviousSchoolNotInDynasty` (`Unlisted`) is written on export and
+  read back silently, without the warning an unknown school name would raise.
+- Roles are read off the dynasty's own depth chart, which only became possible
+  in v0.8.3. Heading a slot named for a real position makes a starter; the
+  specialist slots describe a package, not a starting job, so leading 3DRB or KR
+  does not promote a third receiver. An 85-man roster yields 21 starters.
+
+The evidence columns — stats, awards, combine, draft — are deliberately empty. A
+save records what a player *is*, never what he *did*; exporting cannot invent a
+stat line, and pretending otherwise would put made-up numbers in somebody's file.
+An exported roster reproduces identity exactly and rates from scratch.
+
+Tests: 556, nine new.
+
 ## v0.8.3-alpha — Depth charts are rebuilt
 
 A generated roster took the field in the donor's order. A depth chart points at
