@@ -446,9 +446,62 @@ public sealed class RatingEngine
 
         _emphasis.Apply(roles, profile, attributes, locked, adjustments);
         ApplyPhysique(attributes, group, player, adjustments);
+        ApplyLegacyShape(attributes, evidence, adjustments, locked);
         ApplyMeasurements(attributes, evidence, adjustments, locked);
         ApplyExperience(attributes, player);
         return attributes;
+    }
+
+    /// <summary>
+    /// Restores the shape an imported player had in the roster he came from.
+    ///
+    /// <para>Everything above this point gives two players of the same
+    /// archetype at the same overall the same attributes. That is right when
+    /// nothing distinguishes them and wrong when something does: an older
+    /// roster records who was fast and who was strong, and a corner who was
+    /// the quickest man in the file should not come out identical to one who
+    /// was the most physical.</para>
+    ///
+    /// <para>What crosses over is the player's rank among others at his own
+    /// position, never the old number. Being the fastest corner in a file
+    /// means something in any game; a speed of 28 out of 31 means nothing
+    /// outside the one it was written in. The shift is bounded by
+    /// <see cref="RatingModelSet.LegacyShapeMaxShift"/> so the ranking colours
+    /// a player in without deciding what he is.</para>
+    ///
+    /// <para>Anything a verified measurement has already fixed is left alone —
+    /// a stopwatch outranks somebody's recollection.</para>
+    /// </summary>
+    private void ApplyLegacyShape(
+        Dictionary<string, double> attributes, RatingEvidence evidence, List<string> adjustments,
+        HashSet<string> locked)
+    {
+        var reach = _model.LegacyShapeMaxShift;
+        if (reach <= 0 || evidence.LegacyRatingPercentiles.Count == 0)
+        {
+            return;
+        }
+
+        var moved = 0;
+        foreach (var (attribute, percentile) in evidence.LegacyRatingPercentiles)
+        {
+            if (!attributes.ContainsKey(attribute) || locked.Contains(attribute))
+            {
+                continue;
+            }
+
+            // 0 is the best at the position and 100 the worst, so a player in
+            // the middle of the order leaves the attribute where it was.
+            attributes[attribute] += (50 - Math.Clamp(percentile, 0, 100)) / 50.0 * reach;
+            moved++;
+        }
+
+        if (moved > 0)
+        {
+            adjustments.Add(
+                $"{moved} attribute(s) moved by up to {reach:0.#} point(s) to keep the shape this player " +
+                "had among others at his position in the roster he was imported from.");
+        }
     }
 
     /// <summary>

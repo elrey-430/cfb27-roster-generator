@@ -571,3 +571,24 @@ The draft slot is not ignored — a late pick is still information — it just
 stops outvoting the season itself. **This is the case `AwardContender` is
 for:** if a player's season ended early, what they were in contention for
 before it ended is often the truest thing left in the record.
+
+## `LegacyRank` and `Legacy*` — written by an import, never typed
+
+`import` (see [Legacy_Rosters.md](Legacy_Rosters.md)) adds a block of columns
+nobody has to fill in by hand. They hold **places in an order**, not ratings:
+
+- **`LegacyRank`** — where the player stood on his own squad in the roster he
+  came from. 0 is the best man on the team, 100 the last.
+- **`LegacySpeed`, `LegacyStrength`, `LegacyAwareness`, …** — where he stood
+  among others *at his own position on that squad*, on the same 0–100 scale.
+  Eighteen columns, one per attribute the older games recorded.
+
+`LegacyRank` is weighed as a talent signal, below draft position and awards,
+because it is somebody's recollection rather than a fact about what a player
+did. The rest nudge their matching attribute and are offered to archetype
+selection, which is what keeps an elusive back and a power back from coming out
+as the same player.
+
+Editing them is fine and they are ordinary numbers, but there is no reason to
+add them to a roster you are writing yourself: a stat line says more, and a
+verified 40-yard dash overrides the ranking outright.

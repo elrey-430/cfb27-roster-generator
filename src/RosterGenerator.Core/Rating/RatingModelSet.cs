@@ -287,6 +287,28 @@ public sealed class RatingModelSet
     /// <summary>Award name (lower-case) → talent score.</summary>
     public Dictionary<string, double> AwardScores { get; init; } = new();
 
+    /// <summary>
+    /// [rankPercentile, overall] points: where a player sits in his own squad's
+    /// order against the overall the game actually gives a player in that slot.
+    ///
+    /// <para>Measured over EA's own rosters — 138 squads of exactly 85, 11,730
+    /// players — by sorting each squad and averaging the overall at each
+    /// position in the order. This is what turns an older game's ranking into a
+    /// number on this game's scale without either scale ever having to be
+    /// reconciled with the other.</para>
+    /// </summary>
+    public double[][] LegacyRankToOverall { get; init; } = Array.Empty<double[]>();
+
+    /// <summary>
+    /// The furthest an attribute may be moved, in points, by where a player
+    /// ranked at his position in an older roster.
+    ///
+    /// <para>Bounded, because the ranking is real information about who was
+    /// fast and who was strong while the source's own scale is not: letting it
+    /// move an attribute freely would import a number nobody has anchored.</para>
+    /// </summary>
+    public double LegacyShapeMaxShift { get; init; }
+
     /// <summary>[fortyTime, speedRating] points.</summary>
     public double[][] FortyYardToSpeed { get; init; } = Array.Empty<double[]>();
 

@@ -26,12 +26,21 @@ using RosterGenerator.Core.Validation;
 //              [--dynasty <folder of exported CSVs>] [--output <md>]
 //   export     --dynasty <save or folder> [--team <name>] [--season <year>]
 //              [--output <csv>]
+//   import     --legacy <PS2-era roster file> --season <year> [--team <name>]
+//              [--output <csv>] [--legacy-team-ids <json>]
 //
 // export writes a team out of a dynasty AS A ROSTER FILE — the same format
 // generate reads. Omit --team to write every team the dynasty carries, which
 // is a whole season in one file. What the save knows is filled in; the
 // evidence columns (stats, awards, combine, draft) are left empty, because a
 // save has never held them.
+//
+// import reads a PS2-era NCAA Football roster file into that same format.
+// Identity crosses over exactly; the ratings do not, because the older games
+// held eighteen of this one's fifty-seven and on a scale nobody has anchored.
+// What crosses instead is the ORDER — where a player stood on his squad, and
+// where he stood among others at his position — which is what the Legacy*
+// columns hold. --season is required: the file records no year.
 //
 // The roster CSV's own Team column decides where each player goes, so one
 // file can carry a whole season. --team is only a fallback for rows that
@@ -51,6 +60,7 @@ try
         "template" => Template(ParseOptions(args[1..])),
         "compare" => Compare(ParseOptions(args[1..])),
         "export" => Export(ParseOptions(args[1..])),
+        "import" => Import(ParseOptions(args[1..])),
         _ => Usage(),
     };
 }
@@ -220,6 +230,47 @@ static string Require(Dictionary<string, string> options, string name) =>
 
 // Data files are looked up: explicit flag, then ./data/, then the data/
 // folder next to the executable (populated by publish).
+// Reads a PS2-era NCAA Football roster file into this tool's roster CSV.
+static int Import(Dictionary<string, string> options)
+{
+    if (!options.TryGetValue("legacy", out var rosterPath))
+    {
+        throw new ArgumentException("--legacy <roster file> is required.");
+    }
+
+    if (!File.Exists(rosterPath))
+    {
+        throw new FileNotFoundException($"There is no roster file at '{Path.GetFullPath(rosterPath)}'.");
+    }
+
+    // The file records no year at all, and guessing one from the players on it
+    // would be a research result presented as a fact the file supplied.
+    if (!options.TryGetValue("season", out var seasonText) ||
+        !int.TryParse(seasonText, out var season) || season <= 0)
+    {
+        throw new ArgumentException(
+            "--season <year> is required: a legacy roster file does not record which season it is.");
+    }
+
+    var teamIds = RosterGenerator.Core.Legacy.LegacyRosterImporter.LoadTeamIds(
+        FindDataFile(options, "legacy-team-ids", "LegacyTeamIds.json", required: true)!);
+    var output = options.GetValueOrDefault("output", "ImportedRoster.csv");
+    var result = RosterGenerator.Core.Legacy.LegacyRosterImporter.Import(
+        rosterPath, output, teamIds, season, options.GetValueOrDefault("team"));
+
+    Console.Error.WriteLine(
+        $"wrote {result.Path}: {result.Players} player(s) across {result.Teams} team(s), season {season}");
+    foreach (var note in result.Notes)
+    {
+        Console.Error.WriteLine($"  {note}");
+    }
+
+    Console.Error.WriteLine(
+        "  Ratings are NOT imported. Fill in stats, awards or a draft pick to rate these players on " +
+        "their own record; without them the ratings follow the source roster's ordering.");
+    return 0;
+}
+
 static string? FindDataFile(Dictionary<string, string> options, string option, string fileName, bool required)
 {
     if (options.TryGetValue(option, out var explicitPath))

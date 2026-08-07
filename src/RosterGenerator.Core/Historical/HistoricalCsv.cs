@@ -313,8 +313,24 @@ public static class HistoricalCsv
         var undrafted = draftPickText.Equals("UDFA", StringComparison.OrdinalIgnoreCase) ||
                         draftPickText.Equals("Undrafted", StringComparison.OrdinalIgnoreCase);
 
+        // Columns an import writes and nobody has to fill in by hand. They
+        // hold places in an order rather than ratings — see
+        // LegacyRosterImporter — so they read as plain numbers.
+        var legacyShape = new Dictionary<string, double>(StringComparer.Ordinal);
+        foreach (var rating in Legacy.LegacySchema.AttributeMap.Values)
+        {
+            var column = Normalize(Legacy.LegacyRosterImporter.ColumnFor(rating));
+            if (ParseDouble(cell(row, column), rowLabel, column, warnings, corrections) is double place)
+            {
+                legacyShape[rating] = place;
+            }
+        }
+
         return new RatingEvidence
         {
+            LegacyRankPercentile =
+                ParseDouble(cell(row, "legacyrank"), rowLabel, "LegacyRank", warnings, corrections),
+            LegacyRatingPercentiles = legacyShape,
             Role = NullIfEmpty(cell(row, "role")),
             StarRating = ParseInt(cell(row, "starrating"), rowLabel, "StarRating", warnings, corrections),
             FortyYardDash = ParseDouble(cell(row, "forty"), rowLabel, "Forty", warnings, corrections),

@@ -35,10 +35,18 @@ public sealed class TalentScorer
         AddProductionSignal(positionGroup, evidence, signals, missing);
         AddRecruitingSignal(evidence, signals, missing);
         AddRoleSignal(evidence, signals, missing);
+        AddLegacySignal(evidence, signals, missing);
 
         var demotionNote = DemoteDraftIfItDisagrees(signals);
 
-        var totalWeight = _model.SignalWeights.Values.Sum();
+        // A roster nobody imported has no place in an older game's order, and
+        // that is not a gap in what is known about the player — it is a source
+        // that does not apply to him. Counting it against coverage would lower
+        // the confidence of every roster ever written by hand, so the legacy
+        // signal only joins the total when there is one to weigh.
+        var totalWeight = _model.SignalWeights
+            .Where(w => w.Key != "legacy" || evidence.LegacyRankPercentile is not null)
+            .Sum(w => w.Value);
         var coveredWeight = signals.Sum(s => s.Weight);
         var coverage = totalWeight > 0 ? coveredWeight / totalWeight : 0;
 
@@ -280,6 +288,32 @@ public sealed class TalentScorer
         {
             missing.Add("recruiting rating");
         }
+    }
+
+    /// <summary>
+    /// What an older game's roster thought of this player, read as a place in
+    /// his own squad's order rather than as a rating.
+    ///
+    /// <para>The signal is deliberately weaker than draft position or a major
+    /// award. Those are facts about what a player did; this is the considered
+    /// opinion of whoever built that roster, arrived at from memory, and where
+    /// a user supplies real evidence it should be the real evidence that
+    /// decides. It beats having nothing at all by a wide margin, which is the
+    /// alternative for the great majority of a 1990s or 2000s squad.</para>
+    /// </summary>
+    private void AddLegacySignal(RatingEvidence evidence, List<TalentSignal> signals, List<string> missing)
+    {
+        var weight = _model.SignalWeights.GetValueOrDefault("legacy");
+        if (evidence.LegacyRankPercentile is double percentile && _model.LegacyRankToOverall.Length > 0)
+        {
+            var score = RatingModelSet.Interpolate(_model.LegacyRankToOverall, percentile);
+            signals.Add(new TalentSignal("legacy", score, weight,
+                $"Ranked in the top {percentile:0}% of his squad in the source roster"));
+        }
+
+        // Nothing is added to `missing` when there is no source roster: a
+        // hand-written file is not missing an import, and saying so would put
+        // a line nobody can act on in front of every user.
     }
 
     private void AddRoleSignal(RatingEvidence evidence, List<TalentSignal> signals, List<string> missing)

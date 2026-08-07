@@ -1,8 +1,63 @@
 # Project Status
 
-_Last updated: 2026-08-02 — the roster file round-trips._
+_Last updated: 2026-08-07 — rosters from the PS2 games can be read in._
 
 ## Current status
+
+**A twenty-year-old roster file is now a source of players.** Community "named"
+rosters for the PS2-era NCAA Football games carry real people with real numbers
+and measurables across more than a hundred teams, which is exactly the part of
+building a historical roster that is pure typing.
+
+```
+RosterGenerator.Cli import --legacy <roster file> --season 2004 --output MyRoster.csv
+```
+
+The container is EA's `DB` format, and it is fully decoded — **660,445 of
+660,445 cells** against community exports of two different files. Three things
+had to be worked out that the format does not state: it stores no row count
+anywhere (the last row with a non-zero key ends the table), nine columns carry
+stale offsets pointing at other columns' bits, and three body-shape fields are
+signed with nothing to mark them.
+
+**Which team a player plays for is not recorded at all.** Squads run in blocks
+of consecutive player id and the team table names two captains per side, which
+is enough until two squads' blocks touch — then there is no gap to cut on and a
+boundary in the wrong place moves a dozen players to the wrong school. The
+depth chart settles it: within a pass a team lists each `(position, depth)` slot
+once, so the boundary that makes the fewest players collide with somebody
+already in their slot is the one the game is describing. Every boundary in both
+files resolves with **no collisions**, and every team ends up holding its own
+captains — 119/119 and 83/83.
+
+**Ratings are deliberately not imported.** Eighteen of CFB27's fifty-seven
+rating columns have any counterpart in the older games, and those eighteen carry
+a mean of **54.3%** of the weight in EA's own overall formulas — 41.9% at
+quarterback. Writing them across would leave nearly half of every overall to be
+invented and then presented as history, and the stored numbers are five or six
+bits wide on a scale nobody has anchored.
+
+**What crosses over is the order.** `LegacyRank` — where a player stood on his
+own squad — becomes a talent signal, scored through a curve measured over EA's
+own rosters (138 squads of exactly 85, 11,730 players). The eighteen
+`Legacy*` columns hold where he stood among others at his own position, and each
+nudges its matching attribute and is offered to archetype selection. That is
+what stops two backs of the same standing coming out identical:
+
+```
+HB Reggie Bush    OVR 84  HB_ElusiveBack  spd 95  str 67
+HB LenDale White  OVR 83  HB_PowerBack    spd 78  str 88
+```
+
+A verified measurement still wins outright: a 40-yard dash fixes speed and the
+ranking may not move it afterwards. And an import counts against nothing — a
+roster written by hand keeps exactly the confidence it always had.
+
+See [Legacy_Rosters.md](Legacy_Rosters.md) for the format, the corrections and
+the team id map, every entry of which was read off the roster it belongs to
+rather than assumed from the ordering.
+
+## Previously
 
 **The tool could read a roster file and not write one.** That asymmetry has been
 the top of the backlog since Milestone 15 and cost users twice: correcting one

@@ -1,0 +1,600 @@
+{
+  "description": "Team ids used by PS2-era NCAA Football roster files, mapped to the school names this tool knows. Each entry names a player from that team's own roster in the source file, because the ids are NOT reliably alphabetical and an assumed sort puts whole squads at the wrong school -- USC and Utah sit next to each other, and the two Louisiana schools appear under names they had stopped using. Every mapping here was read off the roster it belongs to.",
+  "schemaVersion": 1,
+  "teams": [
+    {
+      "teamId": 1,
+      "school": "Air Force",
+      "identifiedBy": "John Rudzinski"
+    },
+    {
+      "teamId": 2,
+      "school": "Akron",
+      "identifiedBy": "Charlie Frye"
+    },
+    {
+      "teamId": 3,
+      "school": "Alabama",
+      "identifiedBy": "Brodie Croyle"
+    },
+    {
+      "teamId": 4,
+      "school": "Arizona",
+      "identifiedBy": "Mike Bell"
+    },
+    {
+      "teamId": 5,
+      "school": "Arizona State",
+      "identifiedBy": "Andrew Walter"
+    },
+    {
+      "teamId": 6,
+      "school": "Arkansas",
+      "identifiedBy": "Matt Jones"
+    },
+    {
+      "teamId": 7,
+      "school": "Arkansas State",
+      "identifiedBy": "Elliot Jacobs"
+    },
+    {
+      "teamId": 8,
+      "school": "Army"
+    },
+    {
+      "teamId": 9,
+      "school": "Auburn",
+      "identifiedBy": "Jason Campbell"
+    },
+    {
+      "teamId": 10,
+      "school": "Ball State",
+      "identifiedBy": "Dante Ridgeway"
+    },
+    {
+      "teamId": 11,
+      "school": "Baylor",
+      "identifiedBy": "Daniel Sepulveda"
+    },
+    {
+      "teamId": 12,
+      "school": "Boise State",
+      "identifiedBy": "Jared Zabransky"
+    },
+    {
+      "teamId": 13,
+      "school": "Boston College",
+      "identifiedBy": "Mathias Kiwanuka"
+    },
+    {
+      "teamId": 14,
+      "school": "Bowling Green",
+      "identifiedBy": "Omar Jacobs"
+    },
+    {
+      "teamId": 15,
+      "school": "Buffalo",
+      "identifiedBy": "Randall Secky"
+    },
+    {
+      "teamId": 16,
+      "school": "BYU",
+      "identifiedBy": "Aaron Francisco"
+    },
+    {
+      "teamId": 17,
+      "school": "California",
+      "identifiedBy": "Aaron Rodgers"
+    },
+    {
+      "teamId": 18,
+      "school": "UCF",
+      "identifiedBy": "Atari Bigby"
+    },
+    {
+      "teamId": 19,
+      "school": "C. Michigan",
+      "identifiedBy": "Kent Smith"
+    },
+    {
+      "teamId": 20,
+      "school": "Cincinnati",
+      "identifiedBy": "Gino Guidugli"
+    },
+    {
+      "teamId": 21,
+      "school": "Clemson",
+      "identifiedBy": "Charlie Whitehurst"
+    },
+    {
+      "teamId": 22,
+      "school": "Colorado",
+      "identifiedBy": "Joel Klatt"
+    },
+    {
+      "teamId": 23,
+      "school": "Colorado State",
+      "identifiedBy": "Justin Holland"
+    },
+    {
+      "teamId": 24,
+      "school": "Duke",
+      "identifiedBy": "Mike Schneider"
+    },
+    {
+      "teamId": 25,
+      "school": "East Carolina",
+      "identifiedBy": "Marvin Townes"
+    },
+    {
+      "teamId": 26,
+      "school": "E. Michigan",
+      "identifiedBy": "Matt Bohnet"
+    },
+    {
+      "teamId": 27,
+      "school": "Florida",
+      "identifiedBy": "Chris Leak"
+    },
+    {
+      "teamId": 28,
+      "school": "Florida State",
+      "identifiedBy": "Chris Rix"
+    },
+    {
+      "teamId": 29,
+      "school": "Fresno State",
+      "identifiedBy": "Logan Mankins"
+    },
+    {
+      "teamId": 30,
+      "school": "Georgia",
+      "identifiedBy": "David Pollack"
+    },
+    {
+      "teamId": 31,
+      "school": "Georgia Tech",
+      "identifiedBy": "Reggie Ball"
+    },
+    {
+      "teamId": 32,
+      "school": "Hawai'i",
+      "identifiedBy": "Timmy Chang"
+    },
+    {
+      "teamId": 33,
+      "school": "Houston",
+      "identifiedBy": "Kevin Kolb"
+    },
+    {
+      "teamId": 34,
+      "school": "Idaho",
+      "identifiedBy": "Brian Nooy"
+    },
+    {
+      "teamId": 35,
+      "school": "Illinois",
+      "identifiedBy": "Jon Beutjer"
+    },
+    {
+      "teamId": 36,
+      "school": "Indiana",
+      "identifiedBy": "Courtney Roby"
+    },
+    {
+      "teamId": 37,
+      "school": "Iowa",
+      "identifiedBy": "Drew Tate"
+    },
+    {
+      "teamId": 38,
+      "school": "Iowa State",
+      "identifiedBy": "Austin Flynn"
+    },
+    {
+      "teamId": 39,
+      "school": "Kansas",
+      "identifiedBy": "Adam Barmann"
+    },
+    {
+      "teamId": 40,
+      "school": "Kansas State",
+      "identifiedBy": "Darren Sproles"
+    },
+    {
+      "teamId": 41,
+      "school": "Kent State",
+      "identifiedBy": "Joshua Cribbs"
+    },
+    {
+      "teamId": 42,
+      "school": "Kentucky",
+      "identifiedBy": "Shane Boyd"
+    },
+    {
+      "teamId": 43,
+      "school": "Louisiana Tech",
+      "identifiedBy": "Ryan Moats"
+    },
+    {
+      "teamId": 44,
+      "school": "Louisville",
+      "identifiedBy": "Stefan LeFors"
+    },
+    {
+      "teamId": 45,
+      "school": "LSU",
+      "identifiedBy": "Marcus Spears"
+    },
+    {
+      "teamId": 46,
+      "school": "Marshall",
+      "identifiedBy": "Stan Hill"
+    },
+    {
+      "teamId": 47,
+      "school": "Maryland",
+      "identifiedBy": "Nick Novak"
+    },
+    {
+      "teamId": 48,
+      "school": "Memphis",
+      "identifiedBy": "DeAngelo Williams"
+    },
+    {
+      "teamId": 49,
+      "school": "Miami",
+      "identifiedBy": "Brock Berlin"
+    },
+    {
+      "teamId": 50,
+      "school": "Miami (OH)",
+      "identifiedBy": "Martin Nance"
+    },
+    {
+      "teamId": 51,
+      "school": "Michigan",
+      "identifiedBy": "Braylon Edwards"
+    },
+    {
+      "teamId": 52,
+      "school": "Michigan State",
+      "identifiedBy": "Damon Dowdell"
+    },
+    {
+      "teamId": 53,
+      "school": "Middle Tenn",
+      "identifiedBy": "Clint Marks"
+    },
+    {
+      "teamId": 54,
+      "school": "Minnesota",
+      "identifiedBy": "Marion Barber"
+    },
+    {
+      "teamId": 55,
+      "school": "Mississippi St",
+      "identifiedBy": "Omarr Conner"
+    },
+    {
+      "teamId": 56,
+      "school": "Missouri",
+      "identifiedBy": "Brad Smith"
+    },
+    {
+      "teamId": 57,
+      "school": "Navy",
+      "identifiedBy": "Kyle Eckel"
+    },
+    {
+      "teamId": 58,
+      "school": "Nebraska",
+      "identifiedBy": "Josh Bullocks"
+    },
+    {
+      "teamId": 59,
+      "school": "Nevada",
+      "identifiedBy": "Chance Kretschmer"
+    },
+    {
+      "teamId": 60,
+      "school": "New Mexico",
+      "identifiedBy": "DonTrell Moore"
+    },
+    {
+      "teamId": 61,
+      "school": "New Mexico St.",
+      "identifiedBy": "Paul Dombrowski"
+    },
+    {
+      "teamId": 62,
+      "school": "North Carolina",
+      "identifiedBy": "Darian Durant"
+    },
+    {
+      "teamId": 63,
+      "school": "NC State",
+      "identifiedBy": "Mario Williams"
+    },
+    {
+      "teamId": 64,
+      "school": "North Texas",
+      "identifiedBy": "Patrick Cobbs"
+    },
+    {
+      "teamId": 65,
+      "school": "UL Monroe",
+      "identifiedBy": "Steven Jyles"
+    },
+    {
+      "teamId": 66,
+      "school": "NIU",
+      "identifiedBy": "Josh Haldi"
+    },
+    {
+      "teamId": 67,
+      "school": "Northwestern",
+      "identifiedBy": "Brett Basanez"
+    },
+    {
+      "teamId": 68,
+      "school": "Notre Dame",
+      "identifiedBy": "Brady Quinn"
+    },
+    {
+      "teamId": 69,
+      "school": "Ohio",
+      "identifiedBy": "Ryan Hawk"
+    },
+    {
+      "teamId": 70,
+      "school": "Ohio State",
+      "identifiedBy": "Mike Nugent"
+    },
+    {
+      "teamId": 71,
+      "school": "Oklahoma",
+      "identifiedBy": "Jason White"
+    },
+    {
+      "teamId": 72,
+      "school": "Oklahoma State",
+      "identifiedBy": "Darrent Williams"
+    },
+    {
+      "teamId": 73,
+      "school": "Ole Miss",
+      "identifiedBy": "Michael Spurlock"
+    },
+    {
+      "teamId": 74,
+      "school": "Oregon",
+      "identifiedBy": "Haloti Ngata"
+    },
+    {
+      "teamId": 75,
+      "school": "Oregon State",
+      "identifiedBy": "Derek Anderson"
+    },
+    {
+      "teamId": 76,
+      "school": "Penn State",
+      "identifiedBy": "Zack Mills"
+    },
+    {
+      "teamId": 77,
+      "school": "Pittsburgh",
+      "identifiedBy": "Tyler Palko"
+    },
+    {
+      "teamId": 78,
+      "school": "Purdue",
+      "identifiedBy": "Kyle Orton"
+    },
+    {
+      "teamId": 79,
+      "school": "Rice",
+      "identifiedBy": "Joel Armstrong"
+    },
+    {
+      "teamId": 80,
+      "school": "Rutgers",
+      "identifiedBy": "Brian Leonard"
+    },
+    {
+      "teamId": 81,
+      "school": "San Diego St.",
+      "identifiedBy": "Kirk Morrison"
+    },
+    {
+      "teamId": 82,
+      "school": "San Jose State",
+      "identifiedBy": "Trestin George"
+    },
+    {
+      "teamId": 83,
+      "school": "SMU",
+      "identifiedBy": "Allan Adami"
+    },
+    {
+      "teamId": 84,
+      "school": "South Carolina",
+      "identifiedBy": "Troy Williamson"
+    },
+    {
+      "teamId": 85,
+      "school": "Southern Miss",
+      "identifiedBy": "Michael Boley"
+    },
+    {
+      "teamId": 86,
+      "school": "Louisiana",
+      "identifiedBy": "C.C. Brown"
+    },
+    {
+      "teamId": 87,
+      "school": "Stanford",
+      "identifiedBy": "Trent Edwards"
+    },
+    {
+      "teamId": 88,
+      "school": "Syracuse",
+      "identifiedBy": "Walter Reyes"
+    },
+    {
+      "teamId": 89,
+      "school": "TCU",
+      "identifiedBy": "Tye Gunn"
+    },
+    {
+      "teamId": 90,
+      "school": "Temple",
+      "identifiedBy": "Rian Wallace"
+    },
+    {
+      "teamId": 91,
+      "school": "Tennessee",
+      "identifiedBy": "Michael Munoz"
+    },
+    {
+      "teamId": 92,
+      "school": "Texas",
+      "identifiedBy": "Vince Young"
+    },
+    {
+      "teamId": 93,
+      "school": "Texas A&M",
+      "identifiedBy": "Reggie McNeal"
+    },
+    {
+      "teamId": 94,
+      "school": "Texas Tech",
+      "identifiedBy": "Sonny Cumbie"
+    },
+    {
+      "teamId": 95,
+      "school": "Toledo",
+      "identifiedBy": "Bruce Gradkowski"
+    },
+    {
+      "teamId": 96,
+      "school": "Tulane",
+      "identifiedBy": "Roydell Williams"
+    },
+    {
+      "teamId": 97,
+      "school": "Tulsa",
+      "identifiedBy": "Garrett Mills"
+    },
+    {
+      "teamId": 98,
+      "school": "UAB",
+      "identifiedBy": "Roddy White"
+    },
+    {
+      "teamId": 99,
+      "school": "UCLA",
+      "identifiedBy": "Marcedes Lewis"
+    },
+    {
+      "teamId": 100,
+      "school": "UConn",
+      "identifiedBy": "Dan Orlovsky"
+    },
+    {
+      "teamId": 101,
+      "school": "UNLV",
+      "identifiedBy": "Adam Seward"
+    },
+    {
+      "teamId": 102,
+      "school": "USC",
+      "identifiedBy": "Matt Leinart"
+    },
+    {
+      "teamId": 103,
+      "school": "Utah",
+      "identifiedBy": "Alex Smith"
+    },
+    {
+      "teamId": 104,
+      "school": "Utah State",
+      "identifiedBy": "Travis Cox"
+    },
+    {
+      "teamId": 105,
+      "school": "UTEP",
+      "identifiedBy": "Jordan Palmer"
+    },
+    {
+      "teamId": 106,
+      "school": "Vanderbilt",
+      "identifiedBy": "Jay Cutler"
+    },
+    {
+      "teamId": 107,
+      "school": "Virginia",
+      "identifiedBy": "Heath Miller"
+    },
+    {
+      "teamId": 108,
+      "school": "Virginia Tech",
+      "identifiedBy": "Bryan Randall"
+    },
+    {
+      "teamId": 109,
+      "school": "Wake Forest",
+      "identifiedBy": "Chris Barclay"
+    },
+    {
+      "teamId": 110,
+      "school": "Washington",
+      "identifiedBy": "Carl Bonnell"
+    },
+    {
+      "teamId": 111,
+      "school": "Washington St.",
+      "identifiedBy": "Will Derting"
+    },
+    {
+      "teamId": 112,
+      "school": "West Virginia",
+      "identifiedBy": "Chris Henry"
+    },
+    {
+      "teamId": 113,
+      "school": "W. Michigan",
+      "identifiedBy": "Greg Jennings"
+    },
+    {
+      "teamId": 114,
+      "school": "Wisconsin",
+      "identifiedBy": "Jim Leonhard"
+    },
+    {
+      "teamId": 115,
+      "school": "Wyoming",
+      "identifiedBy": "Jovon Bouknight"
+    },
+    {
+      "teamId": 143,
+      "school": "Troy",
+      "identifiedBy": "DeMarcus Ware"
+    },
+    {
+      "teamId": 144,
+      "school": "USF",
+      "identifiedBy": "Andre Hall"
+    },
+    {
+      "teamId": 229,
+      "school": "FLA Atlantic",
+      "identifiedBy": "Jared Allen"
+    },
+    {
+      "teamId": 230,
+      "school": "FIU",
+      "identifiedBy": "Antwan Barnes"
+    }
+  ]
+}

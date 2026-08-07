@@ -75,12 +75,40 @@ public sealed record RatingEvidence
     public IReadOnlyDictionary<string, double> Stats { get; init; } =
         new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Where this player ranked on his own squad in an earlier game's roster,
+    /// 0 (the best player on the team) to 100 (the last man on it).
+    ///
+    /// <para>A rank, not a rating, because an older game's rating scale means
+    /// nothing here — those numbers are held in five or six bits and were
+    /// never anchored to anything this tool can read. The ordering, though, is
+    /// somebody's considered judgement about who was good, and an ordering
+    /// survives translation between two games that a number does not.</para>
+    /// </summary>
+    public double? LegacyRankPercentile { get; init; }
+
+    /// <summary>
+    /// Where the player ranked among others at his position in the same
+    /// source roster, one entry per rating column, 0 (highest) to 100
+    /// (lowest).
+    ///
+    /// <para>Only the eighteen attributes the older games actually recorded
+    /// ever appear here. Like the rank above these are positions in an order,
+    /// so the fastest receiver in the source file stays the fastest without
+    /// anybody having to decide what his old speed rating "meant" — and a
+    /// player keeps the shape that made him himself, rather than collapsing
+    /// into the average of everyone else at his rank.</para>
+    /// </summary>
+    public IReadOnlyDictionary<string, double> LegacyRatingPercentiles { get; init; } =
+        new Dictionary<string, double>(StringComparer.Ordinal);
+
     /// <summary>True when no evidence at all was supplied.</summary>
     public bool IsEmpty =>
         Role is null && StarRating is null && FortyYardDash is null && BenchPressReps is null &&
         VerticalJumpInches is null && ShuttleSeconds is null && ThreeConeSeconds is null &&
         DraftPickOverall is null && DraftRound is null && !UndraftedFreeAgent &&
-        Awards.Count == 0 && AwardContender.Count == 0 && Stats.Count == 0;
+        Awards.Count == 0 && AwardContender.Count == 0 && Stats.Count == 0 &&
+        LegacyRankPercentile is null && LegacyRatingPercentiles.Count == 0;
 }
 
 /// <summary>

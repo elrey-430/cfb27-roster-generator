@@ -144,6 +144,20 @@ public sealed class ArchetypeSelector
             profile["YardsPerReception"] = recYards / receptions;
         }
 
+        // An imported player brings his standing among others at his own
+        // position in the roster he came from, and that is the best evidence
+        // available for which kind of player he was. A rule asks for it by
+        // name — "LegacySpeed" at most 20 is the fastest fifth of the position
+        // — which lets a scrambling quarterback be told from a pocket one on
+        // something better than his listed weight.
+        foreach (var (attribute, percentile) in evidence.LegacyRatingPercentiles)
+        {
+            var name = attribute.EndsWith("Rating", StringComparison.Ordinal)
+                ? attribute[..^"Rating".Length]
+                : attribute;
+            profile[$"Legacy{name}"] = percentile;
+        }
+
         return profile;
     }
 

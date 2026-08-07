@@ -115,6 +115,16 @@ public sealed class MainWindow : Window
     /// real roster rather than a blank template, begins here.</para>
     /// </summary>
     private readonly Button _exportButton = new() { Content = "Export roster file", IsEnabled = false };
+
+    /// <summary>
+    /// Reads a PS2-era NCAA Football roster file into a roster file for this
+    /// tool.
+    ///
+    /// <para>Needs no dynasty loaded, because it is not reading one — the
+    /// legacy file is the source, and what comes out is an ordinary roster CSV
+    /// to be checked, edited and then generated like any other.</para>
+    /// </summary>
+    private readonly Button _importButton = new() { Content = "Import old roster" };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
     private readonly SelectableTextBlock _output = new()
     {
@@ -166,6 +176,7 @@ public sealed class MainWindow : Window
         _saveOutBox.IsCheckedChanged += (_, _) => UpdateSaveOption();
         _ratingsBox.IsCheckedChanged += (_, _) => OnRatingsToggled();
         _exportButton.Click += async (_, _) => await ExportAsync();
+        _importButton.Click += async (_, _) => await ImportLegacyAsync();
         _checkButton.Click += async (_, _) => await CheckAsync();
         _generateButton.Click += async (_, _) => await GenerateAsync();
 
@@ -253,7 +264,7 @@ public sealed class MainWindow : Window
             Orientation = Orientation.Horizontal,
             Spacing = 8,
             Margin = new Thickness(0, 6, 0, 0),
-            Children = { _exportButton, _checkButton, _generateButton },
+            Children = { _importButton, _exportButton, _checkButton, _generateButton },
         });
 
         panel.Children.Add(_blocker);
@@ -647,6 +658,80 @@ public sealed class MainWindow : Window
     /// Writes the loaded dynasty out as a roster file — every team it carries,
     /// in the template's own shape, ready to edit and feed back in.
     /// </summary>
+    private async Task ImportLegacyAsync()
+    {
+        var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Choose a PS2-era NCAA Football roster file",
+            AllowMultiple = false,
+        });
+
+        if (picked.FirstOrDefault()?.TryGetLocalPath() is not { Length: > 0 } source)
+        {
+            return;
+        }
+
+        // The file records no year of its own, and inferring one from the
+        // players on it would be a research result dressed up as something the
+        // file said. Whatever season the user has chosen is used as given.
+        if (!int.TryParse(_seasonBox.Text, out var season) || season <= 0)
+        {
+            _output.Text =
+                "Set the season first. A roster file from an older game does not record which year it " +
+                "is, so the tool cannot work it out for you — type the season above and try again.";
+            SetStatus("A season is needed before an old roster can be read.", ok: false);
+            return;
+        }
+
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save the roster file",
+            SuggestedFileName = $"{season}_ImportedRoster.csv",
+            DefaultExtension = "csv",
+            FileTypeChoices = new[] { new FilePickerFileType("Roster file") { Patterns = new[] { "*.csv" } } },
+        });
+
+        if (file?.TryGetLocalPath() is not { Length: > 0 } destination)
+        {
+            return;
+        }
+
+        _importButton.IsEnabled = false;
+        SetStatus("Reading the old roster…", ok: null);
+        try
+        {
+            var ids = RosterGenerator.Core.Legacy.LegacyRosterImporter.LoadTeamIds(
+                Path.Combine(AppContext.BaseDirectory, "data", "LegacyTeamIds.json"));
+            var result = await Task.Run(() => RosterGenerator.Core.Legacy.LegacyRosterImporter.Import(
+                source, destination, ids, season));
+
+            _output.Text =
+                $"Roster file written to: {Path.GetFullPath(result.Path)}\n\n" +
+                $"  {result.Players} player(s) across {result.Teams} team(s), season {season}.\n" +
+                string.Concat(result.Notes.Select(n => $"  {n}\n")) +
+                "\nNames, positions, numbers, heights, weights, class years and skin tones came across " +
+                "exactly. Ratings did not: the older games held eighteen of this one's fifty-seven, on a " +
+                "scale nobody has been able to anchor. What did come across is the ORDER — who was best " +
+                "on the squad, and who was fastest at his position — which is enough to rate a roster " +
+                "that looks like itself.\n\nFill in stats, awards or a draft pick for anyone you know " +
+                "about and those ratings become yours.";
+            SetStatus($"Done — {result.Players} players read into {Path.GetFileName(destination)}.", ok: true);
+            // The file just written is almost certainly the one the user
+            // wants to generate from, so it is adopted rather than left for
+            // them to go and find.
+            _rosterBox.Text = destination;
+        }
+        catch (Exception ex)
+        {
+            _output.Text = ex.Message;
+            SetStatus("That roster file could not be read.", ok: false);
+        }
+        finally
+        {
+            UpdateButtons();
+        }
+    }
+
     private async Task ExportAsync()
     {
         if (_package is null)
