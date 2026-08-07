@@ -346,10 +346,17 @@ public sealed class RosterGenerationService
             ? null
             : Appearance.BodyTypeModel.Load(bodyTypePath);
 
+        // Which players a team owns is normally answered by their TeamIndex.
+        // It is not for the generic FCS teams, who share index 255 with the
+        // recruiting pool, so the teams' own roster lists are read as well —
+        // that is what lets a school the game dropped be recreated at all.
+        var teamRosters = Dynasty.TeamRosterTable.Open(
+            Path.GetDirectoryName(export.PlayerTablePath) ?? ".");
+
         var converter = new HistoricalTeamConverter(
             teamMappings, positionMappings, ratingEngine, archetypeSelector, filler, depth,
             export.BuildPreviousSchoolMappings(teamAliases), request.ReplaceRealPersonFaces,
-            visuals, commentaryIds, abilityModel, bodyTypes);
+            visuals, commentaryIds, abilityModel, bodyTypes, teamRosters);
 
         // One file can carry a whole season. Each team's slots are disjoint, so
         // they convert one after another into the same session and the single
@@ -570,11 +577,15 @@ public sealed class RosterGenerationService
         var applier = new EquipmentApplier(EquipmentEraSet.Load(erasPath));
         var seasonBySlot = new Dictionary<int, int>();
         var teams = dated.Select(c => c.TeamId).Distinct().ToHashSet();
+        // The slots each conversion claimed, rather than another TeamIndex
+        // query: the generic FCS teams share their index with the recruiting
+        // pool, and asking again would put an era's helmets on four thousand
+        // players nobody generated.
         foreach (var team in dated)
         {
-            foreach (var player in donor.Players.Where(p => p.TeamIndex == team.TeamId))
+            foreach (var slot in team.DonorSlots)
             {
-                seasonBySlot[player.RowKey] = team.Source.Season;
+                seasonBySlot[slot] = team.Source.Season;
             }
         }
 

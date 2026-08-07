@@ -173,3 +173,48 @@ speed outright and the ranking is not allowed to move it afterwards.
   pick for the players you know about is what turns it into your roster.
 - Players the source never named are dropped. Whole divisions shipped unnamed
   in those games, and a roster row with nobody on it is not a player.
+
+## Schools the game no longer carries
+
+Of the 119 teams on a 2004 I-A roster, exactly one is not in CFB27: **Idaho**.
+
+CFB27 ships five generic FCS teams — East, Midwest, Northwest, Southeast and
+West — each with a real 85-man roster. Idaho is written onto **FCS East**, and
+`data/TeamMappings.json` records that as an alias plus a `standInTeam`:
+
+```json
+{ "teamId": 255, "names": ["FCS East", "FCSE", "Idaho"], "standInTeam": "FCS East" }
+```
+
+**The redirect cannot go by `TeamIndex`.** All five FCS teams carry index 255,
+and so do the 4,527 players in the recruiting pool, so asking the player table
+for "team 255" hands back the lot. `Player` has no other team column:
+`PrevTeamIndex` is 255 for all of them too, and 3,875 of the 4,527 are freshmen.
+
+The teams know, though. Every team row — FBS and FCS alike — has a `Roster`
+reference into one shared table whose rows hold exactly 85 player references,
+the same 32-bit encoding and player tag the depth chart uses:
+
+```
+FCS East  Team.Roster -> row 33  -> 85 refs, first player rows 6373, 5875, 11651
+USC       Team.Roster -> row 129 -> 85 refs, first player rows 2, 12223, 298
+```
+
+`TeamRosterTable` follows it, so a stand-in school writes to exactly the right
+eighty-five slots. Verified on a real dynasty: generating 2004 Idaho changed 85
+player rows, **all 85 of them FCS East's own, none outside it**.
+
+Two consequences worth knowing:
+
+- The dynasty's team list deliberately drops rows carrying the no-team
+  sentinel, which is why the FCS teams do not appear in `list-teams`. An
+  overlay entry naming a stand-in is admitted anyway — it is resolved by team
+  name, never by index, so it cannot conjure a team the dynasty lacks. If the
+  named team really is absent the conversion says so and writes nothing.
+- Anything that re-asks `TeamIndex` after a conversion has the same problem.
+  Equipment did, and put an era's helmets on all 4,527 players in the pool.
+  Conversions now record the slots they claimed and equipment follows those.
+
+To add another departed school, give its name to whichever FCS team should hold
+it. There are five, so five can be recreated in one dynasty before they start
+overwriting each other.

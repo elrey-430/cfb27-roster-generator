@@ -1,5 +1,5 @@
 {
-  "description": "Maps school names/aliases to CFB27 TeamIndex values. Generated from the base save's Team table (2225_Team.csv); aliases are editable and lookups are case/punctuation-insensitive.",
+  "description": "Maps school names/aliases to CFB27 TeamIndex values. Generated from the base save's Team table (2225_Team.csv); aliases are editable and lookups are case/punctuation-insensitive. An entry may also carry standInTeam, naming the team in the save whose roster slots the school should be written onto -- used for the five generic FCS teams, which all share TeamIndex 255 with the recruiting pool and so cannot be told apart by id, and for schools the game no longer carries at all. Idaho is an alias of FCS East for that reason.",
   "teams": [
     {
       "teamId": 0,
@@ -995,6 +995,47 @@
         "Sac State",
         "SAC"
       ]
+    },
+    {
+      "teamId": 255,
+      "names": [
+        "FCS East",
+        "FCSE",
+        "Idaho"
+      ],
+      "standInTeam": "FCS East"
+    },
+    {
+      "teamId": 255,
+      "names": [
+        "FCS Midwest",
+        "FCSMW"
+      ],
+      "standInTeam": "FCS Midwest"
+    },
+    {
+      "teamId": 255,
+      "names": [
+        "FCS Northwest",
+        "FCSNW"
+      ],
+      "standInTeam": "FCS Northwest"
+    },
+    {
+      "teamId": 255,
+      "names": [
+        "FCS Southeast",
+        "FCSSE"
+      ],
+      "standInTeam": "FCS Southeast"
+    },
+    {
+      "teamId": 255,
+      "names": [
+        "FCS West",
+        "FCSW"
+      ],
+      "standInTeam": "FCS West"
     }
   ]
 }

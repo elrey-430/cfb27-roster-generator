@@ -12,10 +12,11 @@ namespace RosterGenerator.Core.Mapping;
 public sealed class TeamMappingSet
 {
     private readonly Dictionary<string, int> _byNormalizedName = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _standInByName = new(StringComparer.Ordinal);
 
-    private TeamMappingSet(IEnumerable<(int TeamId, IReadOnlyList<string> Names)> teams)
+    private TeamMappingSet(IEnumerable<(int TeamId, IReadOnlyList<string> Names, string? StandIn)> teams)
     {
-        foreach (var (teamId, names) in teams)
+        foreach (var (teamId, names, standIn) in teams)
         {
             foreach (var name in names)
             {
@@ -32,9 +33,30 @@ public sealed class TeamMappingSet
                 }
 
                 _byNormalizedName[key] = teamId;
+                if (standIn is { Length: > 0 })
+                {
+                    _standInByName[key] = standIn;
+                }
             }
         }
     }
+
+    /// <summary>
+    /// The team in the save whose roster slots a school should be written
+    /// onto, when that is not simply the school's own — or null for the
+    /// ordinary case.
+    ///
+    /// <para>It exists for schools the game no longer carries. Idaho played
+    /// FBS football for decades and CFB27 does not have them, so a 2004 Idaho
+    /// roster had nowhere to go at all. Naming one of the game's five generic
+    /// FCS teams gives it eighty-five slots to occupy.</para>
+    ///
+    /// <para>The redirect is by team NAME rather than by <c>TeamIndex</c>,
+    /// because every FCS team shares index 255 with the whole recruiting pool
+    /// — see <see cref="Dynasty.TeamRosterTable"/>.</para>
+    /// </summary>
+    public string? StandInTeam(string schoolName) =>
+        _standInByName.TryGetValue(Normalize(schoolName), out var team) ? team : null;
 
     /// <summary>Resolves a school name/alias to its CFB27 team index.</summary>
     /// <exception cref="KeyNotFoundException">No alias matches the name.</exception>
@@ -54,11 +76,15 @@ public sealed class TeamMappingSet
         _byNormalizedName.TryGetValue(Normalize(schoolName), out teamId);
 
     /// <summary>Loads the mapping file.</summary>
-    public static TeamMappingSet Load(string path) => Build(LoadEntries(path));
+    public static TeamMappingSet Load(string path) => Build(LoadEntriesWithStandIns(path));
 
     /// <summary>Builds a mapping set from raw (teamId, names) entries.</summary>
     public static TeamMappingSet Build(IEnumerable<(int TeamId, IReadOnlyList<string> Names)> entries) =>
-        new(entries.Select(e => (e.TeamId, e.Names)));
+        new(entries.Select(e => (e.TeamId, e.Names, (string?)null)));
+
+    /// <summary>Builds a mapping set including stand-in teams.</summary>
+    public static TeamMappingSet Build(
+        IEnumerable<(int TeamId, IReadOnlyList<string> Names, string? StandIn)> entries) => new(entries);
 
     /// <summary>Reads a mapping file's raw (teamId, names) entries.</summary>
     public static IReadOnlyList<(int TeamId, IReadOnlyList<string> Names)> LoadEntries(string path)
@@ -78,6 +104,32 @@ public sealed class TeamMappingSet
                 .Where(n => n.Length > 0)
                 .ToList();
             entries.Add((teamId, names));
+        }
+
+        return entries;
+    }
+
+    /// <summary>Reads a mapping file, keeping each entry's stand-in team.</summary>
+    public static IReadOnlyList<(int TeamId, IReadOnlyList<string> Names, string? StandIn)>
+        LoadEntriesWithStandIns(string path)
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        if (!document.RootElement.TryGetProperty("teams", out var teams))
+        {
+            throw new InvalidDataException($"'{path}' has no 'teams' array.");
+        }
+
+        var entries = new List<(int, IReadOnlyList<string>, string?)>();
+        foreach (var team in teams.EnumerateArray())
+        {
+            var names = team.GetProperty("names").EnumerateArray()
+                .Select(n => n.GetString() ?? "")
+                .Where(n => n.Length > 0)
+                .ToList();
+            entries.Add((
+                team.GetProperty("teamId").GetInt32(),
+                names,
+                team.TryGetProperty("standInTeam", out var standIn) ? standIn.GetString() : null));
         }
 
         return entries;

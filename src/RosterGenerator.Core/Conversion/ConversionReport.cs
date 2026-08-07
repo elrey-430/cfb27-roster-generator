@@ -83,6 +83,18 @@ public sealed class ConversionReport
     public List<string> LeftoverDonorSlots { get; } = new();
 
     /// <summary>
+    /// The donor roster rows this team owns — every slot the conversion could
+    /// write to, filled or not.
+    ///
+    /// <para>Recorded because <c>TeamIndex</c> cannot always be asked the same
+    /// question afterwards: the generic FCS teams share index 255 with the
+    /// whole recruiting pool, so re-querying it would sweep several thousand
+    /// uninvolved players into whatever came next. Equipment used to do
+    /// exactly that.</para>
+    /// </summary>
+    public List<int> DonorSlots { get; } = new();
+
+    /// <summary>
     /// Slots re-rated as end-of-roster depth because the historical roster did
     /// not fill them. Empty when the fill is disabled, in which case the same
     /// slots appear in <see cref="LeftoverDonorSlots"/> instead.

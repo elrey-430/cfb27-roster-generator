@@ -38,6 +38,7 @@ public sealed class HistoricalTeamConverter
     private readonly RosterDepthModel? _depth;
     private readonly TeamMappingSet? _previousSchools;
     private readonly CommentaryIdSet _commentaryIds;
+    private readonly Dynasty.TeamRosterTable? _teamRosters;
 
     /// <summary>
     /// Creates a converter.
@@ -108,8 +109,10 @@ public sealed class HistoricalTeamConverter
         Equipment.CharacterVisualsTable? characterVisuals = null,
         CommentaryIdSet? commentaryIds = null,
         AbilityModel? abilities = null,
-        Appearance.BodyTypeModel? bodyTypes = null)
+        Appearance.BodyTypeModel? bodyTypes = null,
+        Dynasty.TeamRosterTable? teamRosters = null)
     {
+        _teamRosters = teamRosters;
         _bodyTypes = bodyTypes;
         _abilities = abilities;
         _commentaryIds = commentaryIds ?? CommentaryIdSet.Empty;
@@ -122,6 +125,41 @@ public sealed class HistoricalTeamConverter
         _rosterFiller = rosterFiller;
         _depth = rosterDepth;
         _previousSchools = previousSchoolMappings;
+    }
+
+    /// <summary>
+    /// The eighty-five slots a stand-in team owns, or null when this school is
+    /// an ordinary one and its <c>TeamIndex</c> is answer enough.
+    /// </summary>
+    private List<Player>? StandInSlots(
+        PlayerRoster roster, string? standIn, ConversionReport report, HistoricalRoster historical)
+    {
+        if (standIn is not { Length: > 0 })
+        {
+            return null;
+        }
+
+        if (_teamRosters?.MembersOf(standIn) is not { Count: > 0 } rows)
+        {
+            report.GlobalWarnings.Add(
+                $"'{historical.School}' is written onto {standIn}, but this dynasty does not carry " +
+                "that team's roster list, so there are no slots to put the players in. A folder from the " +
+                "community export tool often holds only some tables; generating from the save itself works.");
+            return new List<Player>();
+        }
+
+        var byRow = roster.Players.ToDictionary(p => p.RowKey);
+        var slots = rows
+            .Select(row => byRow.TryGetValue(row, out var player) ? player : null)
+            .OfType<Player>()
+            .OrderBy(p => p.RowKey)
+            .ToList();
+
+        report.GlobalAssumptions.Add(
+            $"{historical.School} is not a team this game carries, so the roster is written onto " +
+            $"{standIn} — {slots.Count} slot(s), named by that team's own roster list rather than by " +
+            "TeamIndex, which every FCS team shares with the recruiting pool.");
+        return slots;
     }
 
     /// <summary>
@@ -188,10 +226,19 @@ public sealed class HistoricalTeamConverter
             "touched; they do not move with the flag in the game's own data.");
 
         // Donor slots for this team, position-preferred assignment.
-        var slots = roster.Players
+        //
+        // Normally a player's own TeamIndex says who he plays for. It cannot
+        // for the game's five generic FCS teams: all of them carry index 255,
+        // and so do the several thousand players in the recruiting pool, so
+        // asking for "team 255" would hand back the lot. A school that stands
+        // in for one of those teams is resolved from the team's side instead,
+        // through its own roster list. See TeamRosterTable.
+        var standIn = _teamMappings.StandInTeam(historical.School);
+        var slots = StandInSlots(roster, standIn, report, historical) ?? roster.Players
             .Where(p => p.TeamIndex == teamId)
             .OrderBy(p => p.RowKey)
             .ToList();
+        report.DonorSlots.AddRange(slots.Select(p => p.RowKey));
         var freeSlots = new List<Player>(slots);
         var placements = new List<(Player Slot, HistoricalPlayer Historical, PlayerConversionEntry Entry)>();
 

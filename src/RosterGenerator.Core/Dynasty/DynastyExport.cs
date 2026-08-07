@@ -73,16 +73,27 @@ public sealed class DynastyExport
         var entries = Teams
             .Select(t => (TeamId: t.TeamIndex, Names: (IReadOnlyList<string>)new[] { t.DisplayName, t.ShortName }
                 .Where(n => n.Length > 0)
-                .ToList()))
+                .ToList(), StandIn: (string?)null))
             .ToList();
 
         if (aliasOverlayPath is not null && File.Exists(aliasOverlayPath))
         {
             var knownIds = Teams.Select(t => t.TeamIndex).ToHashSet();
-            // Only overlay aliases for teams that exist in THIS dynasty, so
-            // a stale mapping file can never introduce a phantom team.
-            entries.AddRange(TeamMappingSet.LoadEntries(aliasOverlayPath)
-                .Where(e => knownIds.Count == 0 || knownIds.Contains(e.TeamId)));
+
+            // Only overlay aliases for teams that exist in THIS dynasty, so a
+            // stale mapping file can never introduce a phantom team.
+            //
+            // An entry naming a stand-in team is admitted anyway, because it
+            // is deliberately about a team that has NO index of its own: the
+            // five generic FCS teams all carry the no-team sentinel, which is
+            // why Teams leaves them out. Such an entry is resolved by team
+            // name against the roster table, never by index, so letting it
+            // through cannot conjure a team that is not there -- if the
+            // dynasty lacks the named team the conversion says so and writes
+            // nothing.
+            entries.AddRange(TeamMappingSet.LoadEntriesWithStandIns(aliasOverlayPath)
+                .Where(e => knownIds.Count == 0 || knownIds.Contains(e.TeamId) ||
+                            e.StandIn is { Length: > 0 }));
         }
 
         return TeamMappingSet.Build(entries);
