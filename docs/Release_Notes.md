@@ -1,5 +1,68 @@
 # Release notes
 
+## v0.9.0-alpha — PS2-era rosters are a source of players
+
+`import` reads a roster file from the PS2-era NCAA Football games. Community
+"named" rosters carry real people with real numbers and measurables across more
+than a hundred teams, which is exactly the part of building a historical roster
+that is pure typing. **Import old roster** in the app, which adopts the file it
+writes so the user can go straight to Check.
+
+The container is EA's `DB` format and it is fully decoded — **660,445 of 660,445
+cells** against community exports of two different files. Three things had to be
+worked out that the format never states:
+
+- It stores no row count anywhere. The record area is pre-allocated and the tail
+  left blank, so the last row with a non-zero key ends the table. Exact on all
+  six tables across both files: 8893/7350/119 and 4471/3995/83.
+- Nine columns carry stale end offsets pointing at another column's bits — four
+  of them player id, height, weight and team id. Recovered by searching every
+  bit position for the one that reproduces an export; the same corrections then
+  read a second unrelated file, which makes them a property of the format.
+- `PFSH`/`PMSH`/`PSSH` are signed in two's complement, with nothing marking them.
+
+**Which team a player plays for is not recorded.** Squads run in blocks of
+consecutive player id and `TDYN` names two captains per side, which suffices
+until two blocks touch — then there is no gap to cut on and a boundary in the
+wrong place moves a dozen players to the wrong school. The depth chart settles
+it: within a pass a team lists each `(position, depth)` slot at most once, so the
+boundary that makes the fewest players collide with somebody already in their
+slot is the one the game is describing. Every boundary in both files resolves
+with no collisions, and every team holds its own captains — 119/119 and 83/83.
+
+**Ratings are deliberately not imported.** Eighteen of CFB27's fifty-seven rating
+columns have any counterpart in the older games, and those eighteen carry a mean
+of 54.3% of the weight in EA's own overall formulas — 41.9% at quarterback.
+Writing them across would leave nearly half of every overall to be invented and
+then presented as history, and the stored numbers are five or six bits wide on a
+scale nobody has anchored.
+
+What crosses over is the order. `LegacyRank` becomes a talent signal (weight
+0.20, below draft, awards and production) scored through a curve measured over
+EA's own rosters — 138 squads of exactly 85, 11,730 players. The eighteen
+`Legacy*` columns hold where a player stood among others at his own position;
+each nudges its matching attribute by up to six points and is offered to
+archetype selection as a rule field. That is what stops two backs of the same
+standing coming out identical:
+
+```
+HB Reggie Bush    OVR 84  HB_ElusiveBack  spd 95  str 67
+HB LenDale White  OVR 83  HB_PowerBack    spd 78  str 88
+```
+
+A verified measurement still wins outright. And the legacy signal only joins the
+weight total when there is one to weigh, so a hand-written roster keeps exactly
+the confidence it always had rather than being diluted by an import nobody made.
+
+`data/LegacyTeamIds.json` maps 119 team ids to schools, 118 of them naming a
+player from that team's own roster. The ids are not reliably alphabetical — USC
+and Utah sit next to each other, and both Louisiana schools appear under names
+they had stopped using.
+
+Tests: 568, twelve new. The fixture is built rather than committed: a real
+roster file is somebody's editing work and not ours to redistribute, and a
+written one states the awkward parts of the format outright.
+
 ## v0.8.4-alpha — A dynasty writes out as a roster file
 
 The tool could read a roster file and not write one — top of the backlog since
