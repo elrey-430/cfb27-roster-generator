@@ -1,5 +1,47 @@
 # Release notes
 
+## v0.9.2-alpha — Schools the game no longer carries
+
+Of the 119 teams on a 2004 I-A roster exactly one is missing from CFB27: Idaho.
+It had nowhere to go, so the whole roster was refused. The game ships five
+generic FCS teams with real 85-man rosters, and a departed school is now written
+onto one of them — Idaho onto FCS East, recorded in `TeamMappings.json` as an
+alias plus a `standInTeam`.
+
+**The redirect cannot go by `TeamIndex`.** All five FCS teams carry index 255,
+and so do the 4,527 players in the recruiting pool, so asking the player table
+for "team 255" hands back the lot. `Player` has no other team column either:
+`PrevTeamIndex` is 255 for all of them and 3,875 of the 4,527 are freshmen.
+
+The teams know. Every team row, FBS and FCS alike, has a `Roster` reference into
+one shared table whose rows hold exactly 85 player references — the same 32-bit
+encoding and player tag the depth chart uses.
+
+```
+FCS East  Team.Roster -> row 33  -> 85 refs, player rows 6373, 5875, 11651
+USC       Team.Roster -> row 129 -> 85 refs, player rows 2, 12223, 298
+```
+
+`TeamRosterTable` follows it. Verified on a real dynasty: generating 2004 Idaho
+changed 85 player rows, all 85 of them FCS East's own and none outside it.
+
+Two things had to give way:
+
+- The dynasty's team list drops rows carrying the no-team sentinel, which is why
+  the FCS teams never appear in it. An overlay entry naming a stand-in is
+  admitted anyway — it resolves by team name, never by index, so it cannot
+  conjure a team the dynasty lacks; if the named team really is absent the
+  conversion says so and writes nothing.
+- Anything that re-asks `TeamIndex` after a conversion has the same problem.
+  Equipment did, and put 2004 helmets on all 4,527 players in the pool.
+  Conversions now record the slots they claimed and equipment follows those,
+  which is identical for an ordinary team and correct for this one.
+
+Five FCS teams means five departed schools per dynasty before they overwrite
+each other.
+
+Tests: 573, five new.
+
 ## v0.9.0-alpha — PS2-era rosters are a source of players
 
 `import` reads a roster file from the PS2-era NCAA Football games. Community
