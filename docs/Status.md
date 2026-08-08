@@ -1,61 +1,102 @@
 # Project Status
 
-_Last updated: 2026-08-07 — rosters from the PS2 games can be read in._
+_Last updated: 2026-08-08 — NCAA 14's own ratings are carried across._
 
 ## Current status
 
-**A twenty-year-old roster file is now a source of players.** Community "named"
-rosters for the PS2-era NCAA Football games carry real people with real numbers
-and measurables across more than a hundred teams, which is exactly the part of
+**A roster from NCAA Football 14 brings its ratings with it.** The PS3-era save
+holds the same EA `DB` container big-endian, and unlike the PS2 files it records
+its ratings on a real 0-99 scale — the same scale CFB27 uses.
+
+```
+RosterGenerator.Cli import --legacy <roster file> --season 2013 --output MyRoster.csv
+```
+
+**Forty-two of CFB27's fifty-seven rating columns are copied and locked.**
+Nothing afterwards moves them: not the class-year experience shift, not the
+position or class caps, not the calibration solve. A junior's awareness is
+normally held to 95 because that is where the game's own juniors stop; that is a
+statement about what the game does, and it yields to a number somebody actually
+recorded. The one thing that still outranks a source rating is a verified
+measurement — a stopwatch is evidence about the person, a rating is somebody's
+reading of him.
+
+**The fifteen CFB27 asks for that NCAA 14 never had** — throw under pressure,
+break sack, play action, the deep route runs — come from the archetype's
+measured profile at that player's overall. Real numbers where they exist, and
+where they do not, what the game itself gives this kind of player at this level.
+
+**One number becomes three where it has to.** NCAA 14 stores one throw accuracy
+and one route running; CFB27 stores a short, a medium and a deep of each. The
+archetype's profile decides the shape and the source's number decides the level,
+so a 95 accuracy on a field general comes out 97/95/93 and steeper on a pure
+scrambler — and the three still average what the source said.
+
+**The archetype comes out of the ratings**, scored in each attribute's own
+measured scatter rather than from a stat line an imported player does not have.
+Fed the game's own average quarterback of each QB archetype at 70/78/85/92/99,
+it recovers the archetype **20 times out of 20**.
+
+**And the overall follows the ratings, not the source's own number.** The two
+came from different formulas over different columns, and chasing the source's
+would pay for the difference out of the handful of attributes nobody recorded.
+The report says what the ratings came to.
+
+Checked against CFB27's own players: a quarterback of every QB archetype at five
+overalls, compared attribute by attribute against what the game gives that
+archetype at the same overall. **Nothing lands more than two of the game's own
+standard deviations off.**
+
+## The PS2 generation
+
+**A twenty-year-old roster file is also a source of players.** Community "named"
+rosters for the PS2-era games carry real people with real numbers and
+measurables across more than a hundred teams, which is exactly the part of
 building a historical roster that is pure typing.
 
-```
-RosterGenerator.Cli import --legacy <roster file> --season 2004 --output MyRoster.csv
-```
+The container is fully decoded — **1,018,590 of 1,018,590 cells** against
+community exports of three different files. The row count is stated at table
+header +20, as an allocated count then a used one; three body-shape fields are
+signed with nothing to mark them; and the fourth word of a column definition is
+the *next* column's start rather than this column's end, which is the single
+misreading that made twenty-two columns look like they carried stale offsets.
+They never did.
 
-The container is EA's `DB` format, and it is fully decoded — **660,445 of
-660,445 cells** against community exports of two different files. Three things
-had to be worked out that the format does not state: it stores no row count
-anywhere (the last row with a non-zero key ends the table), nine columns carry
-stale offsets pointing at other columns' bits, and three body-shape fields are
-signed with nothing to mark them.
+**Which team a player plays for is not recorded at all** in that generation.
+Squads run in blocks of consecutive player id and the team table names two
+captains per side, which is enough until two squads' blocks touch — then there
+is no gap to cut on and a boundary in the wrong place moves a dozen players to
+the wrong school. The depth chart settles it: within a pass a team lists each
+`(position, depth)` slot once, so the boundary that makes the fewest players
+collide with somebody already in their slot is the one the game is describing.
+Every boundary in both files resolves with **no collisions**. NCAA 14 simply
+records the team on the player, and names its own schools in plain text.
 
-**Which team a player plays for is not recorded at all.** Squads run in blocks
-of consecutive player id and the team table names two captains per side, which
-is enough until two squads' blocks touch — then there is no gap to cut on and a
-boundary in the wrong place moves a dozen players to the wrong school. The
-depth chart settles it: within a pass a team lists each `(position, depth)` slot
-once, so the boundary that makes the fewest players collide with somebody
-already in their slot is the one the game is describing. Every boundary in both
-files resolves with **no collisions**, and every team ends up holding its own
-captains — 119/119 and 83/83.
+**PS2 ratings are deliberately not imported.** Eighteen of CFB27's fifty-seven
+rating columns have any counterpart in the 2004 game, and those eighteen carry a
+mean of **54.3%** of the weight in EA's own overall formulas — 41.9% at
+quarterback — on a five- or six-bit scale nobody has anchored. NCAA 14's
+forty-two carry **89.2%**, on a scale that needs no anchoring, which is what
+makes the difference in treatment defensible.
 
-**Ratings are deliberately not imported.** Eighteen of CFB27's fifty-seven
-rating columns have any counterpart in the older games, and those eighteen carry
-a mean of **54.3%** of the weight in EA's own overall formulas — 41.9% at
-quarterback. Writing them across would leave nearly half of every overall to be
-invented and then presented as history, and the stored numbers are five or six
-bits wide on a scale nobody has anchored.
-
-**What crosses over is the order.** `LegacyRank` — where a player stood on his
-own squad — becomes a talent signal, scored through a curve measured over EA's
-own rosters (138 squads of exactly 85, 11,730 players). The eighteen
-`Legacy*` columns hold where he stood among others at his own position, and each
-nudges its matching attribute and is offered to archetype selection. That is
-what stops two backs of the same standing coming out identical:
+**What crosses over from a PS2 file is the order.** `LegacyRank` — where a
+player stood on his own squad — becomes a talent signal, scored through a curve
+measured over EA's own rosters (138 squads of exactly 85, 11,730 players). The
+eighteen `Legacy*` columns hold where he stood among others at his own position,
+and each nudges its matching attribute and is offered to archetype selection.
+That is what stops two backs of the same standing coming out identical:
 
 ```
 HB Reggie Bush    OVR 84  HB_ElusiveBack  spd 95  str 67
 HB LenDale White  OVR 83  HB_PowerBack    spd 78  str 88
 ```
 
-A verified measurement still wins outright: a 40-yard dash fixes speed and the
-ranking may not move it afterwards. And an import counts against nothing — a
-roster written by hand keeps exactly the confidence it always had.
+A verified measurement still wins outright, and an import counts against
+nothing — a roster written by hand keeps exactly the confidence it always had.
 
-See [Legacy_Rosters.md](Legacy_Rosters.md) for the format, the corrections and
-the team id map, every entry of which was read off the roster it belongs to
-rather than assumed from the ordering.
+See [Legacy_Rosters.md](Legacy_Rosters.md) for both formats, the benchmark
+tables, and the team id map, every entry of which was read off the roster it
+belongs to rather than assumed from the ordering.
 
 ## Previously
 
