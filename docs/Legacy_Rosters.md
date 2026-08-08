@@ -316,3 +316,166 @@ the coefficient weight**, against 54.3% for the PS2 eighteen — 100% at kicker 
 punter, 84–96% everywhere else, and **56.6% at quarterback**, where NCAA 14 had
 one throw-accuracy number to CFB27's three and none of `ThrowUnderPressure`,
 `ThrowOnTheRun`, `BreakSack` or `PlayAction`.
+
+### What an NCAA 14 import writes
+
+The two generations produce **different roster files**, because they are
+different kinds of evidence.
+
+| | PS2 (2004–07) | PS3 (NCAA 14) |
+|---|---|---|
+| Overall column | `LegacyRank` — a place in the squad, 0 best | `SourceOverall` — the rating itself |
+| Attribute columns | `LegacySpeed` … — places at the position | `SourceSpeed` … — the ratings themselves |
+| How the engine uses them | a talent signal, and a bounded nudge to the shape | copied in and locked |
+
+A rank is what you write when the source's own numbers cannot be trusted as
+numbers. Here they can, so writing a rank beside them would hand the generator a
+worse copy of evidence it already has — and a PS3 import writes no `Legacy*`
+column at all.
+
+**Forty-two ratings are copied and locked.** Nothing afterwards moves them —
+not the class-year experience shift, not the position or class caps, not the
+calibration solve. A senior's awareness is normally lifted because a roster file
+says nothing about it; here something does. A junior's awareness is normally
+held to 95 because that is where the game's own juniors stop; that is a
+statement about what the game does, and it yields to a number somebody
+recorded. The one thing that still outranks a source rating is a verified
+measurement, because a stopwatch is evidence about the person where a rating is
+somebody's reading of him.
+
+**The fifteen CFB27 asks for that NCAA 14 never had** — `ThrowUnderPressure`,
+`BreakSack`, `PlayAction`, `ThrowOnTheRun`, `ChangeOfDirection`, `Confidence`,
+`LeadBlock`, `LongSnap` and the rest — come from the archetype's measured
+profile at that player's overall. That is the whole trade: real numbers where
+they exist, and where they do not, what the game itself gives this kind of
+player at this level.
+
+### One number where CFB27 wants three
+
+NCAA 14 stores **one throw accuracy** and **one route running**. CFB27 stores a
+short, a medium and a deep of each. A single number is evidence about all three
+together and about none of them separately, so:
+
+- the archetype's measured profile decides the **shape** — at overall 85 the
+  game's own field generals throw 91 short, 89 mid and 87 deep, its pure
+  scramblers 84/82/77;
+- the source's number decides the **level** — all three move by the same amount
+  until their plain mean is what the source said.
+
+A 95 accuracy on a field general at 85 comes out **97 / 95 / 93**. The same 95
+on a pure scrambler comes out steeper, because that is how the game's own pure
+scramblers throw.
+
+The averaging is unweighted on purpose. Weighting by how much each depth matters
+to the overall would let the split carry an opinion about the player that
+whoever typed the number never expressed. Where a value would clamp at 99 the
+points it cannot take are handed back to the others, so the mean still holds;
+when none has room the mean falls short, which is honest.
+
+The split columns are configured in `data/RatingModels.json` under
+`sourceRatingSplits`, not hard-coded.
+
+**The general `ThrowAccuracyRating` is not written from the source.** CFB27
+keeps that column and no overall formula reads it — its own improvisers carry
+about 34 there while throwing in the eighties. Copying the source's 95 into it
+would make an imported quarterback the only player in the game whose vestigial
+column means anything.
+
+### The archetype comes out of the ratings
+
+An imported player has no stat line, so the ordinary rules — 800 rushing yards
+makes a scrambler — have nothing to read. The ratings say it better anyway.
+
+Every archetype legal at the position is scored by how far the source's values
+sit from what the game gives that archetype at that overall, counted in each
+attribute's **own measured scatter**. Being 5 points off a value that varies by
+8 says nothing; being 5 off one that varies by 1 says a great deal. The closest
+archetype wins.
+
+Fed the game's own average quarterback of each of the four QB archetypes, at 70,
+78, 85, 92 and 99, this recovers the archetype it was given **20 times out of
+20**, at a distance of 0.003 scatter-units against 0.2 to 0.5 for the runners-up.
+
+The hand-written rules are untouched, and still decide every roster that was
+typed rather than imported.
+
+### The overall follows the ratings
+
+The source's overall chooses the archetype and picks the point on the profile
+curve to fill gaps from. It is **not** a target the ratings are bent to reach.
+
+The two numbers can disagree — the source's was computed by the older game's
+formula over the older game's columns, and CFB27's reads columns that game never
+had. Chasing it would pay for the difference out of the handful of attributes
+nobody recorded. On a field general at 92 an early build did exactly that,
+taking twelve points off throw under pressure to buy back three points of
+overall the archetype's own measured profile does not agree exists.
+
+So calibration is skipped for an imported player, and the report says what the
+ratings came to:
+
+> Overall computed as 95 from the ratings themselves, rather than held at the
+> source's 92.
+
+### Checked against CFB27's own quarterbacks
+
+A quarterback of every QB archetype, generated at 70 / 78 / 85 / 92 / 99 from
+the ratings NCAA 14 would hold for the game's own average player of that
+archetype, then compared attribute by attribute against what CFB27 itself gives
+that archetype at the same overall.
+
+Field general, `generated / CFB27` (`±` is the scatter across the game's own 423
+field generals):
+
+| | ± | 70 | 78 | 85 | 92 | 99 |
+|---|---|---|---|---|---|---|
+| ThrowAccuracyShort | 3.6 | 81/81 | 86/87 | 91/91 | 96/96 | 99/101 |
+| ThrowAccuracyMid | 3.4 | 79/79 | 84/85 | 89/89 | 94/94 | 99/99 |
+| ThrowAccuracyDeep | 3.6 | 76/76 | 82/82 | 87/87 | 92/92 | 99/97 |
+| ThrowOnTheRun | 5.8 | 76/76 | 80/80 | 84/84 | 88/88 | 92/92 |
+| ThrowUnderPressure | 4.6 | 74/73 | 79/78 | 84/83 | 88/87 | 92/91 |
+| BreakSack | 11.2 | 66/66 | 72/72 | 77/77 | 82/82 | 87/87 |
+| PlayAction | 5.9 | 73/72 | 81/80 | 87/86 | 94/93 | 99/99 |
+| Awareness | 5.1 | 73/73 | 81/81 | 88/88 | 94/94 | 99/101 |
+| **Overall** | | 70/70 | 79/78 | 87/85 | 95/92 | 99/99 |
+
+Every one of those but the last row is a **gap-filled** attribute or a split —
+the part that had to be checked, because the copied forty-two are copied.
+
+Across all four archetypes at all five benchmarks, **nothing lands more than two
+of the game's own standard deviations from what CFB27 gives that archetype.**
+
+Two things the table shows honestly:
+
+- **Field general overalls run above the source's** — 79 for a 78, 95 for a 92.
+  That archetype's measured profile is the one that is not self-consistent:
+  feeding its own values back through EA's formula returns 95 at 92 and 87 at
+  85. It is the position's default archetype, so quarterbacks the community
+  editor mislabelled land in it and the fit carries them. The disagreement is
+  now visible in the report instead of being paid for out of the attributes.
+- **At overall 99 the fits ask for values the game cannot hold** — a field
+  general's measured throw accuracy short at 99 is 100.5 and his awareness
+  101.3; a scrambler's break sack is 109. Those clamp at 99, so the very top of
+  the scale is the one place a generated player is knowably short of the
+  extrapolation, and a scrambler comes out 98 where the source said 99.
+
+### Worked example
+
+A quarterback whose NCAA 14 line reads 75 speed, 94 throw power, 95 throw
+accuracy, at overall 85:
+
+```
+75 speed / 94 power / 95 accuracy at 85 -> QB_FieldGeneral (distance 0.19)
+  - The source's one ThrowAccuracy of 95 became ThrowAccuracyShort 97,
+    ThrowAccuracyMid 95, ThrowAccuracyDeep 93 - shaped by what the game gives
+    this archetype at overall 85, and moved together until they average 95.
+  - 40 rating(s) kept exactly as the source roster recorded them. The remaining
+    10 came from what the game gives this archetype at overall 85 - the older
+    game had no column for them.
+  - Overall computed as 92 from the ratings themselves, rather than held at the
+    source's 85.
+```
+
+The 92 is right and worth reading twice: this player was given a 99-overall's
+arm on an 85's body, and CFB27's quarterback formula weights the arm heavily. He
+is not an 85 in this game.
