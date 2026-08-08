@@ -3154,5 +3154,17 @@
       57.9
     ]
   ],
-  "legacyShapeMaxShift": 6.0
+  "legacyShapeMaxShift": 6.0,
+  "sourceRatingSplits": {
+    "ThrowAccuracyRating": [
+      "ThrowAccuracyShortRating",
+      "ThrowAccuracyMidRating",
+      "ThrowAccuracyDeepRating"
+    ],
+    "RouteRunningRating": [
+      "ShortRouteRunningRating",
+      "MediumRouteRunningRating",
+      "DeepRouteRunningRating"
+    ]
+  }
 }

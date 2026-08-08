@@ -94,6 +94,114 @@ public sealed class ArchetypeProfileSet
     public ArchetypeProfile? Find(string? archetype) =>
         archetype is { Length: > 0 } name && _profiles.TryGetValue(name, out var profile) ? profile : null;
 
+    /// <summary>
+    /// Which of several archetypes a set of real attribute values looks most
+    /// like, at a given overall.
+    ///
+    /// <para>An imported player arrives with the numbers somebody gave him and
+    /// no stat line, so the ordinary rules — 800 rushing yards makes a
+    /// scrambler — have nothing to read. The attributes themselves say it
+    /// better anyway: the game's own quarterbacks at overall 85 throw 91/89/87
+    /// short-to-deep as field generals and 85/82/77 as pure scramblers, and
+    /// which of those a player resembles is a measurement rather than a
+    /// guess.</para>
+    ///
+    /// <para>Distance is counted in each attribute's own measured scatter, so
+    /// an attribute the game spreads widely across an archetype counts for
+    /// less than one it holds tightly — being 5 points off a value that varies
+    /// by 8 says nothing, and being 5 off one that varies by 1 says a great
+    /// deal.</para>
+    /// </summary>
+    /// <param name="candidates">Archetypes legal at the player's position.</param>
+    /// <param name="ratings">Real 0-99 values, keyed by CFB27 rating column.</param>
+    /// <param name="overall">The overall to compare at.</param>
+    /// <param name="distance">Mean squared scatter-units from the winner.</param>
+    /// <param name="compared">How many attributes the comparison could use.</param>
+    /// <param name="splits">
+    /// Source columns CFB27 holds as several, from
+    /// <see cref="RatingModelSet.SourceRatingSplits"/>. One of these is
+    /// compared against the average of what the archetype gives the several,
+    /// never against a CFB27 column of the same name — the game keeps a
+    /// general ThrowAccuracyRating that its own improvisers carry at 34 while
+    /// throwing 86 short, and comparing a source's 88 against that would put
+    /// every improviser three scatter-units from being an improviser.
+    /// </param>
+    /// <returns>The best match, or null when nothing could be compared.</returns>
+    public string? BestMatch(
+        IEnumerable<string> candidates, IReadOnlyDictionary<string, double> ratings, double overall,
+        out double distance, out int compared,
+        IReadOnlyDictionary<string, string[]>? splits = null)
+    {
+        string? best = null;
+        distance = double.MaxValue;
+        compared = 0;
+
+        foreach (var candidate in candidates)
+        {
+            if (Find(candidate) is not ArchetypeProfile profile)
+            {
+                continue;
+            }
+
+            var total = 0.0;
+            var counted = 0;
+            foreach (var (attribute, value) in ratings)
+            {
+                double expected;
+                double scatter;
+                if (splits is not null && splits.TryGetValue(attribute, out var across))
+                {
+                    var parts = across
+                        .Select(a => (Ok: profile.TryExpected(a, overall, out var v), Value: v, Part: a))
+                        .Where(p => p.Ok)
+                        .ToList();
+                    if (parts.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    expected = parts.Average(p => p.Value);
+                    scatter = parts.Average(p => profile.Spread(p.Part));
+                }
+                else if (!profile.TryExpected(attribute, overall, out expected))
+                {
+                    continue;
+                }
+                else
+                {
+                    scatter = profile.Spread(attribute);
+                }
+
+                // A floor of one point keeps an attribute the game happens to
+                // give every player of an archetype identically from deciding
+                // the whole comparison on a rounding difference.
+                var z = (value - expected) / Math.Max(scatter, 1.0);
+                total += z * z;
+                counted++;
+            }
+
+            if (counted == 0)
+            {
+                continue;
+            }
+
+            var mean = total / counted;
+            if (mean < distance)
+            {
+                distance = mean;
+                best = candidate;
+                compared = counted;
+            }
+        }
+
+        if (best is null)
+        {
+            distance = 0;
+        }
+
+        return best;
+    }
+
     /// <summary>Loads the generated profile file.</summary>
     public static ArchetypeProfileSet Load(string path)
     {

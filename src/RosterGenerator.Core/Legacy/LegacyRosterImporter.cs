@@ -39,10 +39,23 @@ public static class LegacyRosterImporter
             .Select(ColumnFor).ToList();
 
     /// <summary>The roster CSV column a rating's legacy standing is written to.</summary>
-    public static string ColumnFor(string ratingColumn) =>
-        "Legacy" + (ratingColumn.EndsWith("Rating", StringComparison.Ordinal)
+    public static string ColumnFor(string ratingColumn) => "Legacy" + Stem(ratingColumn);
+
+    /// <summary>
+    /// Columns carrying a rating the source roster recorded outright, in write
+    /// order. Written only for a generation that holds its ratings on a real
+    /// 0-99 scale.
+    /// </summary>
+    public static IReadOnlyList<string> SourceColumns { get; } =
+        LegacySchema.SourceRatingColumns.Select(SourceColumnFor).ToList();
+
+    /// <summary>The roster CSV column a source roster's own rating is written to.</summary>
+    public static string SourceColumnFor(string ratingColumn) => "Source" + Stem(ratingColumn);
+
+    private static string Stem(string ratingColumn) =>
+        ratingColumn.EndsWith("Rating", StringComparison.Ordinal)
             ? ratingColumn[..^"Rating".Length]
-            : ratingColumn);
+            : ratingColumn;
 
     /// <summary>Reads the team id map that names each squad.</summary>
     public static IReadOnlyDictionary<int, string> LoadTeamIds(string path)
@@ -91,12 +104,18 @@ public static class LegacyRosterImporter
             }
         }
 
+        // A file holding real ratings is a different kind of source, and the
+        // roster it writes says so. A rank is what you write when the source's
+        // own numbers cannot be trusted as numbers; where they can, writing a
+        // rank beside them would hand the generator a worse copy of evidence
+        // it already has.
+        var real = file.HasRealRatings;
         var header = new List<string>
         {
             "FirstName", "LastName", "Position", "Number", "HeightInches", "Weight", "Class",
-            "Team", "Season", "SkinTone", "Role", "LegacyRank",
+            "Team", "Season", "SkinTone", "Role", real ? "SourceOverall" : "LegacyRank",
         };
-        header.AddRange(ShapeColumns);
+        header.AddRange(real ? SourceColumns : ShapeColumns);
 
         var rows = new List<IReadOnlyList<string>> { header };
         var written = 0;
@@ -110,15 +129,19 @@ public static class LegacyRosterImporter
             // at a weak one on nothing but the company he kept.
             var named = team.Players.Where(p => !p.IsNameless).ToList();
             skipped += team.Players.Count - named.Count;
-            var rank = Percentiles(named.Select(p => (object)p), p => ((LegacyPlayer)p).RawOverall);
-            var shape = LegacySchema.AttributeMap.Values.ToDictionary(
-                column => column,
-                column => named
-                    .GroupBy(p => p.Position)
-                    .SelectMany(g => Percentiles(
-                        g.Select(p => (object)p), p => ((LegacyPlayer)p).RawAttributes.GetValueOrDefault(column)))
-                    .ToDictionary(x => x.Key, x => x.Value),
-                StringComparer.Ordinal);
+            var rank = real
+                ? new Dictionary<int, double>()
+                : Percentiles(named.Select(p => (object)p), p => ((LegacyPlayer)p).RawOverall);
+            var shape = real
+                ? new Dictionary<string, Dictionary<int, double>>(StringComparer.Ordinal)
+                : LegacySchema.AttributeMap.Values.ToDictionary(
+                    column => column,
+                    column => named
+                        .GroupBy(p => p.Position)
+                        .SelectMany(g => Percentiles(
+                            g.Select(p => (object)p), p => ((LegacyPlayer)p).RawAttributes.GetValueOrDefault(column)))
+                        .ToDictionary(x => x.Key, x => x.Value),
+                    StringComparer.Ordinal);
 
             foreach (var player in named)
             {
@@ -135,12 +158,26 @@ public static class LegacyRosterImporter
                     season.ToString(),
                     player.SkinTone?.ToString() ?? "",
                     player.Role ?? "",
-                    Format(rank.GetValueOrDefault(player.PlayerId)),
+                    real
+                        ? player.RawOverall.ToString()
+                        : Format(rank.GetValueOrDefault(player.PlayerId)),
                 };
 
-                foreach (var column in LegacySchema.AttributeMap.Values.OrderBy(v => v, StringComparer.Ordinal))
+                if (real)
                 {
-                    row.Add(shape[column].TryGetValue(player.PlayerId, out var value) ? Format(value) : "");
+                    foreach (var column in LegacySchema.SourceRatingColumns)
+                    {
+                        row.Add(player.RawAttributes.TryGetValue(column, out var value)
+                            ? value.ToString()
+                            : "");
+                    }
+                }
+                else
+                {
+                    foreach (var column in LegacySchema.AttributeMap.Values.OrderBy(v => v, StringComparer.Ordinal))
+                    {
+                        row.Add(shape[column].TryGetValue(player.PlayerId, out var value) ? Format(value) : "");
+                    }
                 }
 
                 rows.Add(row);

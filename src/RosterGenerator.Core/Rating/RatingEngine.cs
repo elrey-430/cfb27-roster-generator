@@ -135,12 +135,32 @@ public sealed class RatingEngine
         var talent = _scorer.Assess(group, normalized);
         var target = (int)Math.Round(talent.Score);
 
+        // 1a. Unless a source roster already answered the question. A later
+        //     game in the same series stores its overall plainly and on this
+        //     game's scale, so an 84 there is an 84 here — a fact about the
+        //     player, where everything the blend does is an inference about
+        //     him. It also switches off the steps below that exist to cover
+        //     for not knowing: the program nudge, the secondary-production
+        //     bonus, the drafted floor, the undrafted ceiling and the
+        //     low-confidence class cap are all ways of guessing better, and
+        //     there is nothing left to guess.
+        var sourceDecided = normalized.SourceOverall is double;
+        if (normalized.SourceOverall is double sourceOverall)
+        {
+            var stated = (int)Math.Round(Math.Clamp(sourceOverall, _model.GlobalCaps.Min, _model.GlobalCaps.Max));
+            adjustments.Add(
+                $"Target overall set to {stated} from the source roster's own rating rather than the " +
+                $"blended {target}: the source records it on this game's scale, so it is read as a number " +
+                "rather than as a place in an order.");
+            target = stated;
+        }
+
         // 1b. Program standing. Role, awards and stats say what a player did,
         //     never where — so an anonymous backup came out identical at a
         //     playoff program and at the worst team in the country. The
         //     adjustment fades as the evidence strengthens: a first-round pick
         //     is rated on their own record.
-        if (programAdjustment != 0)
+        if (programAdjustment != 0 && !sourceDecided)
         {
             var share = talent.Confidence switch
             {
@@ -167,7 +187,7 @@ public sealed class RatingEngine
         var roles = _emphasis.Score(group, normalized.Stats);
         var secondary = _emphasis.SecondaryOverallBonus(roles, out var secondaryNote);
         var secondaryPoints = (int)Math.Round(secondary);
-        if (secondaryPoints > 0)
+        if (secondaryPoints > 0 && !sourceDecided)
         {
             adjustments.Add(
                 $"Target overall moved {target} -> {target + secondaryPoints}: {secondaryNote}");
@@ -192,7 +212,7 @@ public sealed class RatingEngine
         //     of ten thousand — and the weighted blend cannot express that,
         //     because draft is one signal of five. Applied before every
         //     ceiling below, so a cap always still wins.
-        if (_model.DraftedOverallFloor > 0 && normalized.WasDrafted)
+        if (_model.DraftedOverallFloor > 0 && normalized.WasDrafted && !sourceDecided)
         {
             var floor = (int)Math.Round(_model.DraftedOverallFloor);
             if (target < floor)
@@ -209,7 +229,7 @@ public sealed class RatingEngine
         //     an explicit UDFA is capped — a blank draft column is a gap in the
         //     record, not a statement that the player went undrafted, and most
         //     all-time rosters carry no draft data whatever.
-        if (_model.UndraftedOverallCeiling > 0 && normalized.UndraftedFreeAgent)
+        if (_model.UndraftedOverallCeiling > 0 && normalized.UndraftedFreeAgent && !sourceDecided)
         {
             var undraftedCap = (int)Math.Round(_model.UndraftedOverallCeiling);
             if (target > undraftedCap)
@@ -236,7 +256,7 @@ public sealed class RatingEngine
         // senior reserve let nine points over.
         var lowConfidenceCap = _model.LowConfidenceCap(normalized.Role, classYear, classModel);
         if (lowConfidenceCap is double capValue && talent.Confidence == RatingConfidence.Low &&
-            target > capValue)
+            target > capValue && !sourceDecided)
         {
             var capped = (int)Math.Round(capValue);
             adjustments.Add(
@@ -251,7 +271,16 @@ public sealed class RatingEngine
         //     its best punter is an 86 where its best receiver is a 99. Left
         //     alone, a nation-leading All-American punter generated at 91,
         //     better than any punter in the game.
-        if (_model.PositionOverallCaps.TryGetValue(group, out var positionCap) && target > positionCap)
+        //
+        //     This too is about inference and so is off when a source decided
+        //     the number. The ceiling is the highest the game's own shipped
+        //     rosters go, not the highest it can hold, and holding an imported
+        //     96 quarterback down to 95 would leave him carrying the ratings
+        //     of a 96 with the overall of a 95 — the ratings are locked, so
+        //     the only way to reach the lower number is to pull the handful of
+        //     attributes that are not locked far out of shape.
+        if (_model.PositionOverallCaps.TryGetValue(group, out var positionCap) && target > positionCap &&
+            !sourceDecided)
         {
             adjustments.Add(
                 $"Target overall reduced {target} -> {positionCap}: the highest {group} the game itself " +
@@ -276,15 +305,47 @@ public sealed class RatingEngine
         //    were written before the game's own players were measured, and a
         //    guess must never overrule a measurement.
         var caps = EffectiveCaps(positionModel, profile, target);
-        void Clamp(Dictionary<string, double> values) => ApplyCaps(values, caps, classModel);
+        void Clamp(Dictionary<string, double> values) => ApplyCaps(values, caps, classModel, locked);
         Clamp(attributes);
-        var achieved = OverallFormulaSet.Calibrate(formula, attributes, target, Clamp, locked,
-            share: a => positionModel.TalentSensitivity.GetValueOrDefault(a, 0.15));
-        if (achieved != target)
+
+        // 4b. A player who arrived with real ratings has already answered the
+        //     question calibration exists to answer, so the overall follows
+        //     the ratings rather than the ratings being bent to reach it.
+        //
+        //     The two numbers can disagree, and when they do the ratings are
+        //     the better evidence: the source's overall was computed by the
+        //     older game's formula over the older game's columns, and CFB27's
+        //     reads columns that game never had. Chasing it would pay for the
+        //     difference out of the handful of attributes nobody recorded —
+        //     on a field general at 92 an early build did exactly that, taking
+        //     twelve points off throw under pressure to buy back three points
+        //     of overall the archetype's own measured profile does not agree
+        //     exists.
+        int achieved;
+        if (normalized.SourceRatings.Count > 0)
         {
-            adjustments.Add(
-                $"Overall settled at {achieved} rather than {target}: sanity caps for {group} " +
-                "prevented the remaining adjustment.");
+            var implied = formula.Compute(attributes);
+            if (implied != target)
+            {
+                adjustments.Add(
+                    $"Overall computed as {implied} from the ratings themselves, rather than held at the " +
+                    $"source's {target}. The source's number came from a different game's formula over a " +
+                    "smaller set of columns; the ratings are what this game reads.");
+            }
+
+            achieved = implied;
+            target = implied;
+        }
+        else
+        {
+            achieved = OverallFormulaSet.Calibrate(formula, attributes, target, Clamp, locked,
+                share: a => positionModel.TalentSensitivity.GetValueOrDefault(a, 0.15));
+            if (achieved != target)
+            {
+                adjustments.Add(
+                    $"Overall settled at {achieved} rather than {target}: sanity caps for {group} " +
+                    "prevented the remaining adjustment.");
+            }
         }
 
         // 5. Freeze to integers. Rounding moves the raw total by up to half a
@@ -340,7 +401,7 @@ public sealed class RatingEngine
             foreach (var attribute in candidates)
             {
                 var proposed = values[attribute] + direction;
-                var bounded = Bound(attribute, proposed, caps, classModel);
+                var bounded = Bound(attribute, proposed, caps, classModel, locked);
                 if (bounded == values[attribute])
                 {
                     continue;
@@ -366,8 +427,15 @@ public sealed class RatingEngine
     /// <summary>Applies position, class-year and global bounds to one integer value.</summary>
     private int Bound(
         string attribute, int value, IReadOnlyDictionary<string, double[]> caps,
-        ClassYearExperienceModel? classModel)
+        ClassYearExperienceModel? classModel, IReadOnlySet<string>? locked = null)
     {
+        // Same rule as ApplyCaps: what the game's own rosters do never
+        // overrules a number that was measured or recorded.
+        if (locked is not null && locked.Contains(attribute))
+        {
+            return Math.Clamp(value, _model.GlobalCaps.Min, _model.GlobalCaps.Max);
+        }
+
         if (caps.TryGetValue(attribute, out var bounds) && bounds.Length == 2)
         {
             value = (int)Math.Clamp(value, bounds[0], bounds[1]);
@@ -447,10 +515,162 @@ public sealed class RatingEngine
         _emphasis.Apply(roles, profile, attributes, locked, adjustments);
         ApplyPhysique(attributes, group, player, adjustments);
         ApplyLegacyShape(attributes, evidence, adjustments, locked);
+        ApplySourceRatings(attributes, evidence, profile, target, adjustments, locked);
         ApplyMeasurements(attributes, evidence, adjustments, locked);
-        ApplyExperience(attributes, player);
+        ApplyExperience(attributes, player, locked);
         return attributes;
     }
+
+    /// <summary>
+    /// Writes back the ratings a source roster actually recorded, and leaves
+    /// the archetype to fill the gaps CFB27 leaves around them.
+    ///
+    /// <para>NCAA 14 answers forty-two of CFB27's fifty-seven rating columns on
+    /// the same 0-99 scale. Those forty-two are not estimated here at all: the
+    /// number is copied and the attribute is locked, so calibration, the caps,
+    /// the rounding pass and the experience shift all leave it where whoever
+    /// built that roster put it.</para>
+    ///
+    /// <para>The remaining fifteen are the ones the older game never had a
+    /// column for — throw under pressure, break sack, play action, the deep
+    /// route runs — and they come from the archetype's measured profile at this
+    /// player's overall, which <see cref="BuildShape"/> has already seeded.
+    /// That is the whole trade: real numbers where they exist, and where they
+    /// do not, what the game itself gives this kind of player at this level
+    /// rather than an invention.</para>
+    ///
+    /// <para>Two of the forty-two are one number where CFB27 wants three. See
+    /// <see cref="Split"/>.</para>
+    /// </summary>
+    private void ApplySourceRatings(
+        Dictionary<string, double> attributes, RatingEvidence evidence, ArchetypeProfile? profile,
+        int target, List<string> adjustments, HashSet<string> locked)
+    {
+        if (evidence.SourceRatings.Count == 0)
+        {
+            return;
+        }
+
+        var carried = 0;
+        foreach (var (attribute, value) in evidence.SourceRatings)
+        {
+            if (_model.SourceRatingSplits.TryGetValue(attribute, out var across))
+            {
+                Split(attributes, attribute, value, across, profile, target, adjustments, locked);
+
+                // The number goes into the split and nowhere else, even where
+                // a column of the same name survives in CFB27. The game still
+                // has a general ThrowAccuracyRating, but no overall formula
+                // reads it and its own players carry values that make no sense
+                // against the three it does read — a 33 on an improviser whose
+                // short, mid and deep are all in the eighties. Copying the
+                // source's 95 into that column would make an imported
+                // quarterback the one player in the game whose vestigial
+                // column means something.
+                continue;
+            }
+
+            if (!attributes.ContainsKey(attribute))
+            {
+                continue;
+            }
+
+            attributes[attribute] = Math.Clamp(value, _model.GlobalCaps.Min, _model.GlobalCaps.Max);
+            locked.Add(attribute);
+            carried++;
+        }
+
+        var filled = attributes.Count - locked.Count;
+        adjustments.Add(
+            $"{carried} rating(s) kept exactly as the source roster recorded them. The remaining {filled} " +
+            (profile is not null
+                ? $"came from what the game gives this archetype at overall {target} — the older game had " +
+                  "no column for them."
+                : "came from the position baseline — the older game had no column for them."));
+    }
+
+    /// <summary>
+    /// Spreads one source rating across the several CFB27 asks for.
+    ///
+    /// <para>The archetype's measured profile decides the <em>shape</em>: at
+    /// overall 85 the game's own field generals throw 91 short, 89 mid and 87
+    /// deep, and its pure scramblers 85/82/77. The source's single number
+    /// decides the <em>level</em>: every one of the three moves by the same
+    /// amount until their plain mean is what the source said. So a 95 accuracy
+    /// on a field general comes out 97/95/93, and the same 95 on a pure
+    /// scrambler comes out steeper.</para>
+    ///
+    /// <para>Clamping at the caps would otherwise quietly lower the mean, so
+    /// whatever a clamped value cannot take is handed back to the ones with
+    /// room. When none has room the mean falls short, which is honest: the
+    /// game cannot hold what the source asked for.</para>
+    /// </summary>
+    private void Split(
+        Dictionary<string, double> attributes, string source, double value, IReadOnlyList<string> across,
+        ArchetypeProfile? profile, int target, List<string> adjustments, HashSet<string> locked)
+    {
+        var parts = across.Where(attributes.ContainsKey).ToList();
+        if (parts.Count == 0)
+        {
+            return;
+        }
+
+        var shape = parts.ToDictionary(
+            part => part,
+            part => profile is not null && profile.TryExpected(part, target, out var expected)
+                ? expected
+                : attributes[part],
+            StringComparer.Ordinal);
+
+        var min = _model.GlobalCaps.Min;
+        var max = _model.GlobalCaps.Max;
+        var free = new HashSet<string>(parts, StringComparer.Ordinal);
+        var result = new Dictionary<string, double>(shape, StringComparer.Ordinal);
+        var wanted = value * parts.Count;
+
+        // Each pass moves everything still free by the same amount, then
+        // freezes whatever hit a cap. Bounded by the number of parts, because
+        // every pass either lands the mean or freezes at least one of them.
+        for (var pass = 0; pass <= parts.Count && free.Count > 0; pass++)
+        {
+            var fixedTotal = parts.Where(p => !free.Contains(p)).Sum(p => result[p]);
+            var shift = (wanted - fixedTotal - free.Sum(p => shape[p])) / free.Count;
+            var clamped = new List<string>();
+            foreach (var part in free)
+            {
+                var moved = shape[part] + shift;
+                result[part] = Math.Clamp(moved, min, max);
+                if (Math.Abs(result[part] - moved) > 1e-9)
+                {
+                    clamped.Add(part);
+                }
+            }
+
+            if (clamped.Count == 0)
+            {
+                break;
+            }
+
+            free.ExceptWith(clamped);
+        }
+
+        foreach (var part in parts)
+        {
+            attributes[part] = result[part];
+            locked.Add(part);
+        }
+
+        adjustments.Add(
+            $"The source's one {Describe(source)} of {value:0} became " +
+            string.Join(", ", parts.Select(p => $"{Describe(p)} {result[p]:0}")) +
+            $" — shaped by what the game gives this archetype at overall {target}, and moved together " +
+            $"until they average {parts.Average(p => result[p]):0.#}.");
+    }
+
+    private static string Describe(string attribute) =>
+        attribute.EndsWith("Rating", StringComparison.Ordinal)
+            ? attribute[..^"Rating".Length]
+            : attribute;
 
     /// <summary>
     /// Restores the shape an imported player had in the roster he came from.
@@ -612,7 +832,8 @@ public sealed class RatingEngine
             "ChangeOfDirectionRating", "three-cone drill", "s");
     }
 
-    private void ApplyExperience(Dictionary<string, double> attributes, HistoricalPlayer player)
+    private void ApplyExperience(
+        Dictionary<string, double> attributes, HistoricalPlayer player, IReadOnlySet<string> locked)
     {
         var classYear = ResolveClassYear(player.ClassYear);
         if (classYear is null || !_model.ClassYearExperience.TryGetValue(classYear, out var classModel))
@@ -630,20 +851,37 @@ public sealed class RatingEngine
 
         foreach (var attribute in _model.ExperienceAttributes)
         {
-            if (attributes.ContainsKey(attribute))
+            // A senior's awareness is normally lifted because the roster file
+            // says nothing about it. When something does — a stopwatch, or a
+            // source roster that recorded the number — moving it would be
+            // overwriting evidence with the reason the estimate existed.
+            if (attributes.ContainsKey(attribute) && !locked.Contains(attribute))
             {
                 attributes[attribute] += shift;
             }
         }
     }
 
+    /// <summary>
+    /// Holds every attribute inside the position, class-year and global
+    /// bounds.
+    ///
+    /// <para>Attributes a measurement or a source roster has fixed are left
+    /// alone. Every cap here describes what the game's own rosters do — a
+    /// freshman's awareness tops out at 78 in them — which is exactly the kind
+    /// of statement that has to yield to a number somebody actually recorded.
+    /// The global 10-99 bounds still apply to everything, because those are
+    /// what the format itself holds.</para>
+    /// </summary>
     private void ApplyCaps(
         Dictionary<string, double> attributes, IReadOnlyDictionary<string, double[]> caps,
-        ClassYearExperienceModel? classModel)
+        ClassYearExperienceModel? classModel, IReadOnlySet<string>? locked = null)
     {
+        bool Free(string attribute) => locked is null || !locked.Contains(attribute);
+
         foreach (var (attribute, bounds) in caps)
         {
-            if (attributes.TryGetValue(attribute, out var value) && bounds.Length == 2)
+            if (attributes.TryGetValue(attribute, out var value) && bounds.Length == 2 && Free(attribute))
             {
                 attributes[attribute] = Math.Clamp(value, bounds[0], bounds[1]);
             }
@@ -651,12 +889,13 @@ public sealed class RatingEngine
 
         if (classModel is not null)
         {
-            if (attributes.TryGetValue("AwarenessRating", out var awareness))
+            if (attributes.TryGetValue("AwarenessRating", out var awareness) && Free("AwarenessRating"))
             {
                 attributes["AwarenessRating"] = Math.Min(awareness, classModel.AwarenessCap);
             }
 
-            if (attributes.TryGetValue("PlayRecognitionRating", out var recognition))
+            if (attributes.TryGetValue("PlayRecognitionRating", out var recognition) &&
+                Free("PlayRecognitionRating"))
             {
                 attributes["PlayRecognitionRating"] = Math.Min(recognition, classModel.PlayRecognitionCap);
             }

@@ -102,13 +102,49 @@ public sealed record RatingEvidence
     public IReadOnlyDictionary<string, double> LegacyRatingPercentiles { get; init; } =
         new Dictionary<string, double>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// The overall a source roster recorded for this player, on a real 0-99
+    /// scale.
+    ///
+    /// <para>This is a rating rather than a rank, and it is trusted as one,
+    /// which the percentiles above deliberately are not. The difference is
+    /// that a later game stores the number plainly and on the scale CFB27 also
+    /// uses — an 88 there is an 88 here — where the PS2-era files hold a
+    /// compressed value nobody has anchored.</para>
+    ///
+    /// <para>It says which archetype the player was and where on the
+    /// archetype's curve to fill in what the source never recorded. It is not
+    /// a target the ratings are bent to reach — see
+    /// <see cref="Rating.RatingEngine"/>.</para>
+    /// </summary>
+    public double? SourceOverall { get; init; }
+
+    /// <summary>
+    /// Attribute values a source roster recorded, on a real 0-99 scale, keyed
+    /// by the CFB27 rating column each one becomes.
+    ///
+    /// <para>These REPLACE the generated estimate and are then left alone —
+    /// the point of importing a roster somebody built is to keep what they
+    /// built. Everything CFB27 asks for that the source never recorded is
+    /// still filled in from the archetype's measured profile, so a complete
+    /// player comes out without any of his real numbers being written
+    /// over.</para>
+    ///
+    /// <para>A verified measurement still outranks them: a stopwatch is
+    /// evidence about the person, where a rating is somebody's reading of
+    /// him.</para>
+    /// </summary>
+    public IReadOnlyDictionary<string, double> SourceRatings { get; init; } =
+        new Dictionary<string, double>(StringComparer.Ordinal);
+
     /// <summary>True when no evidence at all was supplied.</summary>
     public bool IsEmpty =>
         Role is null && StarRating is null && FortyYardDash is null && BenchPressReps is null &&
         VerticalJumpInches is null && ShuttleSeconds is null && ThreeConeSeconds is null &&
         DraftPickOverall is null && DraftRound is null && !UndraftedFreeAgent &&
         Awards.Count == 0 && AwardContender.Count == 0 && Stats.Count == 0 &&
-        LegacyRankPercentile is null && LegacyRatingPercentiles.Count == 0;
+        LegacyRankPercentile is null && LegacyRatingPercentiles.Count == 0 &&
+        SourceOverall is null && SourceRatings.Count == 0;
 }
 
 /// <summary>

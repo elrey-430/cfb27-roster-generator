@@ -105,7 +105,7 @@ public static class LegacySchema
             ["PRBS"] = "RunBlockPowerRating",
             ["SPCT"] = "SpectacularCatchRating",
             ["TRAF"] = "CatchInTrafficRating",
-            ["PRTR"] = "ShortRouteRunningRating",
+            ["PRTR"] = "RouteRunningRating",
             ["PKRT"] = "KickReturnRating",
         };
 
@@ -186,6 +186,23 @@ public static class LegacySchema
     /// </summary>
     public static readonly IReadOnlySet<string> SignedFields =
         new HashSet<string>(StringComparer.Ordinal) { "PFSH", "PMSH", "PSSH" };
+
+    /// <summary>
+    /// Every CFB27 rating column a PS3-era roster can supply a real 0-99 value
+    /// for, in write order. Forty-two of CFB27's fifty-seven.
+    ///
+    /// <para>Two of these are not CFB27 columns at all — the later game holds
+    /// one throw accuracy and one route running where CFB27 holds three of
+    /// each. They are carried under their own names and spread across the
+    /// three when a player is generated, because a number somebody typed once
+    /// is evidence about all three together and about none of them
+    /// separately.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> SourceRatingColumns =
+        AttributeMap.Values.Concat(ModernAttributeMap.Values)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(v => v, StringComparer.Ordinal)
+            .ToList();
 
     /// <summary>
     /// Decodes one of the character codes a name is stored as: 1-26 are

@@ -53,6 +53,12 @@ public static class RoleSpread
     /// anyone else in their role.
     /// </summary>
     public static bool IsUndifferentiated(RatedPlayer player) =>
+        // A source roster's own overall is the most individuating thing a
+        // player can carry: somebody sat down and decided this one was an 84.
+        // It reaches the engine as an outright replacement rather than as a
+        // weighed signal, so it has to be named here — otherwise the spread
+        // would lay a squad of real numbers back out along an average curve.
+        player.Player.Evidence.SourceOverall is null &&
         player.Ratings.Talent.Signals.Count > 0 &&
         player.Ratings.Talent.Signals.All(s => ThinSignals.Contains(s.Name));
 

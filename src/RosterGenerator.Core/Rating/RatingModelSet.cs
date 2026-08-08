@@ -309,6 +309,23 @@ public sealed class RatingModelSet
     /// </summary>
     public double LegacyShapeMaxShift { get; init; }
 
+    /// <summary>
+    /// Ratings an older game held as one number where CFB27 holds several,
+    /// mapped to the columns they spread across.
+    ///
+    /// <para>NCAA 14 records one throw accuracy and one route running; CFB27
+    /// asks for a short, a medium and a deep of each. A single number is
+    /// evidence about all three together and about none of them separately, so
+    /// the archetype's measured profile decides the shape — which of the three
+    /// leads, and by how much — and the source's number decides the level, by
+    /// moving all three until their plain mean is what it says.</para>
+    ///
+    /// <para>Averaging without weights is deliberate. Weighting by how much
+    /// each depth matters to the overall would let the split carry an opinion
+    /// about the player that whoever typed the number never expressed.</para>
+    /// </summary>
+    public Dictionary<string, string[]> SourceRatingSplits { get; init; } = new();
+
     /// <summary>[fortyTime, speedRating] points.</summary>
     public double[][] FortyYardToSpeed { get; init; } = Array.Empty<double[]>();
 

@@ -781,6 +781,62 @@ public class LegacyRosterTests
     }
 
     [Fact]
+    public void APs3ImportWritesTheRatingsThemselvesRatherThanRanks()
+    {
+        // The two generations get different columns because they are different
+        // kinds of evidence. A rank is what you write when the source's own
+        // numbers cannot be trusted as numbers; here they can, so writing a
+        // rank beside them would hand the generator a worse copy of what it
+        // already has.
+        var source = WriteTemp(BigEndianFileWithTeams());
+        var output = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".csv");
+        try
+        {
+            var result = LegacyRosterImporter.Import(source, output, new Dictionary<int, string>(), 2013);
+            Assert.Equal(2, result.Teams);
+
+            var header = File.ReadLines(output).First().Split(',');
+            Assert.Contains("SourceOverall", header);
+            Assert.Contains("SourceSpeed", header);
+            Assert.DoesNotContain("LegacyRank", header);
+            Assert.DoesNotContain("LegacySpeed", header);
+
+            var read = HistoricalCsv.Read(output);
+            Assert.Empty(read.Warnings);
+            var young = read.Rosters.SelectMany(r => r.Players).Single(p => p.LastName == "Young");
+            Assert.Equal(99, young.Evidence.SourceOverall);
+            Assert.Empty(young.Evidence.LegacyRatingPercentiles);
+            Assert.Null(young.Evidence.LegacyRankPercentile);
+        }
+        finally
+        {
+            File.Delete(source);
+            File.Delete(output);
+        }
+    }
+
+    [Fact]
+    public void APs2ImportStillWritesRanksAndNoSourceRatings()
+    {
+        var output = ImportTouchingSquads(out _);
+        try
+        {
+            var header = File.ReadLines(output).First().Split(',');
+            Assert.Contains("LegacyRank", header);
+            Assert.DoesNotContain("SourceOverall", header);
+            Assert.DoesNotContain("SourceSpeed", header);
+
+            var player = HistoricalCsv.Read(output).Roster.Players[0];
+            Assert.Null(player.Evidence.SourceOverall);
+            Assert.Empty(player.Evidence.SourceRatings);
+        }
+        finally
+        {
+            File.Delete(output);
+        }
+    }
+
+    [Fact]
     public void ThePs2TeamIdMapDoesNotSpeakForAPs3File()
     {
         // The two generations number different leagues. Letting the PS2 map

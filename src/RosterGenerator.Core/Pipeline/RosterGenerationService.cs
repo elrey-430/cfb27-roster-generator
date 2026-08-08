@@ -299,7 +299,9 @@ public sealed class RosterGenerationService
         }
 
         var archetypeSelector = request.SelectArchetypes && ratingEngine is not null
-            ? ArchetypeSelector.Load(FindDataFile(data, "ArchetypeRules.json"))
+            ? ArchetypeSelector.Load(
+                FindDataFile(data, "ArchetypeRules.json"), ratingEngine.Profiles,
+                ratingEngine.Model.SourceRatingSplits)
             : null;
 
         // The depth model is loaded whenever ratings are generated, not only

@@ -64,6 +64,16 @@ public sealed record LegacyTeam(int TeamId, string? School, IReadOnlyList<Legacy
 /// </param>
 public sealed record LegacyRosterFile(IReadOnlyList<LegacyTeam> Teams, IReadOnlyList<string> Notes)
 {
+    /// <summary>
+    /// True when this generation records its ratings on a real 0-99 scale, so
+    /// the numbers themselves can be carried across rather than only their
+    /// order.
+    ///
+    /// <para>The PS3-era files do; the PS2-era ones do not, and the difference
+    /// decides everything about what an import is allowed to write.</para>
+    /// </summary>
+    public bool HasRealRatings { get; init; }
+
     /// <summary>Every player across every team.</summary>
     public IEnumerable<LegacyPlayer> AllPlayers => Teams.SelectMany(t => t.Players);
 }

@@ -219,7 +219,7 @@ public static class LegacyRosterReader
                     : schools?.GetValueOrDefault(t.Key),
                 t.Value))
             .ToList();
-        return new LegacyRosterFile(teams, notes);
+        return new LegacyRosterFile(teams, notes) { HasRealRatings = true };
     }
 
     /// <summary>Team id to school name, read from the file's own team table.</summary>

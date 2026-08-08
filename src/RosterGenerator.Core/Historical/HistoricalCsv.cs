@@ -326,11 +326,27 @@ public static class HistoricalCsv
             }
         }
 
+        // The other half of the same idea, for a source that recorded its
+        // ratings on a scale worth carrying across: these are the numbers
+        // themselves, not places in an order.
+        var sourceRatings = new Dictionary<string, double>(StringComparer.Ordinal);
+        foreach (var rating in Legacy.LegacySchema.SourceRatingColumns)
+        {
+            var column = Normalize(Legacy.LegacyRosterImporter.SourceColumnFor(rating));
+            if (ParseDouble(cell(row, column), rowLabel, column, warnings, corrections) is double value)
+            {
+                sourceRatings[rating] = value;
+            }
+        }
+
         return new RatingEvidence
         {
             LegacyRankPercentile =
                 ParseDouble(cell(row, "legacyrank"), rowLabel, "LegacyRank", warnings, corrections),
             LegacyRatingPercentiles = legacyShape,
+            SourceOverall =
+                ParseDouble(cell(row, "sourceoverall"), rowLabel, "SourceOverall", warnings, corrections),
+            SourceRatings = sourceRatings,
             Role = NullIfEmpty(cell(row, "role")),
             StarRating = ParseInt(cell(row, "starrating"), rowLabel, "StarRating", warnings, corrections),
             FortyYardDash = ParseDouble(cell(row, "forty"), rowLabel, "Forty", warnings, corrections),

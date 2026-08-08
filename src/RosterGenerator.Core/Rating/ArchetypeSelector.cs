@@ -68,10 +68,16 @@ public sealed class ArchetypeSelector
     };
 
     private readonly Dictionary<string, PositionArchetypeRules> _positions;
+    private readonly ArchetypeProfileSet? _profiles;
+    private readonly IReadOnlyDictionary<string, string[]>? _splits;
 
-    private ArchetypeSelector(Dictionary<string, PositionArchetypeRules> positions)
+    private ArchetypeSelector(
+        Dictionary<string, PositionArchetypeRules> positions, ArchetypeProfileSet? profiles,
+        IReadOnlyDictionary<string, string[]>? splits)
     {
         _positions = positions;
+        _profiles = profiles;
+        _splits = splits;
     }
 
     /// <summary>Positions the rules cover.</summary>
@@ -97,6 +103,21 @@ public sealed class ArchetypeSelector
         {
             throw new KeyNotFoundException(
                 $"No archetype rules for position '{position}' in ArchetypeRules.json.");
+        }
+
+        // An imported player carries the numbers somebody gave him, and those
+        // say what kind of player he was more directly than any rule written
+        // over a stat line could — so when they are there, they decide. The
+        // rules below stay exactly as they are for every hand-written roster.
+        if (_profiles is not null && evidence.SourceRatings.Count > 0 &&
+            evidence.SourceOverall is double overall &&
+            _profiles.BestMatch(rules.Available, evidence.SourceRatings, overall, out _, out var compared,
+                _splits) is string matched)
+        {
+            return new ArchetypeChoice(matched,
+                $"{matched} chosen because the {compared} rating(s) the source roster recorded look more " +
+                $"like what the game gives a {matched} at overall {overall:0} than like any other " +
+                $"archetype available at {position}", true);
         }
 
         var profile = BuildProfile(player, evidence);
@@ -158,6 +179,17 @@ public sealed class ArchetypeSelector
             profile[$"Legacy{name}"] = percentile;
         }
 
+        // And the same for a source that recorded real values — "SourceSpeed
+        // at least 90" — so a rule can be written against them if the measured
+        // match above ever needs overriding at a particular position.
+        foreach (var (attribute, value) in evidence.SourceRatings)
+        {
+            var name = attribute.EndsWith("Rating", StringComparison.Ordinal)
+                ? attribute[..^"Rating".Length]
+                : attribute;
+            profile[$"Source{name}"] = value;
+        }
+
         return profile;
     }
 
@@ -182,7 +214,20 @@ public sealed class ArchetypeSelector
     }
 
     /// <summary>Loads the rules file.</summary>
-    public static ArchetypeSelector Load(string path)
+    /// <param name="path">Path to <c>ArchetypeRules.json</c>.</param>
+    /// <param name="profiles">
+    /// Measured archetype profiles, used only to choose an archetype for a
+    /// player who arrives with real ratings. Without them such a player falls
+    /// back to the same rules everyone else uses.
+    /// </param>
+    /// <param name="sourceRatingSplits">
+    /// Source columns CFB27 holds as several, from
+    /// <see cref="RatingModelSet.SourceRatingSplits"/>. Needed only for that
+    /// same measured match.
+    /// </param>
+    public static ArchetypeSelector Load(
+        string path, ArchetypeProfileSet? profiles = null,
+        IReadOnlyDictionary<string, string[]>? sourceRatingSplits = null)
     {
         using var document = JsonDocument.Parse(File.ReadAllText(path));
         if (!document.RootElement.TryGetProperty("positions", out var positions))
@@ -193,6 +238,6 @@ public sealed class ArchetypeSelector
         var parsed = positions.EnumerateObject()
             .ToDictionary(p => p.Name, p => p.Value.Deserialize<PositionArchetypeRules>(JsonOptions)!,
                 StringComparer.Ordinal);
-        return new ArchetypeSelector(parsed);
+        return new ArchetypeSelector(parsed, profiles, sourceRatingSplits);
     }
 }
