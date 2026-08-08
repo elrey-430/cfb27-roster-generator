@@ -121,11 +121,22 @@ public static class LegacyRosterReader
         var chart = file.Tables.GetValueOrDefault(LegacySchema.DepthChartTable);
         var roles = chart is null ? new Dictionary<int, string>() : ReadRoles(chart);
 
+        // This generation names its own teams, so nothing has to be identified
+        // by hand. The PS2 team id map exists only because that generation's
+        // team table carries an id and no name at all; here TDNA says "Arizona
+        // State" and every one of the 126 names carrying players already
+        // resolves against the tool's own school list, with no aliases added.
+        var schoolByTeamId = ReadTeamNames(file);
+
         var byTeam = new Dictionary<int, List<LegacyPlayer>>();
-        var count = play.CountUsed(LegacySchema.PlayerId);
+        var count = play.Has(LegacySchema.PlayerId)
+            ? play.CountUsed(LegacySchema.PlayerId)
+            : play.DeclaredUsed;
         for (var row = 0; row < count; row++)
         {
-            var id = play.Read(row, LegacySchema.PlayerId);
+            // The row is a true identity within a file, and stands in where a
+            // table carries no id column of its own.
+            var id = play.Has(LegacySchema.PlayerId) ? play.Read(row, LegacySchema.PlayerId) : row;
             var team = play.Has(LegacySchema.PlayerTeamId)
                 ? play.Read(row, LegacySchema.PlayerTeamId)
                 : 0;
@@ -178,20 +189,62 @@ public static class LegacyRosterReader
 
         notes.Add(
             $"Read as a PS3-era roster: {byTeam.Values.Sum(v => v.Count)} player(s) across " +
-            $"{byTeam.Count} team(s), with each player's team taken from the player table.");
+            $"{byTeam.Count} team(s), each player's team taken from the player table and each " +
+            "team's name from the file's own team table.");
         notes.Add(
             "Skin tone is not read from this generation: its player table carries face and head " +
             "assets rather than a tone, and reading one off those would be inference about a real " +
             "person's appearance.");
 
+        var empty = schoolByTeamId.Count - byTeam.Count;
+        if (empty > 0)
+        {
+            notes.Add(
+                $"{empty} team(s) in the file carry no players and were left out — a roster of this " +
+                "generation lists teams it does not field, and writing them as empty squads would " +
+                "put teams of nobody into the roster file.");
+        }
+
         var teams = byTeam
             .OrderBy(t => t.Key)
             .Select(t => new LegacyTeam(
                 t.Key,
-                schools is not null && schools.TryGetValue(t.Key, out var s) ? s : null,
+                // The file's own name wins here. The caller's map is the PS2
+                // team id list, which numbers a different and smaller league —
+                // letting it speak for this generation would quietly refile
+                // teams wherever the two numberings disagree. It is consulted
+                // only for an id this file does not name.
+                schoolByTeamId.TryGetValue(t.Key, out var named) && named.Length > 0
+                    ? named
+                    : schools?.GetValueOrDefault(t.Key),
                 t.Value))
             .ToList();
         return new LegacyRosterFile(teams, notes);
+    }
+
+    /// <summary>Team id to school name, read from the file's own team table.</summary>
+    private static Dictionary<int, string> ReadTeamNames(EaDbFile file)
+    {
+        var names = new Dictionary<int, string>();
+        // TGID, not TOID: this generation's team table is keyed by the same
+        // id the players carry, and the PS2 spelling is a different column.
+        if (!file.Tables.TryGetValue(LegacySchema.ModernTeamTable, out var team) ||
+            !team.Has(LegacySchema.PlayerTeamId) || !team.Has(LegacySchema.TeamName))
+        {
+            return names;
+        }
+
+        for (var row = 0; row < team.CountUsed(LegacySchema.PlayerTeamId); row++)
+        {
+            var id = team.Read(row, LegacySchema.PlayerTeamId);
+            var name = team.ReadText(row, LegacySchema.TeamName);
+            if (id != 0 && name.Length > 0)
+            {
+                names[id] = name;
+            }
+        }
+
+        return names;
     }
 
     private static LegacyPlayer ReadPlayer(

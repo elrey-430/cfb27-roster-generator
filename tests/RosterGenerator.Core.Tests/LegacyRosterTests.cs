@@ -670,4 +670,125 @@ public class LegacyRosterTests
         Assert.Equal(2, play.CountUsed("PGID"));
         Assert.True(play.Capacity > play.DeclaredUsed, "the fixture leaves spare rows");
     }
+
+    /// <summary>
+    /// A big-endian file with a PLAY table carrying team ids and a TEAM table
+    /// naming them — including one team that is listed and never fielded.
+    /// </summary>
+    private static byte[] BigEndianFileWithTeams()
+    {
+        static void BeU32(byte[] b, int o, uint v)
+        {
+            b[o] = (byte)(v >> 24); b[o + 1] = (byte)(v >> 16);
+            b[o + 2] = (byte)(v >> 8); b[o + 3] = (byte)v;
+        }
+
+        static byte[] Table(
+            (string Name, int Bits, int Start)[] columns, int recordBytes, int records,
+            Action<Action<string, int>, Action<string, string>, int> fill)
+        {
+            var head = new byte[48];
+            BeU32(head, 8, (uint)recordBytes);
+            head[21] = (byte)records; head[23] = (byte)records;
+            head[28] = (byte)columns.Length;
+            BeU32(head, 44, (uint)columns[0].Start);
+
+            var defs = new List<byte>();
+            for (var i = 0; i < columns.Length; i++)
+            {
+                defs.AddRange(columns[i].Name.Reverse().Select(c => (byte)c));
+                var w = new byte[4]; BeU32(w, 0, (uint)columns[i].Bits); defs.AddRange(w);
+                if (i == columns.Length - 1) { continue; }
+                var t = new byte[4]; BeU32(t, 0, 3); defs.AddRange(t);
+                var n = new byte[4]; BeU32(n, 0, (uint)columns[i + 1].Start); defs.AddRange(n);
+            }
+
+            var data = new byte[recordBytes * records];
+            var byName = columns.ToDictionary(c => c.Name);
+            for (var r = 0; r < records; r++)
+            {
+                var row = r;
+                fill((name, value) =>
+                {
+                    var c = byName[name];
+                    for (var i = 0; i < c.Bits; i++)
+                    {
+                        if ((value >> (c.Bits - 1 - i) & 1) == 0) { continue; }
+                        var p = row * recordBytes * 8 + c.Start + i;
+                        data[p >> 3] |= (byte)(1 << (7 - (p & 7)));
+                    }
+                }, (name, text) =>
+                {
+                    var at = row * recordBytes + byName[name].Start / 8;
+                    for (var i = 0; i < text.Length; i++) { data[at + i] = (byte)text[i]; }
+                }, row);
+            }
+
+            return head.Concat(defs).Concat(data).ToArray();
+        }
+
+        var playCols = new (string, int, int)[]
+        {
+            ("PFNA", 88, 0), ("PLNA", 88, 88), ("PGID", 16, 176),
+            ("TGID", 10, 192), ("PPOS", 5, 202), ("POVR", 7, 207),
+        };
+        var first = new[] { "Bryce", "Will", "Bo" };
+        var last = new[] { "Young", "Anderson", "Nix" };
+        var team = new[] { 3, 3, 9 };
+        var play = Table(playCols, 27, 3, (put, text, r) =>
+        {
+            text("PFNA", first[r]); text("PLNA", last[r]);
+            put("PGID", 100 + r);
+            put("TGID", team[r]); put("PPOS", r == 2 ? 0 : 13); put("POVR", 99 - r);
+        });
+
+        var teamCols = new (string, int, int)[] { ("TDNA", 88, 0), ("TGID", 10, 88) };
+        var names = new[] { "Alabama", "Auburn", "Baylor" };   // Baylor fields nobody
+        var ids = new[] { 3, 9, 12 };
+        var teams = Table(teamCols, 13, 3, (put, text, r) =>
+        {
+            text("TDNA", names[r]); put("TGID", ids[r]);
+        });
+
+        var file = new List<byte>();
+        file.AddRange("DB"u8.ToArray());
+        file.AddRange(new byte[] { 0x00, 0x08, 0x01, 0x00, 0x00, 0x00 });
+        var size = new byte[4]; BeU32(size, 0, (uint)(24 + 16 + play.Length + teams.Length));
+        file.AddRange(size);
+        file.AddRange(new byte[4]);
+        var count = new byte[4]; BeU32(count, 0, 2); file.AddRange(count);
+        file.AddRange(new byte[4]);
+        file.AddRange("PLAY".Reverse().Select(c => (byte)c));
+        file.AddRange(new byte[4]);
+        file.AddRange("TEAM".Reverse().Select(c => (byte)c));
+        var off = new byte[4]; BeU32(off, 0, (uint)play.Length); file.AddRange(off);
+        return file.Concat(play).Concat(teams).ToArray();
+    }
+
+    [Fact]
+    public void APs3FileNamesItsOwnTeamsAndSkipsEmptyOnes()
+    {
+        // This generation's team table carries the school name in plain text,
+        // so nothing has to be identified by hand the way the PS2 team id map
+        // had to be. A team the file lists but does not field is left out
+        // rather than written as a squad of nobody.
+        var file = EaDbFile.Parse(BigEndianFileWithTeams());
+        var roster = LegacyRosterReader.Read(file);
+
+        Assert.Equal(new[] { "Alabama", "Auburn" }, roster.Teams.Select(t => t.School));
+        Assert.All(roster.Teams, t => Assert.NotEmpty(t.Players));
+        Assert.Contains(roster.Notes, n => n.Contains("carry no players"));
+    }
+
+    [Fact]
+    public void ThePs2TeamIdMapDoesNotSpeakForAPs3File()
+    {
+        // The two generations number different leagues. Letting the PS2 map
+        // win here would quietly refile teams wherever they disagree.
+        var roster = LegacyRosterReader.Read(
+            EaDbFile.Parse(BigEndianFileWithTeams()),
+            new Dictionary<int, string> { [3] = "Idaho", [9] = "Idaho" });
+
+        Assert.Equal(new[] { "Alabama", "Auburn" }, roster.Teams.Select(t => t.School));
+    }
 }

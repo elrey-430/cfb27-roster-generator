@@ -257,6 +257,25 @@ LT  #75  Jake Matthews      OVR 98      QB #5  Teddy Bridgewater   OVR 97
 ROLB #11 Anthony Barr       OVR 98      LT #73 Greg Robinson       OVR 97
 ```
 
+### Teams name themselves
+
+This generation's `TEAM` table carries `TDNA` ("Alabama"), `TLNA`, `TSNA`
+("Bama") and `TMNA` as plain text, keyed by the same `TGID` the players hold.
+So there is nothing to identify by hand: `data/LegacyTeamIds.json` exists only
+because the PS2 team table has an id and no name at all.
+
+All **126 team names carrying players already resolve** against the tool's own
+school list, with no aliases added.
+
+The file's own name always wins over `LegacyTeamIds.json`. The two generations
+number different leagues — NCAA 14 reaches TGID 235 where the PS2 map stops at
+230 — so letting the older map speak here would quietly refile teams wherever
+they disagree, and it agrees at the start, which is exactly what makes that
+failure hard to notice.
+
+A team the file lists but never fields is **left out** rather than written as a
+squad of nobody. In this roster 141 teams are listed and 126 fielded.
+
 ### What is read
 
 Everything except skin tone: names, positions, jersey numbers, heights,

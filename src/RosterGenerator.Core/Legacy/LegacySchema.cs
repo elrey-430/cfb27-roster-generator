@@ -12,6 +12,15 @@ public static class LegacySchema
     /// <summary>The team table.</summary>
     public const string TeamTable = "TDYN";
 
+    /// <summary>The PS3-era team table, which names its teams in plain text.</summary>
+    public const string ModernTeamTable = "TEAM";
+
+    /// <summary>Team name, e.g. "Arizona State".</summary>
+    public const string TeamName = "TDNA";
+
+    /// <summary>Team short name, e.g. "ASU". Used as a fallback alias.</summary>
+    public const string TeamShortName = "TSNA";
+
     /// <summary>The depth chart table.</summary>
     public const string DepthChartTable = "DCHT";
 
