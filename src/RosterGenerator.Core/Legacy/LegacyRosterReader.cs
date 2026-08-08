@@ -118,21 +118,14 @@ public static class LegacyRosterReader
 
         var notes = new List<string>();
 
-        // No depth-chart roles for this generation. The chart is there and
-        // holds what it should, but joining it needs the player id, and the id
-        // is one of the columns whose declared offset points at another
-        // column's bits. Searching for its real one found nothing that is both
-        // unique per player and present in the chart, so the join would be
-        // guesswork -- and a wrong role is worse than no role, because the
-        // rating engine weighs it.
+        var chart = file.Tables.GetValueOrDefault(LegacySchema.DepthChartTable);
+        var roles = chart is null ? new Dictionary<int, string>() : ReadRoles(chart);
 
         var byTeam = new Dictionary<int, List<LegacyPlayer>>();
         var count = play.CountUsed(LegacySchema.PlayerId);
         for (var row = 0; row < count; row++)
         {
-            // The row index, not PGID: the id column is misplaced in this
-            // generation and the row is a true, stable identity within a file.
-            var id = row;
+            var id = play.Read(row, LegacySchema.PlayerId);
             var team = play.Has(LegacySchema.PlayerTeamId)
                 ? play.Read(row, LegacySchema.PlayerTeamId)
                 : 0;
@@ -165,16 +158,21 @@ public static class LegacyRosterReader
                     : "ATH",
                 JerseyNumber = jersey > 0 ? jersey : null,
                 HeightInches = height > 0 ? height : null,
-                // Weight sits among the columns whose declared offset is wrong
-                // in this generation and has not been pinned to one candidate,
-                // so it is left out rather than written as a number that might
-                // be somebody else's.
-                WeightPounds = null,
-                ClassYear = null,
+                WeightPounds = height > 0
+                    ? play.Read(row, LegacySchema.Weight) + LegacySchema.WeightOffsetPounds
+                    : null,
+                ClassYear = play.Has(LegacySchema.ModernClassYear) &&
+                            play.Read(row, LegacySchema.ModernClassYear) is var y &&
+                            y >= 0 && y < LegacySchema.ClassYears.Count
+                    ? LegacySchema.ClassYears[y]
+                    : null,
+                // Skin tone is not in this generation's player table -- the
+                // face and head assets are, and reading a tone off those would
+                // be inference about a real person's appearance.
                 SkinTone = null,
                 RawOverall = play.Has(LegacySchema.Overall) ? play.Read(row, LegacySchema.Overall) : 0,
                 RawAttributes = attributes,
-                Role = null,
+                Role = roles.GetValueOrDefault(id),
             });
         }
 
@@ -182,10 +180,9 @@ public static class LegacyRosterReader
             $"Read as a PS3-era roster: {byTeam.Values.Sum(v => v.Count)} player(s) across " +
             $"{byTeam.Count} team(s), with each player's team taken from the player table.");
         notes.Add(
-            "Names, positions, jersey numbers, heights and all 40 ratings are read. Weight, class " +
-            "year, skin tone and the depth-chart role are not: those columns declare offsets that " +
-            "point at other columns' bits, and only the ratings have been confirmed to sit where " +
-            "they say they do.");
+            "Skin tone is not read from this generation: its player table carries face and head " +
+            "assets rather than a tone, and reading one off those would be inference about a real " +
+            "person's appearance.");
 
         var teams = byTeam
             .OrderBy(t => t.Key)

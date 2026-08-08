@@ -322,29 +322,37 @@ public sealed class EaDbFile
                 "byte(s), which cannot be read.");
         }
 
+        // The fourth word of a column definition is the NEXT column's start,
+        // not this one's end. The two are the same number whenever columns run
+        // consecutively, which is nearly always -- so reading it as an end and
+        // subtracting the width gives the right answer almost everywhere, and
+        // silently the wrong one wherever a record has a gap or lists its
+        // columns out of order.
+        //
+        // That off-by-one is what a correction table used to paper over: nine
+        // columns on PS2 and thirteen more on PS3, all of which dissolve here.
+        // Verified against the community exports of two PS2 files at 1,018,590
+        // of 1,018,590 cells with nothing corrected at all.
         var fields = new List<LegacyField>(columnCount);
         var cursor = start + 48;
-        var previousEnd = firstBit;
+        var startBit = firstBit;
         for (var i = 0; i < columnCount; i++)
         {
             var fieldName = ReadCode(data, cursor, order);
             var bits = (int)ReadU32(data, cursor + 4, order);
+            fields.Add(new LegacyField(fieldName, startBit, bits));
 
-            int startBit;
+            // The last column carries only its name and width: there is no
+            // next column for it to point at.
             if (i == columnCount - 1)
             {
-                startBit = previousEnd;
                 cursor += 8;
             }
             else
             {
-                var endBit = (int)ReadU32(data, cursor + 12, order);
-                startBit = endBit - bits;
-                previousEnd = endBit;
+                startBit = (int)ReadU32(data, cursor + 12, order);
                 cursor += 16;
             }
-
-            fields.Add(LegacySchema.Correct(name, fieldName, startBit, bits, order));
         }
 
         return new LegacyTable(name, recordBytes, fields, data, cursor,

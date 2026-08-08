@@ -42,17 +42,18 @@ Three things the format does not say out loud:
   agrees with the header on all six tables of both files (8893/7350/119 and
   4471/3995/83), but is a guess where the header is a fact. The reader now
   takes the header and keeps the scan as a fallback.
-- **Nine columns carry stale end offsets** that point at another column's bits.
-  Four of them matter completely: player id, height, weight and team id. They
-  were recovered by searching every bit position for the one that reproduces a
-  community export, and the same corrections then read a second unrelated file
-  correctly — which is what makes them a property of the format rather than
-  damage to one file. They live in `LegacySchema.CorrectedStarts`.
+- **A column definition's fourth word is the NEXT column's start**, not this
+  column's end. The two are the same number whenever columns run consecutively,
+  which is nearly always — so reading it as an end and subtracting the width is
+  right almost everywhere and silently wrong wherever a record has a gap or
+  lists its columns out of order. That off-by-one produced twenty-two columns
+  across three files that looked individually corrupt and needed a correction
+  table; reading the word correctly dissolves every one of them.
 - **`PFSH`, `PMSH` and `PSSH` are signed**, in two's complement. Nothing marks
   them: their declared type is the same 3 every other column carries.
 
-Verified against community exports of both files, cell for cell:
-**660,445 of 660,445 (100%)**.
+Verified against community exports of both files, cell for cell, **with no
+corrections of any kind: 1,018,590 of 1,018,590 (100%)**.
 
 Names are stored a character at a time, ten fields for a first name and
 thirteen for a last: 1–26 lower case, 27–52 upper, and four punctuation codes.
@@ -256,31 +257,24 @@ LT  #75  Jake Matthews      OVR 98      QB #5  Teddy Bridgewater   OVR 97
 ROLB #11 Anthony Barr       OVR 98      LT #73 Greg Robinson       OVR 97
 ```
 
-### Which columns can be trusted
+### What is read
 
-Sorting the 133 player columns by declared offset leaves **three gaps and
-thirteen overlaps**, and every one of the thirteen is an id, a weight, a hand or
-a body slider:
+Everything except skin tone: names, positions, jersey numbers, heights,
+weights, class years, redshirt status, depth-chart roles and all 42 ratings.
 
-```
-RCHD  PGID  POID  PWGT  PYEA  PLHA  PRHA  BSAA  BSBA  BSCA  BSFA  BSGA  BSGT
-```
+Skin tone is not read from this generation. Its player table carries face and
+head assets rather than a tone, and reading one off those would be inference
+about a real person's appearance.
 
-**Not one rating is among them.** So the attributes sit where they say they do,
-and weight, class year, skin tone and the depth-chart role do not — the reader
-leaves those blank rather than write a number that might belong to another
-column. Roles need the player id to join the chart, and no offset was found that
-is both unique per player and present in the chart, so no role is emitted at
-all: a wrong role is worse than none, because the rating engine weighs it.
-
-`PLNA` was recovered by requiring thirteen bytes of printable text terminated by
-NUL — one candidate, on 300 players of 300. The team id reads identically at
-bit 0 and bit 16, consistent with the record holding two team references.
+The columns that looked misplaced here — the player id, weight, class year and
+the rest — were the same off-by-one described above, not damage.
 
 ### The attribute mapping
 
-Twenty-two attributes beyond the PS2 eighteen, each read from its four-character
-code and then checked against the position that ought to lead it:
+Twenty-four attributes beyond the PS2 eighteen. Each was read from its
+four-character code, checked against the position that ought to lead it, and
+then confirmed against the field dictionary in a community editor's own
+configuration — which caught one the position test could not:
 
 | Field | Reading | Leads | Trails | Gap |
 |---|---|---|---|---|
@@ -292,10 +286,14 @@ code and then checked against the position that ought to lead it:
 | `PPBS` | PassBlockPower | LT 78 | WR 41 | +37 |
 
 **Twenty-one of twenty-one came out in the predicted direction by at least 28
-points.** A wrong mapping would show noise or the wrong sign.
+points** — but a position signature cannot separate two attributes with the same
+profile, and one was wrong for exactly that reason: `PPRC` is **Play
+Recognition**, not Press, and defensive backs lead both. The editor's dictionary
+also named `PYRS` as Press (it had been taken for a class year) and `PBFW` as
+Run Blocking Footwork.
 
-Against EA's 79 overall formulas those forty attributes carry **84.5% of the
-coefficient weight**, against 54.3% for the PS2 eighteen — 100% at kicker and
-punter, 78–92% everywhere else, and **56.6% at quarterback**, where NCAA 14 had
+Against EA's 79 overall formulas those forty-four attributes carry **89.2% of
+the coefficient weight**, against 54.3% for the PS2 eighteen — 100% at kicker and
+punter, 84–96% everywhere else, and **56.6% at quarterback**, where NCAA 14 had
 one throw-accuracy number to CFB27's three and none of `ThrowUnderPressure`,
 `ThrowOnTheRun`, `BreakSack` or `PlayAction`.

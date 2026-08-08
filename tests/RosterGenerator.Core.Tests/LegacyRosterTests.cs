@@ -34,7 +34,7 @@ public class LegacyRosterTests
     private const int TeamRecordBytes = 20;
     private const int ChartRecordBytes = 4;
 
-    private sealed record Column(string Name, int Bits, int Start, int? DeclaredEnd = null);
+    private sealed record Column(string Name, int Bits, int Start);
 
     private static readonly List<Column> PlayerColumns = BuildPlayerColumns();
 
@@ -43,8 +43,8 @@ public class LegacyRosterTests
         var columns = new List<Column>
         {
             new("RCHD", 16, 0),
-            new("PGID", 16, 16, DeclaredEnd: 210),
-            new("PWGT", 8, 32, DeclaredEnd: 397),
+            new("PGID", 16, 16),
+            new("PWGT", 8, 32),
         };
 
         var bit = 40;
@@ -63,18 +63,18 @@ public class LegacyRosterTests
         columns.Add(new Column("PYER", 2, 190));
         columns.Add(new Column("PSKI", 3, 192));
         columns.Add(new Column("POVR", 5, 195));
-        columns.Add(new Column("PHGT", 7, 390, DeclaredEnd: 32));
         columns.Add(new Column("PSPD", 5, 200));
         columns.Add(new Column("PSTR", 5, 205));
+        columns.Add(new Column("PHGT", 7, 390));
         return columns;
     }
 
     private static readonly List<Column> TeamColumns = new()
     {
         new Column("DCAP", 16, 0),
-        new Column("OCAP", 16, 16, DeclaredEnd: 96),
+        new Column("OCAP", 16, 16),
         new Column("TROV", 8, 32),
-        new Column("TOID", 9, 120, DeclaredEnd: 64),
+        new Column("TOID", 9, 120),
     };
 
     private static readonly List<Column> ChartColumns = new()
@@ -214,7 +214,7 @@ public class LegacyRosterTests
             }
 
             defs.AddRange(BitConverter.GetBytes(3));
-            defs.AddRange(BitConverter.GetBytes(column.DeclaredEnd ?? column.Start + column.Bits));
+            defs.AddRange(BitConverter.GetBytes(columns[i + 1].Start));
         }
 
         var data = new byte[recordBytes * records];
@@ -276,7 +276,7 @@ public class LegacyRosterTests
     // ---- reader ------------------------------------------------------------
 
     [Fact]
-    public void ReadsIdentityThroughTheStaleColumnOffsets()
+    public void ReadsIdentityOutOfARecord()
     {
         var file = BuildFile(
             new[]

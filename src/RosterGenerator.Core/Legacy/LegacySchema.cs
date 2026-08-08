@@ -54,6 +54,12 @@ public static class LegacySchema
     /// <summary>PS3-era team id, carried on the player rather than inferred.</summary>
     public const string PlayerTeamId = "TGID";
 
+    /// <summary>PS3-era class year, 0-3. Not to be confused with PYRS, which is Press.</summary>
+    public const string ModernClassYear = "PYEA";
+
+    /// <summary>PS3-era redshirt marker.</summary>
+    public const string Redshirt = "PRSD";
+
     /// <summary>
     /// The attributes a PS3-era file adds over a PS2-era one, mapped to the
     /// CFB27 rating each becomes.
@@ -69,8 +75,10 @@ public static class LegacySchema
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["PBCV"] = "BCVisionRating",
+            ["PYRS"] = "PressRating",
+            ["PBFW"] = "RunBlockFinesseRating",
             ["PBSH"] = "BlockSheddingRating",
-            ["PPRC"] = "PressRating",
+            ["PPRC"] = "PlayRecognitionRating",
             ["PMCV"] = "ManCoverageRating",
             ["PZCV"] = "ZoneCoverageRating",
             ["PFMV"] = "FinesseMovesRating",
@@ -169,73 +177,6 @@ public static class LegacySchema
     /// </summary>
     public static readonly IReadOnlySet<string> SignedFields =
         new HashSet<string>(StringComparer.Ordinal) { "PFSH", "PMSH", "PSSH" };
-
-    /// <summary>
-    /// Columns whose stored end offset does not point at their data, and where
-    /// their bits really are.
-    ///
-    /// <para>The container's column table is otherwise exact — it tiles each
-    /// record with no gap — but nine columns across two tables carry offsets
-    /// that belong to a different column. They were recovered by searching
-    /// every bit position for the one that reproduces a community CSV export,
-    /// and the same corrections then read a second, unrelated roster file
-    /// correctly, which is what makes them a property of the format rather
-    /// than damage to one file.</para>
-    ///
-    /// <para>Four of them are fields this tool depends on completely: player
-    /// id, height, weight, and team id.</para>
-    /// </summary>
-    private static readonly IReadOnlyDictionary<string, int> CorrectedStarts =
-        new Dictionary<string, int>(StringComparer.Ordinal)
-        {
-            ["PLAY.RCHD"] = 0,
-            ["PLAY.PGID"] = 16,
-            ["PLAY.PWGT"] = 32,
-            ["PLAY.PHED"] = 206,
-            ["PLAY.PHGT"] = 390,
-            ["TDYN.DCAP"] = 0,
-            ["TDYN.OCAP"] = 16,
-            ["TDYN.TRRB"] = 56,
-            ["TDYN.TROL"] = 88,
-            ["TDYN.TOID"] = 120,
-        };
-
-    /// <summary>
-    /// Columns whose stored end offset is wrong in PS3-era files.
-    ///
-    /// <para>Far fewer than on PS2, and confined to the front of the record:
-    /// sorting NCAA 14's 133 player columns by declared offset leaves three
-    /// gaps and thirteen overlaps, and every one of the thirteen is an id, a
-    /// weight, a hand or a body slider. Not a single rating is among them,
-    /// which is why the attributes can be trusted where the identity fields
-    /// cannot.</para>
-    ///
-    /// <para><c>PLNA</c> was found by requiring thirteen bytes of printable
-    /// text terminated by NUL — one candidate offset, on 300 players out of
-    /// 300. The team id reads identically at bit 0 and bit 16, which is
-    /// consistent with the record holding two team references; bit 16 is taken
-    /// because it fills a gap the declared layout leaves.</para>
-    /// </summary>
-    private static readonly IReadOnlyDictionary<string, int> CorrectedStartsBig =
-        new Dictionary<string, int>(StringComparer.Ordinal)
-        {
-            ["PLAY.PLNA"] = 120,
-            ["PLAY.TGID"] = 16,
-        };
-
-    /// <summary>
-    /// Returns a column at the offset it is really stored at.
-    /// </summary>
-    internal static LegacyField Correct(
-        string table, string field, int startBit, int bits,
-        LegacyByteOrder order = LegacyByteOrder.Little)
-    {
-        var table_ = order == LegacyByteOrder.Big ? CorrectedStartsBig : CorrectedStarts;
-        return new LegacyField(
-            field,
-            table_.TryGetValue($"{table}.{field}", out var corrected) ? corrected : startBit,
-            bits);
-    }
 
     /// <summary>
     /// Decodes one of the character codes a name is stored as: 1-26 are
