@@ -45,6 +45,53 @@ public static class LegacySchema
     /// <summary>The game's own overall rating, compressed — see the remarks on <see cref="Overall"/>.</summary>
     public const string Overall = "POVR";
 
+    /// <summary>PS3-era first name, held as plain text rather than a column per letter.</summary>
+    public const string FirstNameText = "PFNA";
+
+    /// <summary>PS3-era last name, held as plain text.</summary>
+    public const string LastNameText = "PLNA";
+
+    /// <summary>PS3-era team id, carried on the player rather than inferred.</summary>
+    public const string PlayerTeamId = "TGID";
+
+    /// <summary>
+    /// The attributes a PS3-era file adds over a PS2-era one, mapped to the
+    /// CFB27 rating each becomes.
+    ///
+    /// <para>Every one of these was checked against the position that ought to
+    /// lead it: man coverage runs corners 81 to a centre's 34, block shedding
+    /// tackles 75 to a receiver's 37, spectacular catch receivers 68 to a
+    /// centre's 19. Twenty-one of twenty-one came out in the predicted
+    /// direction by at least 28 points, which is what turns a reading of the
+    /// four-character code into a mapping worth relying on.</para>
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string> ModernAttributeMap =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["PBCV"] = "BCVisionRating",
+            ["PBSH"] = "BlockSheddingRating",
+            ["PPRC"] = "PressRating",
+            ["PMCV"] = "ManCoverageRating",
+            ["PZCV"] = "ZoneCoverageRating",
+            ["PFMV"] = "FinesseMovesRating",
+            ["PPMV"] = "PowerMovesRating",
+            ["PJMV"] = "JukeMoveRating",
+            ["PSMV"] = "SpinMoveRating",
+            ["PTRK"] = "TruckingRating",
+            ["PSAR"] = "StiffArmRating",
+            ["PHIT"] = "HitPowerRating",
+            ["PIBL"] = "ImpactBlockingRating",
+            ["PPRS"] = "PursuitRating",
+            ["RELS"] = "ReleaseRating",
+            ["PPBF"] = "PassBlockFinesseRating",
+            ["PPBS"] = "PassBlockPowerRating",
+            ["PRBS"] = "RunBlockPowerRating",
+            ["SPCT"] = "SpectacularCatchRating",
+            ["TRAF"] = "CatchInTrafficRating",
+            ["PRTR"] = "ShortRouteRunningRating",
+            ["PKRT"] = "KickReturnRating",
+        };
+
     /// <summary>Defensive captain's player id.</summary>
     public const string DefensiveCaptain = "DCAP";
 
@@ -154,12 +201,41 @@ public static class LegacySchema
         };
 
     /// <summary>
+    /// Columns whose stored end offset is wrong in PS3-era files.
+    ///
+    /// <para>Far fewer than on PS2, and confined to the front of the record:
+    /// sorting NCAA 14's 133 player columns by declared offset leaves three
+    /// gaps and thirteen overlaps, and every one of the thirteen is an id, a
+    /// weight, a hand or a body slider. Not a single rating is among them,
+    /// which is why the attributes can be trusted where the identity fields
+    /// cannot.</para>
+    ///
+    /// <para><c>PLNA</c> was found by requiring thirteen bytes of printable
+    /// text terminated by NUL — one candidate offset, on 300 players out of
+    /// 300. The team id reads identically at bit 0 and bit 16, which is
+    /// consistent with the record holding two team references; bit 16 is taken
+    /// because it fills a gap the declared layout leaves.</para>
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, int> CorrectedStartsBig =
+        new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["PLAY.PLNA"] = 120,
+            ["PLAY.TGID"] = 16,
+        };
+
+    /// <summary>
     /// Returns a column at the offset it is really stored at.
     /// </summary>
-    internal static LegacyField Correct(string table, string field, int startBit, int bits) =>
-        new(field,
-            CorrectedStarts.TryGetValue($"{table}.{field}", out var corrected) ? corrected : startBit,
+    internal static LegacyField Correct(
+        string table, string field, int startBit, int bits,
+        LegacyByteOrder order = LegacyByteOrder.Little)
+    {
+        var table_ = order == LegacyByteOrder.Big ? CorrectedStartsBig : CorrectedStarts;
+        return new LegacyField(
+            field,
+            table_.TryGetValue($"{table}.{field}", out var corrected) ? corrected : startBit,
             bits);
+    }
 
     /// <summary>
     /// Decodes one of the character codes a name is stored as: 1-26 are

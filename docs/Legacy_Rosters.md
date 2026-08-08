@@ -36,10 +36,12 @@ than a layout.
 
 Three things the format does not say out loud:
 
-- **No row count exists anywhere.** The record area is pre-allocated and the
-  unused tail left blank, so the last row with a non-zero key ends the table.
-  Checked against community CSV exports of two different roster files —
-  8893/7350/119 and 4471/3995/83 rows — and exact on all six.
+- **The row count is at table header +20**, as an allocated count then a used
+  one, both `u16`. This was missed on the first pass and stood in for by
+  scanning back from the end for the last row with a non-zero key — which
+  agrees with the header on all six tables of both files (8893/7350/119 and
+  4471/3995/83), but is a guess where the header is a fact. The reader now
+  takes the header and keeps the scan as a fallback.
 - **Nine columns carry stale end offsets** that point at another column's bits.
   Four of them matter completely: player id, height, weight and team id. They
   were recovered by searching every bit position for the one that reproduces a
@@ -218,3 +220,82 @@ Two consequences worth knowing:
 To add another departed school, give its name to whichever FCS team should hold
 it. There are five, so five can be recreated in one dynasty before they start
 overwriting each other.
+
+
+## The PS3 generation — NCAA Football 14
+
+`USR-DATA` inside a PS3 save folder is **the same container, big-endian**.
+Because the four-character table and column codes are stored as integers rather
+than text, their bytes arrive reversed: what reads as `THCD` is `DCHT`. The
+reader detects which way round a file is by parsing the header both ways and
+keeping the one whose declared size matches the file on disk.
+
+An NCAA 14 roster carries ten tables against a PS2 roster's three, and the
+player table is a different proposition:
+
+```
+PLAY  8631/9100 rows, 112 bytes, 133 columns      TEAM   141/146
+DCHT 11068/11464                                  COCH   403/409
+CSKL   378/409                                    STAD   197/200
+CONF    25/26   DIVI 22/22   INJY 0/0   TUNI 0/0
+```
+
+- **Names are plain text** — `PFNA` 11 bytes, `PLNA` 13 — not a column per letter.
+- **Ratings are real.** Seven bits each, overall running 58–99 across 8,631
+  players with a mean of 74.8. The PS2 generation's five-bit bucket index, and
+  the scale problem that came with it, are simply absent.
+- **`TGID` is on the player**, so none of the id-run and depth-chart machinery
+  above is needed: the file says who plays for whom.
+- **Forty attributes**, against eighteen on PS2.
+
+Reading the 2013 roster gives the season it should:
+
+```
+RE   #7  Jadeveon Clowney   OVR 99      WR #2  Sammy Watkins       OVR 97
+LT  #75  Jake Matthews      OVR 98      QB #5  Teddy Bridgewater   OVR 97
+ROLB #11 Anthony Barr       OVR 98      LT #73 Greg Robinson       OVR 97
+```
+
+### Which columns can be trusted
+
+Sorting the 133 player columns by declared offset leaves **three gaps and
+thirteen overlaps**, and every one of the thirteen is an id, a weight, a hand or
+a body slider:
+
+```
+RCHD  PGID  POID  PWGT  PYEA  PLHA  PRHA  BSAA  BSBA  BSCA  BSFA  BSGA  BSGT
+```
+
+**Not one rating is among them.** So the attributes sit where they say they do,
+and weight, class year, skin tone and the depth-chart role do not — the reader
+leaves those blank rather than write a number that might belong to another
+column. Roles need the player id to join the chart, and no offset was found that
+is both unique per player and present in the chart, so no role is emitted at
+all: a wrong role is worse than none, because the rating engine weighs it.
+
+`PLNA` was recovered by requiring thirteen bytes of printable text terminated by
+NUL — one candidate, on 300 players of 300. The team id reads identically at
+bit 0 and bit 16, consistent with the record holding two team references.
+
+### The attribute mapping
+
+Twenty-two attributes beyond the PS2 eighteen, each read from its four-character
+code and then checked against the position that ought to lead it:
+
+| Field | Reading | Leads | Trails | Gap |
+|---|---|---|---|---|
+| `PMCV` | ManCoverage | CB 81 | C 34 | +47 |
+| `PZCV` | ZoneCoverage | FS 77 | C 34 | +43 |
+| `SPCT` | SpectacularCatch | WR 68 | C 19 | +48 |
+| `PPRS` | Pursuit | MLB 77 | QB 33 | +44 |
+| `PBSH` | BlockShedding | DT 75 | WR 37 | +37 |
+| `PPBS` | PassBlockPower | LT 78 | WR 41 | +37 |
+
+**Twenty-one of twenty-one came out in the predicted direction by at least 28
+points.** A wrong mapping would show noise or the wrong sign.
+
+Against EA's 79 overall formulas those forty attributes carry **84.5% of the
+coefficient weight**, against 54.3% for the PS2 eighteen — 100% at kicker and
+punter, 78–92% everywhere else, and **56.6% at quarterback**, where NCAA 14 had
+one throw-accuracy number to CFB27's three and none of `ThrowUnderPressure`,
+`ThrowOnTheRun`, `BreakSack` or `PlayAction`.

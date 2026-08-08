@@ -33,6 +33,15 @@ public static class LegacyRosterReader
     /// <summary>Reads a legacy roster file already parsed into tables.</summary>
     public static LegacyRosterFile Read(EaDbFile file, IReadOnlyDictionary<int, string>? schools = null)
     {
+        // A PS3-era file records each player's team on the player, so none of
+        // the id-run and depth-chart machinery below is needed for it. It is
+        // also the richer file by a distance: names as text, ratings on a real
+        // 0-99 scale, and twenty-two more attributes.
+        if (file.ByteOrder == LegacyByteOrder.Big)
+        {
+            return ReadModern(file, schools);
+        }
+
         foreach (var required in new[]
                  { LegacySchema.PlayerTable, LegacySchema.TeamTable, LegacySchema.DepthChartTable })
         {
@@ -92,6 +101,100 @@ public static class LegacyRosterReader
         }
 
         return new LegacyRosterFile(result, notes);
+    }
+
+    /// <summary>
+    /// Reads a PS3-era roster, where the player table says who each player
+    /// plays for and the names are plain text.
+    /// </summary>
+    private static LegacyRosterFile ReadModern(
+        EaDbFile file, IReadOnlyDictionary<int, string>? schools)
+    {
+        if (!file.Tables.TryGetValue(LegacySchema.PlayerTable, out var play))
+        {
+            throw new InvalidDataException(
+                "This file has no 'PLAY' table, so it is not a roster the tool can read.");
+        }
+
+        var notes = new List<string>();
+
+        // No depth-chart roles for this generation. The chart is there and
+        // holds what it should, but joining it needs the player id, and the id
+        // is one of the columns whose declared offset points at another
+        // column's bits. Searching for its real one found nothing that is both
+        // unique per player and present in the chart, so the join would be
+        // guesswork -- and a wrong role is worse than no role, because the
+        // rating engine weighs it.
+
+        var byTeam = new Dictionary<int, List<LegacyPlayer>>();
+        var count = play.CountUsed(LegacySchema.PlayerId);
+        for (var row = 0; row < count; row++)
+        {
+            // The row index, not PGID: the id column is misplaced in this
+            // generation and the row is a true, stable identity within a file.
+            var id = row;
+            var team = play.Has(LegacySchema.PlayerTeamId)
+                ? play.Read(row, LegacySchema.PlayerTeamId)
+                : 0;
+            var attributes = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var map in new[] { LegacySchema.AttributeMap, LegacySchema.ModernAttributeMap })
+            {
+                foreach (var (field, column) in map)
+                {
+                    if (play.Has(field))
+                    {
+                        attributes[column] = play.Read(row, field);
+                    }
+                }
+            }
+
+            var position = play.Read(row, LegacySchema.Position);
+            var height = play.Has(LegacySchema.Height) ? play.Read(row, LegacySchema.Height) : 0;
+            var jersey = play.Has(LegacySchema.Jersey) ? play.Read(row, LegacySchema.Jersey) : 0;
+
+            byTeam.TryAdd(team, new List<LegacyPlayer>());
+            byTeam[team].Add(new LegacyPlayer
+            {
+                PlayerId = id,
+                FirstName = play.Has(LegacySchema.FirstNameText)
+                    ? play.ReadText(row, LegacySchema.FirstNameText) : "",
+                LastName = play.Has(LegacySchema.LastNameText)
+                    ? play.ReadText(row, LegacySchema.LastNameText) : "",
+                Position = position >= 0 && position < LegacySchema.Positions.Count
+                    ? LegacySchema.Positions[position]
+                    : "ATH",
+                JerseyNumber = jersey > 0 ? jersey : null,
+                HeightInches = height > 0 ? height : null,
+                // Weight sits among the columns whose declared offset is wrong
+                // in this generation and has not been pinned to one candidate,
+                // so it is left out rather than written as a number that might
+                // be somebody else's.
+                WeightPounds = null,
+                ClassYear = null,
+                SkinTone = null,
+                RawOverall = play.Has(LegacySchema.Overall) ? play.Read(row, LegacySchema.Overall) : 0,
+                RawAttributes = attributes,
+                Role = null,
+            });
+        }
+
+        notes.Add(
+            $"Read as a PS3-era roster: {byTeam.Values.Sum(v => v.Count)} player(s) across " +
+            $"{byTeam.Count} team(s), with each player's team taken from the player table.");
+        notes.Add(
+            "Names, positions, jersey numbers, heights and all 40 ratings are read. Weight, class " +
+            "year, skin tone and the depth-chart role are not: those columns declare offsets that " +
+            "point at other columns' bits, and only the ratings have been confirmed to sit where " +
+            "they say they do.");
+
+        var teams = byTeam
+            .OrderBy(t => t.Key)
+            .Select(t => new LegacyTeam(
+                t.Key,
+                schools is not null && schools.TryGetValue(t.Key, out var s) ? s : null,
+                t.Value))
+            .ToList();
+        return new LegacyRosterFile(teams, notes);
     }
 
     private static LegacyPlayer ReadPlayer(

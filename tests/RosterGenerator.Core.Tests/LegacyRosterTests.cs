@@ -114,7 +114,7 @@ public class LegacyRosterTests
             write("PHGT", p.Height);
             write("PSPD", p.Speed);
             write("PSTR", p.Strength);
-        });
+        }, used: players.Count);
 
         var tdyn = BuildTable(TeamColumns, TeamRecordBytes, teams.Count + 2, (write, row) =>
         {
@@ -127,7 +127,7 @@ public class LegacyRosterTests
             write("DCAP", teams[row].Defensive);
             write("OCAP", teams[row].Offensive);
             write("TROV", 70);
-        });
+        }, used: teams.Count);
 
         var dcht = BuildTable(ChartColumns, ChartRecordBytes, chart.Count + 2, (write, row) =>
         {
@@ -139,7 +139,7 @@ public class LegacyRosterTests
             write("PGID", chart[row].PlayerId);
             write("PPOS", chart[row].Position);
             write("ddep", chart[row].Depth);
-        });
+        }, used: chart.Count);
 
         var tables = new (string Name, byte[] Bytes)[]
         {
@@ -190,12 +190,15 @@ public class LegacyRosterTests
 
     private static byte[] BuildTable(
         IReadOnlyList<Column> columns, int recordBytes, int records,
-        Action<Action<string, int>, int> fill)
+        Action<Action<string, int>, int> fill, int? used = null)
     {
         // 48-byte table header, then 16 bytes per column except the last,
-        // which the format truncates to name and width.
+        // which the format truncates to name and width. +20 holds the record
+        // counts, allocated then used.
         var head = new byte[48];
         BitConverter.GetBytes(recordBytes).CopyTo(head, 8);
+        BitConverter.GetBytes((ushort)records).CopyTo(head, 20);
+        BitConverter.GetBytes((ushort)(used ?? records)).CopyTo(head, 22);
         BitConverter.GetBytes(columns.Count).CopyTo(head, 28);
         BitConverter.GetBytes(columns[0].Start).CopyTo(head, 44);
 
@@ -524,5 +527,147 @@ public class LegacyRosterTests
         var rated = engine.Generate("HB", null, Back("Ordinary"), withEvidence);
         Assert.True(rated.Talent.Coverage > 0.65,
             $"coverage {rated.Talent.Coverage:0.00} should not be diluted by an import nobody made");
+    }
+
+    // ---- the PS3 generation -----------------------------------------------
+
+    /// <summary>
+    /// A minimal big-endian file. Everything is the same container written the
+    /// other way round, including the four-character codes, which are stored as
+    /// integers and so arrive with their bytes reversed.
+    /// </summary>
+    private static byte[] BigEndianFile()
+    {
+        // One table, PLAY, with a text name and a couple of 7-bit ratings.
+        var columns = new (string Name, int Bits, int Start)[]
+        {
+            ("PFNA", 88, 0),      // 11 bytes of text
+            ("PPOS", 5, 88),
+            ("PSPD", 7, 93),
+            ("POVR", 7, 100),
+        };
+        const int recordBytes = 14;
+        const int records = 3;
+
+        var head = new byte[48];
+        void BeU32(byte[] b, int o, uint v)
+        {
+            b[o] = (byte)(v >> 24); b[o + 1] = (byte)(v >> 16);
+            b[o + 2] = (byte)(v >> 8); b[o + 3] = (byte)v;
+        }
+
+        BeU32(head, 8, recordBytes);
+        head[20] = 0; head[21] = records;       // allocated
+        head[22] = 0; head[23] = records;       // used
+        head[28] = (byte)columns.Length;
+        BeU32(head, 44, 0);
+
+        var defs = new List<byte>();
+        for (var i = 0; i < columns.Length; i++)
+        {
+            var (name, bits, start) = columns[i];
+            defs.AddRange(name.Reverse().Select(c => (byte)c));
+            var four = new byte[4]; BeU32(four, 0, (uint)bits); defs.AddRange(four);
+            if (i == columns.Length - 1)
+            {
+                continue;
+            }
+
+            var type = new byte[4]; BeU32(type, 0, 3); defs.AddRange(type);
+            var end = new byte[4]; BeU32(end, 0, (uint)(start + bits)); defs.AddRange(end);
+        }
+
+        var data = new byte[recordBytes * records];
+        var names = new[] { "Jadeveon", "Sammy", "Teddy" };
+        var pos = new[] { 11, 3, 0 };
+        var spd = new[] { 90, 92, 84 };
+        var ovr = new[] { 99, 97, 97 };
+        for (var r = 0; r < records; r++)
+        {
+            var at = r * recordBytes;
+            for (var i = 0; i < names[r].Length; i++)
+            {
+                data[at + i] = (byte)names[r][i];
+            }
+
+            void Put(int start, int bits, int value)
+            {
+                for (var i = 0; i < bits; i++)
+                {
+                    if ((value >> (bits - 1 - i) & 1) == 0)
+                    {
+                        continue;
+                    }
+
+                    var p = r * recordBytes * 8 + start + i;
+                    data[p >> 3] |= (byte)(1 << (7 - (p & 7)));
+                }
+            }
+
+            Put(88, 5, pos[r]);
+            Put(93, 7, spd[r]);
+            Put(100, 7, ovr[r]);
+        }
+
+        var table = head.Concat(defs).Concat(data).ToArray();
+        var file = new List<byte>();
+        file.AddRange("DB"u8.ToArray());
+        file.AddRange(new byte[] { 0x00, 0x08 });
+        file.AddRange(new byte[] { 0x01, 0x00, 0x00, 0x00 });
+        var size = new byte[4]; BeU32(size, 0, (uint)(24 + 8 + table.Length)); file.AddRange(size);
+        file.AddRange(new byte[4]);
+        var count = new byte[4]; BeU32(count, 0, 1); file.AddRange(count);
+        file.AddRange(new byte[4]);
+        file.AddRange("PLAY".Reverse().Select(c => (byte)c));
+        file.AddRange(new byte[4]);
+        return file.Concat(table).ToArray();
+    }
+
+    [Fact]
+    public void ByteOrderIsDetectedFromTheFileItself()
+    {
+        // Read both ways round and keep whichever declares a size matching the
+        // file on disk -- evidence rather than a flag byte taken on trust.
+        Assert.Equal(LegacyByteOrder.Big, EaDbFile.Parse(BigEndianFile()).ByteOrder);
+
+        var ps2 = EaDbFile.Parse(BuildFile(
+            new[] { new FixturePlayer(41, "A", "Player", 0, 1, 72, 200, 0, 0, 10, 10, 10) },
+            new[] { (9, 41, 41) }, new[] { (41, 0, 0) }));
+        Assert.Equal(LegacyByteOrder.Little, ps2.ByteOrder);
+    }
+
+    [Fact]
+    public void ABigEndianFileReadsTextNamesAndBigEndianBits()
+    {
+        var play = EaDbFile.Parse(BigEndianFile()).Tables["PLAY"];
+
+        Assert.Equal(3, play.DeclaredUsed);
+        Assert.Equal(new[] { "PFNA", "PPOS", "PSPD", "POVR" },
+            play.Fields.Select(f => f.Name));
+        Assert.Equal("Jadeveon", play.ReadText(0, "PFNA"));
+        Assert.Equal("Teddy", play.ReadText(2, "PFNA"));
+        Assert.Equal(99, play.Read(0, "POVR"));
+        Assert.Equal(92, play.Read(1, "PSPD"));
+    }
+
+    [Fact]
+    public void RowCountsComeFromTheHeaderRatherThanAScan()
+    {
+        // The count is stated at table header +20 as (allocated, used). It was
+        // missed on the first pass and stood in for by scanning back for the
+        // last non-zero key; the header is the fact and the scan the fallback.
+        var file = BuildFile(
+            new[]
+            {
+                new FixturePlayer(41, "A", "One", 0, 1, 72, 200, 0, 0, 10, 10, 10),
+                new FixturePlayer(42, "B", "Two", 1, 2, 73, 210, 1, 1, 11, 11, 11),
+            },
+            new[] { (9, 41, 42) },
+            new[] { (41, 0, 0), (42, 1, 0) });
+
+        var play = EaDbFile.Parse(file).Tables["PLAY"];
+        Assert.Equal(2, play.DeclaredUsed);
+        Assert.Equal(2, play.CountUsed("PGID"));
+        Assert.True(play.Capacity > play.DeclaredUsed, "the fixture leaves spare rows");
     }
 }
