@@ -1,5 +1,35 @@
 # Release notes
 
+## v0.9.3-alpha — NCAA 14's rosters bring their ratings
+
+The PS3-era save holds forty-two of CFB27's fifty-seven rating columns on the
+same 0-99 scale, so unlike the PS2 files the numbers themselves cross over, not
+just the order. Read against a real 2013 community roster: 8,631 players across
+126 teams, no warnings, Clowney a 99 and Bridgewater a 97.
+
+Those forty-two are copied and then left alone — no cap, class shift or solver
+moves them. The fifteen NCAA 14 never had are filled from what CFB27 gives that
+kind of player at that level. Its single throw accuracy and single route
+running are split three ways, shaped by the archetype and centred so they still
+average what was written. The archetype itself comes out of the ratings, scored
+in each attribute's own measured scatter: 20 recoveries out of 20 on the game's
+own average quarterbacks.
+
+**The correction that took longest to find.** Carrying the ratings verbatim was
+wrong, and only a real roster showed it. CFB27's formula returned an overall 6.8
+points below what NCAA 14 stated at outside linebacker and 2.5 points above it
+at cornerback — a 9.6-point spread tracking nothing but how much of each
+position's formula the older game covered. That would have made corners the best
+players on every imported team. Every carried rating now moves by the same
+amount, solved so the game's formula returns the stated overall; one shift
+rather than one per attribute, so every difference between them — the player's
+shape — survives untouched. Position bias 0.0, within-position rank correlation
+1.000 where it was 0.80-0.99.
+
+Also: `import` reached the CLI help text, which it had never been in; and both
+front ends stopped telling every user "Ratings are NOT imported" after an import
+that had just imported them.
+
 ## v0.9.2-alpha — Schools the game no longer carries
 
 Of the 119 teams on a 2004 I-A roster exactly one is missing from CFB27: Idaho.
