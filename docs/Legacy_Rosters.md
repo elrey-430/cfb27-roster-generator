@@ -399,23 +399,72 @@ Fed the game's own average quarterback of each of the four QB archetypes, at 70,
 The hand-written rules are untouched, and still decide every roster that was
 typed rather than imported.
 
-### The overall follows the ratings
+### The overall comes out at what the source stated
 
-The source's overall chooses the archetype and picks the point on the profile
-curve to fill gaps from. It is **not** a target the ratings are bent to reach.
+The source's overall is not a suggestion the ratings are allowed to disagree
+with. It is what the player comes out at.
 
-The two numbers can disagree — the source's was computed by the older game's
-formula over the older game's columns, and CFB27's reads columns that game never
-had. Chasing it would pay for the difference out of the handful of attributes
-nobody recorded. On a field general at 92 an early build did exactly that,
-taking twelve points off throw under pressure to buy back three points of
-overall the archetype's own measured profile does not agree exists.
+That is a change from the first build of this, which let the overall follow
+the ratings wherever they led. Run against a real NCAA 14 roster — 8,631
+players, 126 teams — that turned out to be wrong in a way the synthetic tests
+could never have shown. Carrying the ratings verbatim put CFB27's overall
+**6.8 points below** what NCAA 14 stated at outside linebacker and **2.5 points
+above** it at cornerback:
 
-So calibration is skipped for an imported player, and the report says what the
-ratings came to:
+| | delta | | delta | | delta |
+|---|---|---|---|---|---|
+| ROLB | −7.1 | WR, C | −5.7 | LG, RG | −1.3 |
+| MLB | −7.0 | FS | −4.4 | HB, LT, RT | −1.3 |
+| QB | −6.8 | DT | −4.1 | FB | −0.7 |
+| LOLB | −6.8 | SS | −3.8 | **CB** | **+2.5** |
+| LE, RE | −6.6 | TE | −2.3 | | |
 
-> Overall computed as 95 from the ratings themselves, rather than held at the
-> source's 92.
+A 9.6-point spread, and not noise: it tracks how much of each position's
+formula weight the carried attributes happen to cover. Shipped like that, an
+imported 2013 roster would have made **corners the best players on every team
+and linebackers the worst**, for no football reason whatever — and it is
+exactly the kind of error nobody notices until they have played a season with
+it.
+
+### The rescale
+
+Every carried rating moves by the **same amount**, solved so that EA's formula
+returns the overall the source stated. The formula is linear, so the amount is
+exact in closed form: the gap in overall, divided by the coefficient weight the
+carried ratings hold. Nothing measured has to be shipped and no per-position
+table can go stale — the position-dependence falls out of the coefficient sums
+by itself.
+
+**One shift, not one per attribute.** Moving them together leaves every
+difference between them untouched, so the player keeps exactly the shape
+somebody gave him: who was fast, who was strong, which quarterback threw better
+than he ran. Shifting each attribute by its own amount would pull his shape
+toward the archetype average, which is the one thing carrying real ratings was
+for.
+
+**The gap-filled attributes do not move at all.** They came from the
+archetype's measured profile and are already on this game's scale; moving them
+would be correcting a number that was never wrong.
+
+Over the same 8,631 players:
+
+| | before | after |
+|---|---|---|
+| worst position bias | −7.1 / +2.5 | 0.0 (kickers and punters −0.3) |
+| spread across positions | 9.6 points | 0.3 points |
+| within-position rank correlation | 0.80 – 0.99 | **1.000** |
+| mean overall | 70.9 | 74.7 (NCAA 14 said 74.8) |
+
+Where a rating would pass 99 the points it cannot take are found among the
+other carried ratings, so the overall still lands. When none of them has room
+it falls short, and the report says so.
+
+**The experience shift is skipped entirely for an imported player.** His class
+year is already in his ratings — whoever built that roster rated a senior as a
+senior — so applying it again would count it twice. It has to be skipped rather
+than merely blocked on the carried attributes: lifting only the ones the source
+never recorded raises the overall, and the rescale then pays for that out of the
+carried ones, which is the class year moving them by the back door.
 
 ### Checked against CFB27's own quarterbacks
 
@@ -429,35 +478,33 @@ field generals):
 
 | | ± | 70 | 78 | 85 | 92 | 99 |
 |---|---|---|---|---|---|---|
-| ThrowAccuracyShort | 3.6 | 81/81 | 86/87 | 91/91 | 96/96 | 99/101 |
-| ThrowAccuracyMid | 3.4 | 79/79 | 84/85 | 89/89 | 94/94 | 99/99 |
-| ThrowAccuracyDeep | 3.6 | 76/76 | 82/82 | 87/87 | 92/92 | 99/97 |
-| ThrowOnTheRun | 5.8 | 76/76 | 80/80 | 84/84 | 88/88 | 92/92 |
-| ThrowUnderPressure | 4.6 | 74/73 | 79/78 | 84/83 | 88/87 | 92/91 |
-| BreakSack | 11.2 | 66/66 | 72/72 | 77/77 | 82/82 | 87/87 |
-| PlayAction | 5.9 | 73/72 | 81/80 | 87/86 | 94/93 | 99/99 |
-| Awareness | 5.1 | 73/73 | 81/81 | 88/88 | 94/94 | 99/101 |
-| **Overall** | | 70/70 | 79/78 | 87/85 | 95/92 | 99/99 |
+| ThrowAccuracyShort | 3.6 | 81/81 | 85/87 | 89/91 | 94/96 | 96/101 |
+| ThrowAccuracyMid | 3.4 | 79/79 | 83/85 | 88/89 | 92/94 | 96/99 |
+| ThrowAccuracyDeep | 3.6 | 76/76 | 81/82 | 85/87 | 90/92 | 96/97 |
+| ThrowOnTheRun | 5.8 | 76/76 | 80/80 | 84/84 | 88/88 | 93/92 |
+| ThrowUnderPressure | 4.6 | 73/73 | 79/78 | 84/83 | 87/87 | 93/91 |
+| BreakSack | 11.2 | 66/66 | 72/72 | 77/77 | 82/82 | 88/87 |
+| PlayAction | 5.9 | 72/72 | 80/80 | 86/86 | 93/93 | 99/99 |
+| **Overall** | | 70/70 | 78/78 | 85/85 | 92/92 | 99/99 |
 
-Every one of those but the last row is a **gap-filled** attribute or a split —
-the part that had to be checked, because the copied forty-two are copied.
+**Every archetype lands its overall exactly**, and across all four at all five
+benchmarks **nothing sits more than two of the game's own standard deviations
+from what CFB27 gives that archetype.**
 
-Across all four archetypes at all five benchmarks, **nothing lands more than two
-of the game's own standard deviations from what CFB27 gives that archetype.**
+The field general is the archetype worth watching, because its measured profile
+is the one that is not self-consistent: feeding its own values back through EA's
+formula returns 95 at 92 and 87 at 85. It is the position's default archetype,
+so quarterbacks the community editor mislabelled land in it and the fit carries
+them. The rescale absorbs that — it pulls the carried ratings down by the three
+points the profile overstates, which is why his accuracies read 94/92/90 at
+overall 92 where the raw profile says 96/94/92. The alternative was letting him
+come out a 95, and a roster of quarterbacks each three points better than their
+own source said.
 
-Two things the table shows honestly:
-
-- **Field general overalls run above the source's** — 79 for a 78, 95 for a 92.
-  That archetype's measured profile is the one that is not self-consistent:
-  feeding its own values back through EA's formula returns 95 at 92 and 87 at
-  85. It is the position's default archetype, so quarterbacks the community
-  editor mislabelled land in it and the fit carries them. The disagreement is
-  now visible in the report instead of being paid for out of the attributes.
-- **At overall 99 the fits ask for values the game cannot hold** — a field
-  general's measured throw accuracy short at 99 is 100.5 and his awareness
-  101.3; a scrambler's break sack is 109. Those clamp at 99, so the very top of
-  the scale is the one place a generated player is knowably short of the
-  extrapolation, and a scrambler comes out 98 where the source said 99.
+At overall 99 the fits ask for values the game cannot hold — a field general's
+measured accuracy short is 100.5 there and his awareness 101.3 — so the top of
+the scale is the one place a generated player is knowably below the
+extrapolation.
 
 ### Worked example
 
@@ -466,16 +513,24 @@ accuracy, at overall 85:
 
 ```
 75 speed / 94 power / 95 accuracy at 85 -> QB_FieldGeneral (distance 0.19)
-  - The source's one ThrowAccuracy of 95 became ThrowAccuracyShort 97,
+  - The source's one ThrowAccuracy of 95 was split into ThrowAccuracyShort 97,
     ThrowAccuracyMid 95, ThrowAccuracyDeep 93 - shaped by what the game gives
     this archetype at overall 85, and moved together until they average 95.
-  - 40 rating(s) kept exactly as the source roster recorded them. The remaining
-    10 came from what the game gives this archetype at overall 85 - the older
-    game had no column for them.
-  - Overall computed as 92 from the ratings themselves, rather than held at the
-    source's 85.
+    Like every other carried rating these are then rescaled below.
+  - 40 rating(s) came from the source roster. The remaining 10 came from what
+    the game gives this archetype at overall 85 - the older game had no column
+    for them.
+  - The source's 15 rating(s) that this game's QB formula reads were moved
+    together by -5.0 point(s) so the overall comes to the 85 the source stated
+    rather than the 91 the same numbers mean here.
 ```
 
-The 92 is right and worth reading twice: this player was given a 99-overall's
-arm on an 85's body, and CFB27's quarterback formula weights the arm heavily. He
-is not an 85 in this game.
+He comes out at 85, throwing 92 / 90 / 88 short to deep, with 89 power and 70
+speed.
+
+The −5.0 is the whole mechanism in one line. This player was handed a
+95-accuracy arm on an 85's body by a game that scores arms differently, and
+CFB27 reads those same numbers as a 91. Rather than argue with the roster he
+came from, every one of his ratings steps down together until he is the 85 it
+said he was — still the same quarterback, still better short than deep, still
+throwing harder than he runs.

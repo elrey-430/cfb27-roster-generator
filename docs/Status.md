@@ -37,15 +37,25 @@ measured scatter rather than from a stat line an imported player does not have.
 Fed the game's own average quarterback of each QB archetype at 70/78/85/92/99,
 it recovers the archetype **20 times out of 20**.
 
-**And the overall follows the ratings, not the source's own number.** The two
-came from different formulas over different columns, and chasing the source's
-would pay for the difference out of the handful of attributes nobody recorded.
-The report says what the ratings came to.
+**And every carried rating is rescaled as a group onto CFB27's scale**, so the
+player comes out at the overall his source stated. Run against a real NCAA 14
+roster — 8,631 players, 126 teams — carrying the numbers verbatim put CFB27's
+overall 6.8 points *below* what the source said at outside linebacker and 2.5
+points *above* it at corner: a 9.6-point spread that would have made corners the
+best players on every imported team. The correction moves all of a player's
+carried ratings by one amount, solved in closed form from EA's own formula, so
+every difference between them — and so the player himself — is untouched. Every
+position now lands on its stated overall, and within-position rank correlation
+is 1.000 where it was 0.80–0.99.
 
 Checked against CFB27's own players: a quarterback of every QB archetype at five
 overalls, compared attribute by attribute against what the game gives that
-archetype at the same overall. **Nothing lands more than two of the game's own
-standard deviations off.**
+archetype at the same overall. **Every archetype lands its overall exactly, and
+nothing sits more than two of the game's own standard deviations off.**
+
+Both front ends run it: `import --legacy` on the command line, **Import old
+roster** in the app. Which generation wrote the file is read off the file
+itself, and each tells you plainly whether your ratings came with it.
 
 ## The PS2 generation
 

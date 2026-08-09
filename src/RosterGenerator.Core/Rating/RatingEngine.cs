@@ -657,10 +657,12 @@ public sealed class RatingEngine
         }
 
         adjustments.Add(
-            $"The source's one {Describe(source)} of {value:0} became " +
+            $"The source's one {Describe(source)} of {value:0} was split into " +
             string.Join(", ", parts.Select(p => $"{Describe(p)} {result[p]:0}")) +
             $" — shaped by what the game gives this archetype at overall {target}, and moved together " +
-            $"until they average {parts.Average(p => result[p]):0.#}.");
+            $"until they average {parts.Average(p => result[p]):0.#}. Like every other carried rating " +
+            "these are then rescaled below, so the roster's final numbers sit a little either side of " +
+            "these.");
     }
 
     private static string Describe(string attribute) =>
