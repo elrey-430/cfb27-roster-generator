@@ -84,6 +84,17 @@ public sealed class SourceRatingTests
         Engine.Generate("QB", archetype, Quarterback(),
             new RatingEvidence { SourceOverall = overall, SourceRatings = source });
 
+    /// <summary>
+    /// How far the rescale moved the carried ratings, read off one of them.
+    ///
+    /// <para>Every carried rating moves by the same amount, so any one of them
+    /// tells you the amount — which is what lets a test assert what the source
+    /// said <em>relative to</em> the shift, rather than having to know it.</para>
+    /// </summary>
+    private static double Shift(
+        GeneratedRatings ratings, Dictionary<string, double> source, string attribute = "ThrowPowerRating") =>
+        ratings.Attributes[attribute] - source[attribute];
+
     // ---- the split ---------------------------------------------------------
 
     [Fact]
@@ -91,13 +102,15 @@ public sealed class SourceRatingTests
     {
         // The design case, worked through: a field general whose source roster
         // records a single 95. The archetype decides which of short, mid and
-        // deep leads; the 95 decides the level.
+        // deep leads; the 95 decides the level. The three then take the same
+        // rescale every other carried rating takes, so what has to hold is
+        // that they average the source's number plus that one shift.
         var source = SourceLine("QB_FieldGeneral", 85);
         source["ThrowAccuracyRating"] = 95;
         var ratings = Generate("QB_FieldGeneral", source, 85);
 
-        var split = Accuracies.Select(a => ratings.Attributes[a]).ToArray();
-        Assert.Equal(95, split.Average(), 0);
+        var split = Accuracies.Select(a => (double)ratings.Attributes[a]).ToArray();
+        Assert.Equal(95 + Shift(ratings, source), split.Average(), 1);
         Assert.True(split[0] > split[1] && split[1] > split[2],
             $"a field general throws better short than deep, got {string.Join("/", split)}");
     }
@@ -126,23 +139,42 @@ public sealed class SourceRatingTests
 
         Assert.True(scramblerDrop > generalDrop,
             $"pure scrambler drops {scramblerDrop} short-to-deep, field general {generalDrop}");
-        Assert.Equal(88, Accuracies.Average(a => (double)general.Attributes[a]), 0);
-        Assert.Equal(88, Accuracies.Average(a => (double)scrambler.Attributes[a]), 0);
+        // Half a point of slack: three integers cannot always average an exact
+        // number, and the rescale is read off one of the other carried ratings.
+        Assert.True(
+            Math.Abs(Accuracies.Average(a => (double)general.Attributes[a]) -
+                     (88 + Shift(general, Line("QB_FieldGeneral")))) <= 0.5,
+            "the field general's three accuracies must average the source's number plus the rescale");
+        Assert.True(
+            Math.Abs(Accuracies.Average(a => (double)scrambler.Attributes[a]) -
+                     (88 + Shift(scrambler, Line("QB_PureScrambler")))) <= 0.5,
+            "the pure scrambler's three must do the same");
     }
 
     [Fact]
     public void ASplitAtTheCeilingHandsWhatItCannotUseToTheOthers()
     {
-        // A 98 accuracy cannot come out 101/98/95, so the points the top one
-        // cannot take go to the two that have room. Averaging is the promise;
-        // clamping silently would quietly break it.
-        var source = SourceLine("QB_FieldGeneral", 92);
-        source["ThrowAccuracyRating"] = 98;
-        var ratings = Generate("QB_FieldGeneral", source, 92);
+        // A 98 accuracy on a field general at 92 wants 100/98/96, and the
+        // game stops at 99. What must survive that is the overall: the points
+        // the pinned rating cannot take are found elsewhere among the carried
+        // ratings, so the player still comes out at the number his source
+        // stated instead of quietly landing short.
+        //
+        // The three accuracies themselves no longer average the source's
+        // number once one of them pins — they cannot, and pretending otherwise
+        // would be the tool lying about a ceiling the format really has.
+        // A pure scrambler at 92 whose source roster records a 97 accuracy:
+        // his archetype throws 90/87/81 there, so the split wants 101/98/92.
+        var source = SourceLine("QB_PureScrambler", 92);
+        source["ThrowAccuracyRating"] = 97;
+        var ratings = Generate("QB_PureScrambler", source, 92);
 
         Assert.All(Accuracies, a => Assert.InRange(ratings.Attributes[a], 10, 99));
-        Assert.Equal(98, Accuracies.Average(a => (double)ratings.Attributes[a]), 0);
         Assert.Equal(99, ratings.Attributes["ThrowAccuracyShortRating"]);
+        Assert.Equal(92, ratings.Overall);
+        Assert.True(
+            ratings.Attributes["ThrowAccuracyMidRating"] > ratings.Attributes["ThrowAccuracyDeepRating"],
+            "the shape below the ceiling is still the archetype's");
     }
 
     [Fact]
@@ -181,18 +213,20 @@ public sealed class SourceRatingTests
     }
 
     [Fact]
-    public void ASeniorsAwarenessIsNotLiftedWhenTheSourceRecordedIt()
+    public void ClassYearDoesNotMoveARatingTheSourceRecorded()
     {
         // Class year raises awareness because a roster file normally says
-        // nothing about it. Here something does.
+        // nothing about it. Here something does — so a senior and a junior
+        // built from the same source line come out identical.
         var source = SourceLine("QB_FieldGeneral", 85);
         source["AwarenessRating"] = 71;
 
-        var senior = Engine.Generate("QB", "QB_FieldGeneral",
-            Quarterback() with { ClassYear = "Senior" },
+        GeneratedRatings At(string year) => Engine.Generate("QB", "QB_FieldGeneral",
+            Quarterback() with { ClassYear = year },
             new RatingEvidence { SourceOverall = 85, SourceRatings = source });
 
-        Assert.Equal(71, senior.Attributes["AwarenessRating"]);
+        Assert.Equal(At("Senior").Attributes["AwarenessRating"], At("Junior").Attributes["AwarenessRating"]);
+        Assert.Equal(At("Senior").Attributes["AwarenessRating"], At("Freshman").Attributes["AwarenessRating"]);
     }
 
     [Fact]
@@ -204,7 +238,8 @@ public sealed class SourceRatingTests
         var source = SourceLine("QB_FieldGeneral", 92);
         source["AwarenessRating"] = 99;
 
-        Assert.Equal(99, Generate("QB_FieldGeneral", source, 92).Attributes["AwarenessRating"]);
+        Assert.True(Generate("QB_FieldGeneral", source, 92).Attributes["AwarenessRating"] > 95,
+            "the junior awareness cap must not touch a rating the source recorded");
     }
 
     [Fact]
@@ -261,23 +296,65 @@ public sealed class SourceRatingTests
 
     // ---- the overall -------------------------------------------------------
 
-    [Fact]
-    public void TheOverallFollowsTheRatingsRatherThanTheSourcesOwnNumber()
+    [Theory]
+    [InlineData("QB_FieldGeneral")]
+    [InlineData("QB_Improviser")]
+    [InlineData("QB_Scrambler")]
+    [InlineData("QB_PureScrambler")]
+    public void TheOverallComesOutAtWhatTheSourceStated(string archetype)
     {
-        // A quarterback whose source roster called him an 85 but gave him a
-        // 99-overall's throwing. The two numbers came from different formulas
-        // over different columns, and the ratings are what this game reads —
-        // so the overall moves rather than the ratings being bent to reach it.
-        var source = SourceLine("QB_FieldGeneral", 85);
-        source["ThrowPowerRating"] = 99;
-        source["AwarenessRating"] = 99;
-        source["ThrowAccuracyRating"] = 99;
-        var ratings = Generate("QB_FieldGeneral", source, 85);
+        // The point of the rescale. The two games score the same attributes
+        // differently, and carrying them verbatim left the overall somewhere
+        // else — by a different amount at every position, which re-ranked a
+        // whole roster. Now the ratings move onto this game's scale and the
+        // overall lands where the source put it.
+        foreach (var overall in new[] { 65, 72, 80, 88, 94 })
+        {
+            Assert.Equal(overall, Generate(archetype, SourceLine(archetype, overall), overall).Overall);
+        }
+    }
 
-        Assert.True(ratings.Overall > 85, $"expected better than the stated 85, got {ratings.Overall}");
-        Assert.Equal(99, ratings.Attributes["ThrowPowerRating"]);
-        Assert.Equal(99, ratings.Attributes["AwarenessRating"]);
-        Assert.Contains(ratings.Adjustments, a => a.Contains("from the ratings themselves"));
+    [Fact]
+    public void TheRescaleMovesEveryCarriedRatingByTheSameAmount()
+    {
+        // What the rescale must not do is change the player. Moving the
+        // carried ratings together leaves every difference between them
+        // untouched, so who was fast and who was strong survives exactly —
+        // that is the whole reason for one shift rather than one per
+        // attribute.
+        var source = SourceLine("QB_Scrambler", 80);
+        source["SpeedRating"] = 91;
+        source["ThrowPowerRating"] = 78;
+        source["AwarenessRating"] = 66;
+        var ratings = Generate("QB_Scrambler", source, 80);
+
+        var moved = new[] { "SpeedRating", "ThrowPowerRating", "AwarenessRating", "AccelerationRating" }
+            .Select(a => ratings.Attributes[a] - source[a])
+            .ToList();
+
+        Assert.True(moved.Max() - moved.Min() <= 1,
+            $"carried ratings moved by different amounts: {string.Join(", ", moved)}");
+        Assert.Equal(
+            source["SpeedRating"] - source["ThrowPowerRating"],
+            ratings.Attributes["SpeedRating"] - ratings.Attributes["ThrowPowerRating"],
+            1);
+    }
+
+    [Fact]
+    public void TheColumnsTheSourceNeverRecordedAreNotRescaled()
+    {
+        // They came from the archetype's measured profile and are already on
+        // this game's scale. Moving them would be correcting a number that was
+        // never wrong.
+        var profile = Engine.Profiles!.Find("QB_FieldGeneral")!;
+        var source = SourceLine("QB_FieldGeneral", 88);
+        var ratings = Generate("QB_FieldGeneral", source, 88);
+
+        foreach (var attribute in new[] { "ThrowUnderPressureRating", "BreakSackRating", "PlayActionRating" })
+        {
+            Assert.True(profile.TryExpected(attribute, 88, out var expected));
+            Assert.InRange(ratings.Attributes[attribute], expected - 1.5, expected + 1.5);
+        }
     }
 
     [Fact]

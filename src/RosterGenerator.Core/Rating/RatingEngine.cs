@@ -297,8 +297,10 @@ public sealed class RatingEngine
         // 3. Attribute shape.
         var profile = _profiles?.Find(formula.PlayerType);
         var locked = new HashSet<string>(StringComparer.Ordinal);
+        var carried = new HashSet<string>(StringComparer.Ordinal);
         var attributes = BuildShape(
-            positionModel, profile, group, target, talent.Score, player, normalized, roles, adjustments, locked);
+            positionModel, profile, group, target, talent.Score, player, normalized, roles, adjustments,
+            locked, carried);
 
         // 4. Calibrate against EA's own formula. The position's sanity caps are
         //    widened to admit the archetype's measured values first: those caps
@@ -308,33 +310,12 @@ public sealed class RatingEngine
         void Clamp(Dictionary<string, double> values) => ApplyCaps(values, caps, classModel, locked);
         Clamp(attributes);
 
-        // 4b. A player who arrived with real ratings has already answered the
-        //     question calibration exists to answer, so the overall follows
-        //     the ratings rather than the ratings being bent to reach it.
-        //
-        //     The two numbers can disagree, and when they do the ratings are
-        //     the better evidence: the source's overall was computed by the
-        //     older game's formula over the older game's columns, and CFB27's
-        //     reads columns that game never had. Chasing it would pay for the
-        //     difference out of the handful of attributes nobody recorded —
-        //     on a field general at 92 an early build did exactly that, taking
-        //     twelve points off throw under pressure to buy back three points
-        //     of overall the archetype's own measured profile does not agree
-        //     exists.
+        // 4b. A player who arrived with real ratings is rescaled onto this
+        //     game's scale rather than calibrated. See <see cref="Rescale"/>.
         int achieved;
-        if (normalized.SourceRatings.Count > 0)
+        if (carried.Count > 0)
         {
-            var implied = formula.Compute(attributes);
-            if (implied != target)
-            {
-                adjustments.Add(
-                    $"Overall computed as {implied} from the ratings themselves, rather than held at the " +
-                    $"source's {target}. The source's number came from a different game's formula over a " +
-                    "smaller set of columns; the ratings are what this game reads.");
-            }
-
-            achieved = implied;
-            target = implied;
+            achieved = Rescale(formula, attributes, carried, target, group, adjustments);
         }
         else
         {
@@ -466,7 +447,8 @@ public sealed class RatingEngine
         RatingEvidence evidence,
         IReadOnlyList<RoleProduction> roles,
         List<string> adjustments,
-        HashSet<string> locked)
+        HashSet<string> locked,
+        HashSet<string> carried)
     {
         var attributes = new Dictionary<string, double>(_model.AttributeDefaults, StringComparer.Ordinal);
 
@@ -515,9 +497,20 @@ public sealed class RatingEngine
         _emphasis.Apply(roles, profile, attributes, locked, adjustments);
         ApplyPhysique(attributes, group, player, adjustments);
         ApplyLegacyShape(attributes, evidence, adjustments, locked);
-        ApplySourceRatings(attributes, evidence, profile, target, adjustments, locked);
-        ApplyMeasurements(attributes, evidence, adjustments, locked);
-        ApplyExperience(attributes, player, locked);
+        ApplySourceRatings(attributes, evidence, profile, target, adjustments, locked, carried);
+        ApplyMeasurements(attributes, evidence, adjustments, locked, carried);
+
+        // An imported player's class year is already in his ratings — whoever
+        // built that roster rated a senior as a senior — so the experience
+        // shift would count it twice. It also has to be skipped rather than
+        // merely blocked on the carried attributes: lifting only the ones the
+        // source never recorded raises the overall, and the rescale below then
+        // pulls the carried ratings down to compensate, which is the class
+        // year moving them by the back door.
+        if (carried.Count == 0)
+        {
+            ApplyExperience(attributes, player, locked);
+        }
         return attributes;
     }
 
@@ -544,19 +537,19 @@ public sealed class RatingEngine
     /// </summary>
     private void ApplySourceRatings(
         Dictionary<string, double> attributes, RatingEvidence evidence, ArchetypeProfile? profile,
-        int target, List<string> adjustments, HashSet<string> locked)
+        int target, List<string> adjustments, HashSet<string> locked, HashSet<string> carried)
     {
         if (evidence.SourceRatings.Count == 0)
         {
             return;
         }
 
-        var carried = 0;
+        var kept = 0;
         foreach (var (attribute, value) in evidence.SourceRatings)
         {
             if (_model.SourceRatingSplits.TryGetValue(attribute, out var across))
             {
-                Split(attributes, attribute, value, across, profile, target, adjustments, locked);
+                Split(attributes, attribute, value, across, profile, target, adjustments, locked, carried);
 
                 // The number goes into the split and nowhere else, even where
                 // a column of the same name survives in CFB27. The game still
@@ -577,12 +570,13 @@ public sealed class RatingEngine
 
             attributes[attribute] = Math.Clamp(value, _model.GlobalCaps.Min, _model.GlobalCaps.Max);
             locked.Add(attribute);
-            carried++;
+            carried.Add(attribute);
+            kept++;
         }
 
         var filled = attributes.Count - locked.Count;
         adjustments.Add(
-            $"{carried} rating(s) kept exactly as the source roster recorded them. The remaining {filled} " +
+            $"{kept} rating(s) came from the source roster. The remaining {filled} " +
             (profile is not null
                 ? $"came from what the game gives this archetype at overall {target} — the older game had " +
                   "no column for them."
@@ -607,7 +601,8 @@ public sealed class RatingEngine
     /// </summary>
     private void Split(
         Dictionary<string, double> attributes, string source, double value, IReadOnlyList<string> across,
-        ArchetypeProfile? profile, int target, List<string> adjustments, HashSet<string> locked)
+        ArchetypeProfile? profile, int target, List<string> adjustments, HashSet<string> locked,
+        HashSet<string> carried)
     {
         var parts = across.Where(attributes.ContainsKey).ToList();
         if (parts.Count == 0)
@@ -658,6 +653,7 @@ public sealed class RatingEngine
         {
             attributes[part] = result[part];
             locked.Add(part);
+            carried.Add(part);
         }
 
         adjustments.Add(
@@ -671,6 +667,118 @@ public sealed class RatingEngine
         attribute.EndsWith("Rating", StringComparison.Ordinal)
             ? attribute[..^"Rating".Length]
             : attribute;
+
+    /// <summary>
+    /// Puts a source roster's ratings on this game's scale, without changing
+    /// the player's shape.
+    ///
+    /// <para><b>The defect this fixes.</b> NCAA 14 and CFB27 both compute an
+    /// overall from attributes, but neither the formulas nor the attribute
+    /// distributions agree, so carrying the numbers across verbatim leaves the
+    /// overall somewhere else. Measured over a real 2013 roster — 8,631
+    /// players — CFB27's formula returns a mean of 6.8 points below what NCAA
+    /// 14 stated at outside linebacker and 2.5 points <em>above</em> it at
+    /// corner. That is a 9.6-point spread, and it is not noise: it tracks how
+    /// much of each position's formula weight the carried attributes happen to
+    /// cover. Left alone it would make corners the best players on every
+    /// imported team and linebackers the worst, for no football reason
+    /// whatever.</para>
+    ///
+    /// <para><b>The correction.</b> Every carried attribute moves by the
+    /// <em>same</em> amount, solved so that EA's formula returns the overall
+    /// the source stated. Because the formula is linear the amount is exact in
+    /// closed form: the gap in overall, divided by the coefficient weight the
+    /// carried attributes hold. Nothing measured has to be shipped and no
+    /// per-position table can go stale — the position-dependence falls out of
+    /// the coefficient sums by itself.</para>
+    ///
+    /// <para><b>Why one shift and not one per attribute.</b> Moving them
+    /// together leaves every difference between them untouched, so the player
+    /// keeps exactly the shape somebody gave him: who was fast, who was
+    /// strong, which quarterback threw better than he ran. Shifting each
+    /// attribute by its own amount would pull his shape toward the archetype
+    /// average, which is the one thing carrying real ratings was for.</para>
+    ///
+    /// <para>The attributes the source never recorded do not move at all.
+    /// They came from the archetype's measured profile and are already on this
+    /// game's scale — moving them would be correcting a number that was never
+    /// wrong.</para>
+    /// </summary>
+    private int Rescale(
+        OverallFormula formula, Dictionary<string, double> attributes, IReadOnlySet<string> carried,
+        int target, string group, List<string> adjustments)
+    {
+        var movable = carried
+            .Where(a => attributes.ContainsKey(a) && formula.Coefficients.ContainsKey(a))
+            .ToList();
+        var weight = movable.Sum(a => formula.Coefficients[a]);
+        if (movable.Count == 0 || weight <= 0)
+        {
+            return formula.Compute(attributes);
+        }
+
+        var before = formula.Compute(attributes);
+        var min = (double)_model.GlobalCaps.Min;
+        var max = (double)_model.GlobalCaps.Max;
+        var start = movable.ToDictionary(a => a, a => attributes[a], StringComparer.Ordinal);
+        var free = new HashSet<string>(movable, StringComparer.Ordinal);
+
+        // Aim a hair below the .5 boundary, because EA rounds an exact .5 down.
+        // Each pass moves everything still free by one shift and freezes
+        // whatever hit a cap, handing what it could not take to the rest — so a
+        // player with one attribute already at 99 still reaches his overall
+        // through the others instead of falling short.
+        for (var pass = 0; pass <= movable.Count && free.Count > 0; pass++)
+        {
+            var frozen = movable.Where(a => !free.Contains(a))
+                .Sum(a => attributes[a] * formula.Coefficients[a]);
+            var others = formula.Coefficients
+                .Where(c => attributes.ContainsKey(c.Key) && !carried.Contains(c.Key))
+                .Sum(c => attributes[c.Key] * c.Value);
+            var freeBase = free.Sum(a => start[a] * formula.Coefficients[a]);
+            var freeWeight = free.Sum(a => formula.Coefficients[a]);
+            if (freeWeight <= 0)
+            {
+                break;
+            }
+
+            var shift = (target - 0.25 - formula.Intercept - others - frozen - freeBase) / freeWeight;
+            var clamped = new List<string>();
+            foreach (var attribute in free)
+            {
+                var moved = start[attribute] + shift;
+                attributes[attribute] = Math.Clamp(moved, min, max);
+                if (Math.Abs(attributes[attribute] - moved) > 1e-9)
+                {
+                    clamped.Add(attribute);
+                }
+            }
+
+            if (clamped.Count == 0)
+            {
+                break;
+            }
+
+            free.ExceptWith(clamped);
+        }
+
+        var achieved = formula.Compute(attributes);
+        var applied = movable.Average(a => attributes[a] - start[a]);
+        adjustments.Add(
+            $"The source's {movable.Count} rating(s) that this game's {group} formula reads were moved " +
+            $"together by {applied:+0.0;-0.0} point(s) so the overall comes to the {target} the source " +
+            $"stated rather than the {before} the same numbers mean here. The two games score the same " +
+            "attributes differently; moving them together leaves every difference between them — and so " +
+            "the player's shape — exactly as it was.");
+        if (achieved != target)
+        {
+            adjustments.Add(
+                $"Overall settled at {achieved} rather than {target}: the ratings ran into the game's " +
+                "10-99 bounds before the rest of the gap could be closed.");
+        }
+
+        return achieved;
+    }
 
     /// <summary>
     /// Restores the shape an imported player had in the roster he came from.
@@ -798,10 +906,12 @@ public sealed class RatingEngine
 
     private void ApplyMeasurements(
         Dictionary<string, double> attributes, RatingEvidence evidence, List<string> adjustments,
-        HashSet<string> locked)
+        HashSet<string> locked, HashSet<string> carried)
     {
         // A verified measurement REPLACES the estimate — it is the best
-        // evidence available for that attribute.
+        // evidence available for that attribute. It also takes the attribute
+        // out of the carried set: a stopwatch is a statement on this game's
+        // scale already, so the rescale below must not move it.
         void FromCurve(double? measurement, double[][] curve, string attribute, string label, string unit)
         {
             if (measurement is not double value || curve.Length == 0)
@@ -812,6 +922,7 @@ public sealed class RatingEngine
             var rating = RatingModelSet.Interpolate(curve, value);
             attributes[attribute] = rating;
             locked.Add(attribute);
+            carried.Remove(attribute);
             adjustments.Add($"{attribute} fixed at {rating:0} by a verified {label} ({value}{unit}).");
         }
 
@@ -823,6 +934,7 @@ public sealed class RatingEngine
             attributes["AccelerationRating"] =
                 RatingModelSet.Interpolate(_model.FortyYardToSpeed, forty + 0.02);
             locked.Add("AccelerationRating");
+            carried.Remove("AccelerationRating");
         }
 
         FromCurve(evidence.BenchPressReps, _model.BenchRepsToStrength, "StrengthRating", "bench press", " reps");
