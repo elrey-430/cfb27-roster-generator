@@ -177,10 +177,21 @@ public static class LegacyRosterReader
                             y >= 0 && y < LegacySchema.ClassYears.Count
                     ? LegacySchema.ClassYears[y]
                     : null,
-                // Skin tone is not in this generation's player table -- the
-                // face and head assets are, and reading a tone off those would
-                // be inference about a real person's appearance.
-                SkinTone = null,
+                // Read if it is there, and only then. An earlier build
+                // hard-coded this to null on the strength of a claim that the
+                // field does not exist in this generation -- a claim nothing
+                // in the code tested, so a real tone would have been dropped
+                // in silence. A stored tone is somebody's deliberate choice
+                // and crosses over like any other, exactly as it does for the
+                // PS2 files; what is forbidden is inferring one, which reading
+                // a field is not. Out-of-range values are refused rather than
+                // squeezed into the scale, because a field that is not the one
+                // we think it is should look wrong rather than plausible.
+                SkinTone = play.Has(LegacySchema.SkinTone) &&
+                           play.Read(row, LegacySchema.SkinTone) is var tone &&
+                           tone >= 0 && tone <= 7
+                    ? tone + 1
+                    : null,
                 RawOverall = play.Has(LegacySchema.Overall) ? play.Read(row, LegacySchema.Overall) : 0,
                 RawAttributes = attributes,
                 Role = roles.GetValueOrDefault(id),
@@ -191,10 +202,14 @@ public static class LegacyRosterReader
             $"Read as a PS3-era roster: {byTeam.Values.Sum(v => v.Count)} player(s) across " +
             $"{byTeam.Count} team(s), each player's team taken from the player table and each " +
             "team's name from the file's own team table.");
-        notes.Add(
-            "Skin tone is not read from this generation: its player table carries face and head " +
-            "assets rather than a tone, and reading one off those would be inference about a real " +
-            "person's appearance.");
+        var withTone = byTeam.Values.SelectMany(v => v).Count(p => p.SkinTone is not null);
+        var total = byTeam.Values.Sum(v => v.Count);
+        notes.Add(withTone > 0
+            ? $"Skin tone came across for {withTone} of {total} player(s): the file records one, and a " +
+              "tone somebody chose is evidence rather than a guess at what a real person looked like."
+            : "Skin tone was not read: this file carries no skin-tone field the reader recognises, so " +
+              "each player keeps whatever the roster slot he takes over already had. It is never " +
+              "inferred from a name, a hometown or a position.");
 
         var empty = schoolByTeamId.Count - byTeam.Count;
         if (empty > 0)

@@ -675,7 +675,7 @@ public class LegacyRosterTests
     /// A big-endian file with a PLAY table carrying team ids and a TEAM table
     /// naming them — including one team that is listed and never fielded.
     /// </summary>
-    private static byte[] BigEndianFileWithTeams()
+    private static byte[] BigEndianFileWithTeams(bool withSkinTone = false)
     {
         static void BeU32(byte[] b, int o, uint v)
         {
@@ -727,19 +727,27 @@ public class LegacyRosterTests
             return head.Concat(defs).Concat(data).ToArray();
         }
 
-        var playCols = new (string, int, int)[]
-        {
-            ("PFNA", 88, 0), ("PLNA", 88, 88), ("PGID", 16, 176),
-            ("TGID", 10, 192), ("PPOS", 5, 202), ("POVR", 7, 207),
-        };
+        var playCols = withSkinTone
+            ? new (string, int, int)[]
+            {
+                ("PFNA", 88, 0), ("PLNA", 88, 88), ("PGID", 16, 176),
+                ("TGID", 10, 192), ("PPOS", 5, 202), ("POVR", 7, 207), ("PSKI", 3, 214),
+            }
+            : new (string, int, int)[]
+            {
+                ("PFNA", 88, 0), ("PLNA", 88, 88), ("PGID", 16, 176),
+                ("TGID", 10, 192), ("PPOS", 5, 202), ("POVR", 7, 207),
+            };
         var first = new[] { "Bryce", "Will", "Bo" };
         var last = new[] { "Young", "Anderson", "Nix" };
         var team = new[] { 3, 3, 9 };
-        var play = Table(playCols, 27, 3, (put, text, r) =>
+        var tone = new[] { 0, 5, 7 };
+        var play = Table(playCols, 28, 3, (put, text, r) =>
         {
             text("PFNA", first[r]); text("PLNA", last[r]);
             put("PGID", 100 + r);
             put("TGID", team[r]); put("PPOS", r == 2 ? 0 : 13); put("POVR", 99 - r);
+            if (withSkinTone) { put("PSKI", tone[r]); }
         });
 
         var teamCols = new (string, int, int)[] { ("TDNA", 88, 0), ("TGID", 10, 88) };
@@ -840,6 +848,31 @@ public class LegacyRosterTests
         {
             File.Delete(output);
         }
+    }
+
+    [Fact]
+    public void APs3SkinToneIsReadWhenTheFileCarriesOne()
+    {
+        // An earlier build hard-coded this to null on the strength of a claim
+        // that the field is absent from this generation — a claim nothing
+        // tested, so a real tone would have been dropped in silence. A stored
+        // tone is somebody's deliberate choice and crosses over like any other
+        // recorded value; only INFERRING one is forbidden.
+        var roster = LegacyRosterReader.Read(EaDbFile.Parse(BigEndianFileWithTeams(withSkinTone: true)));
+        var players = roster.Teams.SelectMany(t => t.Players).OrderBy(p => p.PlayerId).ToList();
+
+        // The file counts from zero and CFB27 from one, as on the PS2 path.
+        Assert.Equal(new int?[] { 1, 6, 8 }, players.Select(p => p.SkinTone));
+        Assert.Contains(roster.Notes, n => n.Contains("Skin tone came across"));
+    }
+
+    [Fact]
+    public void APs3FileWithNoSkinToneFieldLeavesTheSlotAlone()
+    {
+        var roster = LegacyRosterReader.Read(EaDbFile.Parse(BigEndianFileWithTeams()));
+
+        Assert.All(roster.Teams.SelectMany(t => t.Players), p => Assert.Null(p.SkinTone));
+        Assert.Contains(roster.Notes, n => n.Contains("Skin tone was not read"));
     }
 
     [Fact]

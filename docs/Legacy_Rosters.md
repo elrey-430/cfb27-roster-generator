@@ -281,9 +281,18 @@ squad of nobody. In this roster 141 teams are listed and 126 fielded.
 Everything except skin tone: names, positions, jersey numbers, heights,
 weights, class years, redshirt status, depth-chart roles and all 42 ratings.
 
-Skin tone is not read from this generation. Its player table carries face and
-head assets rather than a tone, and reading one off those would be inference
-about a real person's appearance.
+Skin tone is read **if the file carries the field**, on the same terms as the
+PS2 files: a stored tone is somebody's deliberate choice and crosses over like
+any other recorded value. Only *inferring* a tone — from a name, a hometown, a
+position — is forbidden, and reading a field is not inferring.
+
+An earlier build hard-coded this to blank for the PS3 generation, on the claim
+that the field is absent there. Nothing in the code tested that claim, so a real
+tone would have been dropped in silence, and the claim itself was never
+evidenced against a field list. The reader now asks the file. Values outside
+0–7 are refused rather than squeezed into the scale, so a field that is not the
+one we think it is looks wrong instead of plausible, and the import report says
+which of the two happened.
 
 The columns that looked misplaced here — the player id, weight, class year and
 the rest — were the same off-by-one described above, not damage.
