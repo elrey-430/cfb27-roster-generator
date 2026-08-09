@@ -26,7 +26,7 @@ using RosterGenerator.Core.Validation;
 //              [--dynasty <folder of exported CSVs>] [--output <md>]
 //   export     --dynasty <save or folder> [--team <name>] [--season <year>]
 //              [--output <csv>]
-//   import     --legacy <PS2-era roster file> --season <year> [--team <name>]
+//   import     --legacy <PS2- or PS3-era roster file> --season <year> [--team <name>]
 //              [--output <csv>] [--legacy-team-ids <json>]
 //
 // export writes a team out of a dynasty AS A ROSTER FILE — the same format
@@ -35,12 +35,15 @@ using RosterGenerator.Core.Validation;
 // evidence columns (stats, awards, combine, draft) are left empty, because a
 // save has never held them.
 //
-// import reads a PS2-era NCAA Football roster file into that same format.
-// Identity crosses over exactly; the ratings do not, because the older games
-// held eighteen of this one's fifty-seven and on a scale nobody has anchored.
-// What crosses instead is the ORDER — where a player stood on his squad, and
-// where he stood among others at his position — which is what the Legacy*
-// columns hold. --season is required: the file records no year.
+// import reads an older NCAA Football roster file into that same format, and
+// what it writes depends on which game wrote the file. Identity always crosses
+// over exactly. A PS2-era file's ratings do not, because that game held
+// eighteen of this one's fifty-seven on a scale nobody has anchored — what
+// crosses instead is the ORDER, in the Legacy* columns. NCAA 14 holds
+// forty-two on the same 0-99 scale CFB27 uses, so those cross as numbers, in
+// the Source* columns. The file is recognised by its own byte order; there is
+// no flag to get wrong. --season is required either way: neither records a
+// year.
 //
 // The roster CSV's own Team column decides where each player goes, so one
 // file can carry a whole season. --team is only a fallback for rows that
@@ -93,6 +96,22 @@ static int Usage()
           list-teams --dynasty <exported CSVs: folder or .zip>
           compare    --left <Player.csv> --right <Player.csv> --team <name or id>
                      [--dynasty <exported CSVs: folder or .zip>] [--output <md>]
+          export     --dynasty <save or exported CSVs> [--team <name>] [--season <year>]
+                     [--output <csv>]
+          import     --legacy <old NCAA Football roster file> --season <year>
+                     [--team <name>] [--output <csv>] [--legacy-team-ids <json>]
+
+        import turns a roster file from an older NCAA Football game into the
+        same roster CSV generate reads, which saves typing a hundred squads by
+        hand. Point --legacy at the roster file itself — a PS2-era file, or the
+        USR-DATA inside an NCAA 14 save folder. --season is required because
+        neither generation records a year.
+
+        Which game wrote it decides what you get, and it is read off the file
+        rather than asked for. A PS2-era file gives identity and the ORDER of
+        its players; its ratings are held on a scale nobody has anchored and
+        are not written across. NCAA 14 gives identity and forty-two RATINGS on
+        the same 0-99 scale CFB27 uses, and those are written across as-is.
 
         template writes a blank roster file for a whole season: every team
         that played that year, each with its 85 slots and its Team, Season and
@@ -265,9 +284,14 @@ static int Import(Dictionary<string, string> options)
         Console.Error.WriteLine($"  {note}");
     }
 
-    Console.Error.WriteLine(
-        "  Ratings are NOT imported. Fill in stats, awards or a draft pick to rate these players on " +
-        "their own record; without them the ratings follow the source roster's ordering.");
+    Console.Error.WriteLine(result.CarriedRatings
+        ? "  Ratings ARE imported: this generation records them on the same 0-99 scale CFB27 uses, so " +
+          "the 42 columns it holds were written out as Source* columns. Generating moves them as a group " +
+          "onto this game's scale, and fills the 15 columns it never had from the archetype's measured " +
+          "profile."
+        : "  Ratings are NOT imported: this generation held 18 of CFB27's 57 columns, on a scale nobody " +
+          "has anchored. What crossed over is the ORDER. Fill in stats, awards or a draft pick to rate " +
+          "these players on their own record.");
     return 0;
 }
 

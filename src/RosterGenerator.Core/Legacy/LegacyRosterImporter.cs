@@ -11,25 +11,40 @@ namespace RosterGenerator.Core.Legacy;
 /// <param name="Skipped">Players dropped because the file never gave them a name.</param>
 /// <param name="Notes">Everything the reader had to decide, for the report.</param>
 public sealed record LegacyImportResult(
-    string Path, int Teams, int Players, int Skipped, IReadOnlyList<string> Notes);
+    string Path, int Teams, int Players, int Skipped, IReadOnlyList<string> Notes)
+{
+    /// <summary>
+    /// True when the source recorded its ratings on a real 0-99 scale and they
+    /// were carried across, rather than only their order. What a front end
+    /// tells the user afterwards turns entirely on this.
+    /// </summary>
+    public bool CarriedRatings { get; init; }
+}
 
 /// <summary>
-/// Turns a PS2-era NCAA Football roster file into a roster CSV this tool can
+/// Turns an older NCAA Football roster file into a roster CSV this tool can
 /// generate from.
 ///
-/// <para>Identity crosses over exactly — name, position, number, height,
-/// weight, class year, skin tone, and the depth-chart role. The ratings do
-/// not, and cannot: eighteen of CFB27's fifty-seven rating columns have any
-/// counterpart in the older game, those eighteen carry only about half the
-/// weight in the game's own overall formula, and the numbers themselves are
-/// held in five or six bits on a scale nobody has anchored. Writing them
-/// across would be inventing the other half and calling it history.</para>
+/// <para>Identity crosses over exactly from either generation — name,
+/// position, number, height, weight, class year, and the depth-chart role.
+/// What happens to the ratings depends entirely on which game wrote the
+/// file.</para>
 ///
-/// <para>What does cross over is the <em>order</em>. Where a player stood on
-/// his own squad becomes a talent signal, and where he stood among others at
-/// his position becomes a nudge to the matching attribute, so the fastest
-/// corner in the file stays the fastest corner. Both are ranks, and a rank
-/// survives the trip between two games in a way a rating does not.</para>
+/// <para><b>PS2 era.</b> The ratings do not cross, and cannot: eighteen of
+/// CFB27's fifty-seven rating columns have any counterpart, those eighteen
+/// carry only about half the weight in the game's own overall formula, and the
+/// numbers are held in five or six bits on a scale nobody has anchored.
+/// Writing them across would be inventing the other half and calling it
+/// history. What crosses instead is the <em>order</em> — where a player stood
+/// on his squad, and among others at his position — because a rank survives
+/// the trip between two games in a way a rating does not.</para>
+///
+/// <para><b>PS3 era (NCAA 14).</b> Forty-two columns, on the same 0-99 scale
+/// CFB27 uses, so the numbers themselves cross over and this writes them as
+/// <c>Source*</c> columns. They are then rescaled as a group onto this game's
+/// scale when a player is generated — see <c>RatingEngine.Rescale</c> — which
+/// is what stops a whole roster being re-ranked by the two games disagreeing
+/// about what an overall means.</para>
 /// </summary>
 public static class LegacyRosterImporter
 {
@@ -201,7 +216,10 @@ public static class LegacyRosterImporter
                 "shipped whole divisions unnamed, and a roster row with nobody on it is not a player.");
         }
 
-        return new LegacyImportResult(outputPath, teams.Count, written, skipped, notes);
+        return new LegacyImportResult(outputPath, teams.Count, written, skipped, notes)
+        {
+            CarriedRatings = real,
+        };
     }
 
     /// <summary>

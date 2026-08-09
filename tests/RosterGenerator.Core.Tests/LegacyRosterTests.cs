@@ -801,6 +801,10 @@ public class LegacyRosterTests
             Assert.DoesNotContain("LegacyRank", header);
             Assert.DoesNotContain("LegacySpeed", header);
 
+            // What a front end tells the user turns entirely on this flag —
+            // "your ratings are here" against "your ratings could not come".
+            Assert.True(result.CarriedRatings);
+
             var read = HistoricalCsv.Read(output);
             Assert.Empty(read.Warnings);
             var young = read.Rosters.SelectMany(r => r.Players).Single(p => p.LastName == "Young");
@@ -818,9 +822,11 @@ public class LegacyRosterTests
     [Fact]
     public void APs2ImportStillWritesRanksAndNoSourceRatings()
     {
-        var output = ImportTouchingSquads(out _);
+        var output = ImportTouchingSquads(out var result);
         try
         {
+            Assert.False(result.CarriedRatings);
+
             var header = File.ReadLines(output).First().Split(',');
             Assert.Contains("LegacyRank", header);
             Assert.DoesNotContain("SourceOverall", header);

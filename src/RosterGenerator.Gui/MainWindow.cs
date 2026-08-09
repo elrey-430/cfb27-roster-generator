@@ -705,16 +705,27 @@ public sealed class MainWindow : Window
             var result = await Task.Run(() => RosterGenerator.Core.Legacy.LegacyRosterImporter.Import(
                 source, destination, ids, season));
 
+            // What to tell them turns on which game wrote the file, and it is
+            // the whole difference between "your ratings are here" and "your
+            // ratings could not come".
             _output.Text =
                 $"Roster file written to: {Path.GetFullPath(result.Path)}\n\n" +
                 $"  {result.Players} player(s) across {result.Teams} team(s), season {season}.\n" +
                 string.Concat(result.Notes.Select(n => $"  {n}\n")) +
-                "\nNames, positions, numbers, heights, weights, class years and skin tones came across " +
-                "exactly. Ratings did not: the older games held eighteen of this one's fifty-seven, on a " +
-                "scale nobody has been able to anchor. What did come across is the ORDER — who was best " +
-                "on the squad, and who was fastest at his position — which is enough to rate a roster " +
-                "that looks like itself.\n\nFill in stats, awards or a draft pick for anyone you know " +
-                "about and those ratings become yours.";
+                (result.CarriedRatings
+                    ? "\nNames, positions, numbers, heights, weights and class years came across exactly " +
+                      "— and so did the RATINGS. This game records them on the same 0-99 scale CFB27 " +
+                      "uses, so all 42 it holds are in your roster file as they were written.\n\n" +
+                      "Generating moves them as a group onto CFB27's scale, which keeps every difference " +
+                      "between them — who was fast, who was strong — while landing each player on the " +
+                      "overall his old roster gave him. The 15 columns this game never had are filled in " +
+                      "from what CFB27 gives that kind of player at that level."
+                    : "\nNames, positions, numbers, heights, weights, class years and skin tones came " +
+                      "across exactly. Ratings did not: this game held eighteen of CFB27's fifty-seven, " +
+                      "on a scale nobody has been able to anchor. What did come across is the ORDER — " +
+                      "who was best on the squad, and who was fastest at his position — which is enough " +
+                      "to rate a roster that looks like itself.\n\nFill in stats, awards or a draft " +
+                      "pick for anyone you know about and those ratings become yours.");
             SetStatus($"Done — {result.Players} players read into {Path.GetFileName(destination)}.", ok: true);
             // The file just written is almost certainly the one the user
             // wants to generate from, so it is adopted rather than left for
