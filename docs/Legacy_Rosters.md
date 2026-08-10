@@ -304,6 +304,7 @@ squad of nobody. In this roster 141 teams are listed and 126 fielded.
 
 Everything except skin tone: names, positions, jersey numbers, heights,
 weights, class years, redshirt status, depth-chart roles and all 42 ratings.
+The `PLAY` table has 133 fields in total.
 
 Skin tone is read **if the file carries the field**, on the same terms as the
 PS2 files: a stored tone is somebody's deliberate choice and crosses over like
@@ -318,14 +319,37 @@ evidenced against a field list. The reader now asks the file. Values outside
 one we think it is looks wrong instead of plausible, and the import report says
 which of the two happened.
 
-**Whether NCAA 14 carries the field is still unsettled.** The community
-dictionary lists no player skin field at all — but it covers only one of the
-twelve attribute codes that generation added, so it is a PS2/Madden-era
-document and its silence is not evidence. What is known is that the PS2
-predecessor holds one in `PLAY`, and that NCAA 14 lets you choose a skin tone
-in its own editor, which has to be stored somewhere. Settling it needs the
-field list off a real NCAA 14 roster; until then the reader asks and reports,
-which is right under either answer.
+**Settled against a real NCAA 14 roster: the field is not there.** All 133
+fields of its `PLAY` table were enumerated, and none of them is a skin tone —
+`PSKI` is absent entirely. Nor is it anywhere else in the file: of the ten
+tables, the only skin field is **`CSKI` on `COCH`**, the coaches. The game
+records a skin colour for the 403 people on its sidelines and none for the
+8,631 on its rosters.
+
+What a player has instead is **`PGHE`**, a generic-head index — 240 distinct
+heads across a range of 1–246. The appearance is chosen, but it is chosen as an
+*asset*, not as a tone.
+
+### Why the head is not read as a tone
+
+The head index is not neutral about complexion. Scored against the PS2 file's
+own skin-tone-by-position profile, `PGHE` correlates at **r = +0.987**, ahead
+of every other field in the table. Heads in the 0–69 range are held by roughly
+half to three-quarters kickers, punters, centres, quarterbacks and offensive
+linemen; heads from 160 up by 8–13%.
+
+That is a **gradient, not a set of blocks**, and it is why the head is left
+alone. There is no boundary to cut on — the 220–229 band climbs back to 24%
+against 11% on either side of it — so any threshold would be one this tool
+invented from a statistical smear, and a wrong threshold writes a wrong
+appearance onto a recreation of a real person. Correlation that strong is
+enough to say the information is in there; it is nowhere near enough to say
+which head is which tone. That mapping lives in the game's art, not in its
+database.
+
+So an imported NCAA 14 player keeps whatever tone the roster slot he takes over
+already had, and the import says so. The correlation figure above is a
+measurement of the file, not a licence to use it.
 
 The columns that looked misplaced here — the player id, weight, class year and
 the rest — were the same off-by-one described above, not damage.
