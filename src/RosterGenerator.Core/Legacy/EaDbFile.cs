@@ -116,6 +116,106 @@ public sealed class LegacyTable
     }
 
     /// <summary>
+    /// Writes a field, in place, into the bytes this table was read from.
+    ///
+    /// <para>The exact mirror of <see cref="Read"/>, deliberately so: the two
+    /// walk the same bits in the same order, and the round-trip test that
+    /// reads a file, writes every field back unchanged and compares byte for
+    /// byte is what proves they agree. Anything subtler than a mirror here
+    /// would be a second implementation of the bit layout, and a second one is
+    /// a second chance to get it wrong.</para>
+    ///
+    /// <para>The record count, the column table and every other table in the
+    /// file are untouched — this changes values, never structure. A value too
+    /// wide for its field is refused rather than silently truncated, because a
+    /// truncated rating is a plausible-looking wrong number.</para>
+    /// </summary>
+    public void Write(int record, string field, int value)
+    {
+        if (!ByName.TryGetValue(field, out var column))
+        {
+            throw new KeyNotFoundException($"Table '{Name}' has no field '{field}'.");
+        }
+
+        if (record < 0 || record >= Capacity)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(record), $"Table '{Name}' holds {Capacity} record(s); {record} is outside it.");
+        }
+
+        var limit = column.Bits >= 31 ? int.MaxValue : (1 << column.Bits) - 1;
+        if (value < 0 || value > limit)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(value),
+                $"'{field}' is {column.Bits} bit(s) wide and holds 0-{limit}; {value} does not fit.");
+        }
+
+        var start = record * RecordBytes * 8 + column.StartBit;
+        if (_order == LegacyByteOrder.Big)
+        {
+            for (var i = 0; i < column.Bits; i++)
+            {
+                var p = start + i;
+                var bit = (value >> (column.Bits - 1 - i)) & 1;
+                var mask = (byte)(1 << (7 - (p & 7)));
+                var at = _offset + (p >> 3);
+                _data[at] = (byte)(bit != 0 ? _data[at] | mask : _data[at] & ~mask);
+            }
+
+            return;
+        }
+
+        for (var written = 0; written < column.Bits;)
+        {
+            var byteIndex = _offset + (start >> 3);
+            var bitInByte = start & 7;
+            var take = Math.Min(8 - bitInByte, column.Bits - written);
+            var mask = ((1 << take) - 1) << bitInByte;
+            var chunk = ((value >> written) & ((1 << take) - 1)) << bitInByte;
+            _data[byteIndex] = (byte)((_data[byteIndex] & ~mask) | chunk);
+            written += take;
+            start += take;
+        }
+    }
+
+    /// <summary>
+    /// Writes a field that stores negative numbers in two's complement.
+    /// </summary>
+    public void WriteSigned(int record, string field, int value)
+    {
+        var bits = ByName[field].Bits;
+        var low = -(1 << (bits - 1));
+        var high = (1 << (bits - 1)) - 1;
+        if (value < low || value > high)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(value), $"'{field}' is {bits} bit(s) wide and holds {low}-{high}; {value} does not fit.");
+        }
+
+        Write(record, field, value < 0 ? value + (1 << bits) : value);
+    }
+
+    /// <summary>
+    /// Writes a field holding text as plain bytes, NUL-padded to its width.
+    ///
+    /// <para>Padding rather than merely terminating: a shorter name written
+    /// over a longer one would otherwise leave the tail of the old one in the
+    /// file, where the game would not read it but anybody comparing two files
+    /// would, and where it is somebody else's name.</para>
+    /// </summary>
+    public void WriteText(int record, string field, string text)
+    {
+        var column = ByName[field];
+        var width = column.Bits / 8;
+        var start = _offset + record * RecordBytes + column.StartBit / 8;
+        for (var i = 0; i < width; i++)
+        {
+            _data[start + i] = i < text.Length ? (byte)text[i] : (byte)0;
+        }
+    }
+
+    /// <summary>
     /// Reads a field that stores negative numbers in two's complement.
     /// </summary>
     public int ReadSigned(int record, string field)
@@ -209,10 +309,13 @@ public sealed class LegacyTable
 /// </summary>
 public sealed class EaDbFile
 {
-    private EaDbFile(IReadOnlyDictionary<string, LegacyTable> tables, LegacyByteOrder order)
+    private readonly byte[] _bytes;
+
+    private EaDbFile(IReadOnlyDictionary<string, LegacyTable> tables, LegacyByteOrder order, byte[] bytes)
     {
         Tables = tables;
         ByteOrder = order;
+        _bytes = bytes;
     }
 
     /// <summary>Tables by name.</summary>
@@ -220,6 +323,38 @@ public sealed class EaDbFile
 
     /// <summary>Which way round this file stores its numbers.</summary>
     public LegacyByteOrder ByteOrder { get; }
+
+    /// <summary>
+    /// The whole file as it now stands, including every edit made through
+    /// <see cref="LegacyTable.Write"/>.
+    ///
+    /// <para>The tables write straight into these bytes, so nothing is
+    /// reassembled on the way out and nothing this reader did not understand
+    /// can be lost: the header, the directory, the column tables, the padding
+    /// and every table left alone come back exactly as they arrived. That is
+    /// the whole design — a roster file is somebody's work and most of it is
+    /// none of our business.</para>
+    /// </summary>
+    public ReadOnlySpan<byte> Bytes => _bytes;
+
+    /// <summary>
+    /// Writes the file out, with any edits, to a NEW path.
+    ///
+    /// <para>Refuses to write over the file it was read from. That file is the
+    /// only copy of somebody's roster, and a tool that can overwrite it will
+    /// eventually overwrite it.</para>
+    /// </summary>
+    public void Save(string path, string? readFrom = null)
+    {
+        if (readFrom is not null &&
+            Path.GetFullPath(path) == Path.GetFullPath(readFrom))
+        {
+            throw new InvalidOperationException(
+                "Writing over the roster file that was read is refused. Give a different output path.");
+        }
+
+        File.WriteAllBytes(path, _bytes);
+    }
 
     /// <summary>True when the file begins with the container's magic bytes.</summary>
     public static bool LooksLikeLegacyFile(string path)
@@ -279,7 +414,7 @@ public sealed class EaDbFile
             tables[name] = ReadTable(data, name, dataStart + offset, dataStart + next, label, order);
         }
 
-        return new EaDbFile(tables, order);
+        return new EaDbFile(tables, order, data);
     }
 
     private static LegacyByteOrder DetectByteOrder(byte[] data, string label)

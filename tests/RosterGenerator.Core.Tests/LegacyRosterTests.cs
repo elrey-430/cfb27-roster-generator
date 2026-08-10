@@ -88,6 +88,19 @@ public class LegacyRosterTests
         int Id, string First, string Last, int Position, int Jersey, int Height, int Weight,
         int ClassYear, int SkinTone, int Overall, int Speed, int Strength);
 
+    /// <summary>A PS2-era fixture, for tests in other files.</summary>
+    internal static byte[] LittleEndianFixture() => BuildFile(
+        new[]
+        {
+            new FixturePlayer(41, "A", "One", 0, 1, 72, 200, 0, 0, 10, 10, 10),
+            new FixturePlayer(42, "B", "Two", 1, 2, 73, 210, 1, 1, 11, 11, 11),
+        },
+        new[] { (9, 41, 42) },
+        new[] { (41, 0, 0), (42, 1, 0) });
+
+    /// <summary>A PS3-era fixture, for tests in other files.</summary>
+    internal static byte[] BigEndianFixture() => BigEndianFileWithTeams();
+
     private static byte[] BuildFile(
         IReadOnlyList<FixturePlayer> players,
         IReadOnlyList<(int TeamId, int Defensive, int Offensive)> teams,
