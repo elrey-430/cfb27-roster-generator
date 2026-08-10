@@ -100,6 +100,30 @@ Skin tone is carried rather than dropped. It is a value somebody chose
 deliberately when the roster was made — a record, not the tool guessing what a
 real person looked like, which it still never does.
 
+**`PSKI` was confirmed on meaning, not just on offset.** A community field
+dictionary glosses the code as *"Player Stats Kicking"*, which would make this
+mapping badly wrong, and the cell-exact match against community exports could
+not have caught it: matching values proves the offset and width are right, and
+says nothing about what the field is.
+
+The players settle it. `PSKI` holds 0–7 for every one of the 7,350 in the I-A
+file, all eight values populated, and its mean by position runs:
+
+| K 0.5 | P 0.5 | C 1.2 | QB 1.6 | … | SS 4.1 | WR 4.2 | HB 4.7 | CB 4.9 |
+|---|---|---|---|---|---|---|---|---|
+
+That ordering — specialists lightest, then centres and quarterbacks and the
+interior line, through the front seven, to the secondary and the skill
+positions — is the demographic shape of 2000s college football, and nothing
+else in a roster file has it. A kicking statistic would do the opposite: it
+would be non-zero *for kickers* and zero for everyone else, where this is 74%
+zeros among kickers and punters against 31% everywhere else.
+
+The dictionary is not wrong so much as answering a different question. These
+four-character codes are reused between tables and between games — it also
+carries Madden's agent negotiations and a Redskins trade flag — so `PSKI` may
+well mean a kicking stat in a stats table while meaning this in `PLAY`.
+
 Hometown, home state, previous school and redshirt status have no counterpart
 in the format. Stats, awards, combine numbers and draft position are empty for
 the same reason they are empty on an export: a roster file records what a
@@ -293,6 +317,15 @@ evidenced against a field list. The reader now asks the file. Values outside
 0–7 are refused rather than squeezed into the scale, so a field that is not the
 one we think it is looks wrong instead of plausible, and the import report says
 which of the two happened.
+
+**Whether NCAA 14 carries the field is still unsettled.** The community
+dictionary lists no player skin field at all — but it covers only one of the
+twelve attribute codes that generation added, so it is a PS2/Madden-era
+document and its silence is not evidence. What is known is that the PS2
+predecessor holds one in `PLAY`, and that NCAA 14 lets you choose a skin tone
+in its own editor, which has to be stored somewhere. Settling it needs the
+field list off a real NCAA 14 roster; until then the reader asks and reports,
+which is right under either answer.
 
 The columns that looked misplaced here — the player id, weight, class year and
 the rest — were the same off-by-one described above, not damage.
