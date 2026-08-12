@@ -1,0 +1,305 @@
+using RosterGenerator.Core.Model;
+using RosterGenerator.Core.Schema;
+
+namespace RosterGenerator.Core.Legacy;
+
+/// <summary>One CFB27 player written into one PS2 roster slot.</summary>
+/// <param name="Name">The player, as CFB27 has him.</param>
+/// <param name="Position">The position slot he took over.</param>
+/// <param name="Cfb27Overall">His overall in CFB27, 0-99.</param>
+/// <param name="WrittenOverall">The overall the PS2 game will show, after the five-bit round trip.</param>
+public sealed record LegacyExportedPlayer(
+    string Name, string Position, int Cfb27Overall, int WrittenOverall);
+
+/// <summary>What an export did.</summary>
+/// <param name="Path">Where the new roster file went.</param>
+/// <param name="Team">The PS2 team that was overwritten.</param>
+/// <param name="Written">Every player written, in slot order.</param>
+/// <param name="Cut">
+/// CFB27 players the PS2 squad had no room for, deepest on the depth chart
+/// first — the order they were cut in.
+/// </param>
+/// <param name="Unfilled">
+/// PS2 slots left exactly as they were because CFB27 had nobody for that
+/// position. Left alone rather than filled with somebody from elsewhere: a
+/// punter in a guard's slot is worse than the guard who was already there.
+/// </param>
+/// <param name="Notes">Names that would not fit, and anything else lost on the way.</param>
+public sealed record LegacyExportResult(
+    string Path,
+    string Team,
+    IReadOnlyList<LegacyExportedPlayer> Written,
+    IReadOnlyList<string> Cut,
+    IReadOnlyList<string> Unfilled,
+    IReadOnlyList<string> Notes);
+
+/// <summary>
+/// Writes a CFB27 team into a PS2-era roster file, over the squad already
+/// there.
+///
+/// <para><b>Over, never into.</b> A PS2 roster records no team on a player —
+/// a squad IS its block of player ids — so there is no way to add a team, and
+/// no need to: every slot that gets overwritten keeps its id, which keeps the
+/// depth chart, the captains and the team's own structure valid. The file that
+/// comes out differs from the one that went in only in the fields of one
+/// team's players.</para>
+///
+/// <para><b>The depth chart decides who survives.</b> CFB27 carries 85 players
+/// and a PS2 squad holds around 69, so a sixth of the roster cannot come. The
+/// cut is made position by position: the PS2 team's own slots say how many
+/// quarterbacks and how many guards it has room for, and CFB27's depth chart
+/// says which ones. Nobody changes position on the way across, so the squad
+/// that arrives is playable — cutting on overall alone would fill a team with
+/// the best 69 players and leave it without a punter.</para>
+///
+/// <para><b>Ratings go through the measured scale.</b> That generation holds a
+/// rating in five bits; see <see cref="LegacyRatingScale"/>. Eighteen of
+/// CFB27's fifty-seven have any counterpart, and the rest simply do not exist
+/// there.</para>
+/// </summary>
+public static class LegacyRosterExporter
+{
+    /// <summary>CFB27 rating column to the PS2 field it becomes.</summary>
+    private static readonly IReadOnlyList<(string Field, string Column)> Ratings =
+        LegacySchema.AttributeMap.Select(kv => (kv.Key, kv.Value)).ToList();
+
+    /// <summary>
+    /// Writes one CFB27 team over one PS2 team.
+    /// </summary>
+    /// <param name="sourcePath">The PS2 roster file to start from. Never modified.</param>
+    /// <param name="outputPath">Where the new roster file goes.</param>
+    /// <param name="roster">The CFB27 player table.</param>
+    /// <param name="teamIndex">The CFB27 team to take players from.</param>
+    /// <param name="legacyTeamId">The PS2 team id to write over.</param>
+    /// <param name="teamName">What to call that team in the report.</param>
+    /// <param name="scale">The measured five-bit rating scale.</param>
+    /// <param name="depthOrder">
+    /// CFB27 player row indexes in depth-chart order, best first, per position.
+    /// Positions it does not mention fall back to overall.
+    /// </param>
+    public static LegacyExportResult Export(
+        string sourcePath,
+        string outputPath,
+        PlayerRoster roster,
+        int teamIndex,
+        int legacyTeamId,
+        string teamName,
+        LegacyRatingScale scale,
+        IReadOnlyDictionary<string, IReadOnlyList<int>>? depthOrder = null)
+    {
+        var file = EaDbFile.Read(sourcePath);
+        if (file.ByteOrder != LegacyByteOrder.Little)
+        {
+            throw new InvalidDataException(
+                "Only a PS2-era roster can be written to. This file is from the PS3 generation, whose " +
+                "checksums have not been worked out.");
+        }
+
+        var play = file.Tables[LegacySchema.PlayerTable];
+        var slots = SlotsOf(file, legacyTeamId);
+        if (slots.Count == 0)
+        {
+            throw new InvalidDataException(
+                $"Team {legacyTeamId} has no players in '{Path.GetFileName(sourcePath)}', so there is " +
+                "nothing to write over.");
+        }
+
+        // Materialised once: PlayerRoster.Players filters empty slots on
+        // every enumeration, and the indexes below have to mean one thing.
+        var players = roster.Players.ToList();
+        var byPosition = Candidates(players, teamIndex, depthOrder);
+        var written = new List<LegacyExportedPlayer>();
+        var unfilled = new List<string>();
+        var notes = new List<string>();
+        var taken = new HashSet<int>();
+
+        // Slot order within a position is the PS2 team's own depth: its
+        // starter takes CFB27's starter.
+        foreach (var (position, positionSlots) in slots.OrderBy(s => s.Key, StringComparer.Ordinal))
+        {
+            var candidates = byPosition.GetValueOrDefault(position, Array.Empty<int>());
+            for (var i = 0; i < positionSlots.Count; i++)
+            {
+                if (i >= candidates.Count)
+                {
+                    unfilled.Add($"{position} #{i + 1}");
+                    continue;
+                }
+
+                var player = players[candidates[i]];
+                taken.Add(candidates[i]);
+                WritePlayer(play, positionSlots[i], player, scale, notes);
+                var overall = Number(player, PlayerColumns.OverallRating);
+                written.Add(new LegacyExportedPlayer(
+                    $"{player.GetRaw(PlayerColumns.FirstName)} {player.GetRaw(PlayerColumns.LastName)}".Trim(),
+                    position, overall, scale.ToDisplayed(scale.ToStored(overall))));
+            }
+        }
+
+        // Everyone the squad had no room for, deepest first — the order they
+        // were cut in, which is what somebody checking the result wants.
+        var cut = byPosition
+            .SelectMany(p => p.Value.Select((row, depth) => (Row: row, p.Key, Depth: depth)))
+            .Where(x => !taken.Contains(x.Row))
+            .OrderByDescending(x => x.Depth)
+            .ThenBy(x => x.Key, StringComparer.Ordinal)
+            .Select(x =>
+            {
+                var player = players[x.Row];
+                return $"{player.GetRaw(PlayerColumns.FirstName)} {player.GetRaw(PlayerColumns.LastName)} " +
+                       $"({x.Key}, {Number(player, PlayerColumns.OverallRating)} OVR, {Ordinal(x.Depth + 1)} on the chart)";
+            })
+            .ToList();
+
+        file.Save(outputPath, readFrom: sourcePath);
+        return new LegacyExportResult(outputPath, teamName, written, cut, unfilled, notes);
+    }
+
+    private static string Ordinal(int n) => n switch
+    {
+        1 => "1st", 2 => "2nd", 3 => "3rd", _ => $"{n}th",
+    };
+
+    /// <summary>
+    /// A column read as a number, or 0 when the export does not carry it.
+    ///
+    /// <para>Tolerant on purpose: an export written by a different version of
+    /// the community tool may be missing a column, and losing a jersey number
+    /// is not a reason to refuse somebody's whole roster.</para>
+    /// </summary>
+    private static int Number(Player player, string column) =>
+        player.HasColumn(column) && int.TryParse(player.GetRaw(column), out var value) ? value : 0;
+
+    /// <summary>
+    /// The PS2 team's slots, grouped by the position each one currently holds.
+    ///
+    /// <para>Grouped by what the slot IS rather than reassigned: keeping every
+    /// player at the position his slot already played is what makes the result
+    /// a football team rather than a list of the best available men.</para>
+    /// </summary>
+    private static Dictionary<string, List<int>> SlotsOf(EaDbFile file, int legacyTeamId)
+    {
+        var roster = LegacyRosterReader.Read(file);
+        var team = roster.Teams.FirstOrDefault(t => t.TeamId == legacyTeamId);
+        var slots = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+        if (team is null)
+        {
+            return slots;
+        }
+
+        var play = file.Tables[LegacySchema.PlayerTable];
+        var rowById = new Dictionary<int, int>();
+        for (var row = 0; row < play.CountUsed(LegacySchema.PlayerId); row++)
+        {
+            rowById[play.Read(row, LegacySchema.PlayerId)] = row;
+        }
+
+        // Best first inside a position, so the PS2 starter is overwritten by
+        // the CFB27 starter rather than by whoever happens to be listed first.
+        foreach (var player in team.Players.OrderByDescending(p => p.RawOverall))
+        {
+            if (rowById.TryGetValue(player.PlayerId, out var row))
+            {
+                slots.TryAdd(player.Position, new List<int>());
+                slots[player.Position].Add(row);
+            }
+        }
+
+        return slots;
+    }
+
+    /// <summary>
+    /// CFB27's players for this team, per position, best first.
+    ///
+    /// <para>The depth chart decides the order where the dynasty carries one,
+    /// because that is the coach's own answer to who plays. Overall is the
+    /// fallback and the tie-break.</para>
+    /// </summary>
+    private static Dictionary<string, IReadOnlyList<int>> Candidates(
+        IReadOnlyList<Player> players, int teamIndex,
+        IReadOnlyDictionary<string, IReadOnlyList<int>>? depthOrder)
+    {
+        var byPosition = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+        for (var row = 0; row < players.Count; row++)
+        {
+            var player = players[row];
+            if (Number(player, PlayerColumns.TeamIndex) != teamIndex)
+            {
+                continue;
+            }
+
+            var position = player.GetRaw(PlayerColumns.Position);
+            if (position.Length == 0)
+            {
+                continue;
+            }
+
+            byPosition.TryAdd(position, new List<int>());
+            byPosition[position].Add(row);
+        }
+
+        return byPosition.ToDictionary(
+            p => p.Key,
+            p =>
+            {
+                var chart = depthOrder?.GetValueOrDefault(p.Key);
+                var ranked = p.Value
+                    .OrderBy(row => chart is null ? int.MaxValue : IndexIn(chart, row))
+                    .ThenByDescending(row => Number(players[row], PlayerColumns.OverallRating))
+                    .ToList();
+                return (IReadOnlyList<int>)ranked;
+            },
+            StringComparer.Ordinal);
+    }
+
+    private static int IndexIn(IReadOnlyList<int> chart, int row)
+    {
+        var index = chart.ToList().IndexOf(row);
+        return index < 0 ? int.MaxValue : index;
+    }
+
+    private static void WritePlayer(
+        LegacyTable play, int row, Player player, LegacyRatingScale scale, List<string> notes)
+    {
+        var who = $"{player.GetRaw(PlayerColumns.FirstName)} {player.GetRaw(PlayerColumns.LastName)}".Trim();
+
+        if (LegacySchema.EncodeName(play, row, LegacySchema.FirstNameFields, player.GetRaw(PlayerColumns.FirstName))
+            is string first)
+        {
+            notes.Add($"{who}: {first}");
+        }
+
+        if (LegacySchema.EncodeName(play, row, LegacySchema.LastNameFields, player.GetRaw(PlayerColumns.LastName))
+            is string last)
+        {
+            notes.Add($"{who}: {last}");
+        }
+
+        void Put(string field, int value)
+        {
+            if (play.Has(field))
+            {
+                play.Write(row, field, Math.Clamp(value, 0, (1 << play.ByName[field].Bits) - 1));
+            }
+        }
+
+        Put(LegacySchema.Jersey, Number(player, PlayerColumns.JerseyNum));
+        Put(LegacySchema.Height, Number(player, PlayerColumns.Height));
+        // CFB27 stores weight the same way this format does -- pounds over 160 --
+        // so it crosses straight over rather than being converted twice.
+        Put(LegacySchema.Weight, Number(player, PlayerColumns.Weight));
+
+        var year = LegacySchema.ClassYears.ToList().FindIndex(
+            y => player.GetRaw(PlayerColumns.SchoolYear).Contains(y, StringComparison.OrdinalIgnoreCase));
+        if (year >= 0)
+        {
+            Put(LegacySchema.ClassYear, year);
+        }
+
+        Put(LegacySchema.Overall, scale.ToStored(Number(player, PlayerColumns.OverallRating)));
+        foreach (var (field, column) in Ratings)
+        {
+            Put(field, scale.ToStored(Number(player, column)));
+        }
+    }
+}

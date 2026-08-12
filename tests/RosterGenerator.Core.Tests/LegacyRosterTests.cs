@@ -98,6 +98,24 @@ public class LegacyRosterTests
         new[] { (9, 41, 42) },
         new[] { (41, 0, 0), (42, 1, 0) });
 
+    /// <summary>
+    /// A PS2-era fixture with one team of five: two ends, a safety, a
+    /// quarterback and a tackle. Positions chosen to overlap the checked-in
+    /// CFB27 sample, so an export has somebody to write and somebody to cut.
+    /// </summary>
+    internal static byte[] LittleEndianSquadFixture() => BuildFile(
+        new[]
+        {
+            //                              pos jer  ht  wt  yr skin ovr spd str
+            new FixturePlayer(41, "Old", "End", 11, 90, 76, 265, 3, 2, 20, 14, 20),
+            new FixturePlayer(42, "Old", "Ends", 11, 91, 75, 258, 2, 1, 14, 12, 18),
+            new FixturePlayer(43, "Old", "Safety", 18, 20, 72, 200, 1, 3, 18, 20, 10),
+            new FixturePlayer(44, "Old", "Passer", 0, 7, 74, 210, 2, 0, 16, 8, 6),
+            new FixturePlayer(45, "Old", "Tackle", 5, 77, 78, 310, 3, 4, 12, 2, 22),
+        },
+        new[] { (9, 41, 45) },
+        new[] { (41, 0, 0), (42, 1, 0), (43, 2, 0), (44, 3, 0), (45, 4, 0) });
+
     /// <summary>A PS3-era fixture, for tests in other files.</summary>
     internal static byte[] BigEndianFixture() => BigEndianFileWithTeams();
 
