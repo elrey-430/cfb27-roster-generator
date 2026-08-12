@@ -37,6 +37,7 @@
     <None Include="..\..\data\OverallFormulas.json" Link="Fixtures\OverallFormulas.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\ArchetypeRules.json" Link="Fixtures\ArchetypeRules.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\ArchetypeProfiles.json" Link="Fixtures\ArchetypeProfiles.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\data\LegacyRatingScale.json" Link="Fixtures\LegacyRatingScale.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\RosterDepth.json" Link="Fixtures\RosterDepth.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\EquipmentEras.json" Link="Fixtures\EquipmentEras.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\FbsMembership.json" Link="Fixtures\FbsMembership.json" CopyToOutputDirectory="PreserveNewest" />
