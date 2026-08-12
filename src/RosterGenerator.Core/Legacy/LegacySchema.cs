@@ -220,6 +220,90 @@ public static class LegacySchema
         _ => null,
     };
 
+    /// <summary>
+    /// The stored code for a character, or null when this generation has no
+    /// way to write it.
+    ///
+    /// <para>The alphabet is 52 letters and four punctuation marks — no digits,
+    /// no accents, nothing outside ASCII. A name the format cannot hold is
+    /// reported rather than mangled into something that only looks like the
+    /// person's name.</para>
+    /// </summary>
+    public static int? EncodeNameCharacter(char character) => character switch
+    {
+        >= 'a' and <= 'z' => character - 'a' + 1,
+        >= 'A' and <= 'Z' => character - 'A' + 27,
+        '.' => 53,
+        '\'' => 54,
+        ' ' => 56,
+        _ => null,
+    };
+
+    /// <summary>
+    /// Writes a name into its per-character fields, and says what it could not
+    /// carry.
+    /// </summary>
+    /// <param name="table">The table to write into.</param>
+    /// <param name="record">The row.</param>
+    /// <param name="fields">The character columns, in order.</param>
+    /// <param name="name">The name to write.</param>
+    /// <returns>
+    /// Null when the whole name went in, or a sentence naming what was lost —
+    /// a name too long for the columns, or a character this generation has no
+    /// code for. Silence there would put a subtly wrong name on a real person
+    /// and give nobody a way to notice.
+    /// </returns>
+    public static string? EncodeName(
+        LegacyTable table, int record, IReadOnlyList<string> fields, string name)
+    {
+        var codes = new List<int>(fields.Count);
+        var dropped = new List<char>();
+        foreach (var character in name.Trim())
+        {
+            if (EncodeNameCharacter(character) is int code)
+            {
+                codes.Add(code);
+            }
+            else
+            {
+                dropped.Add(character);
+            }
+        }
+
+        var truncated = codes.Count > fields.Count;
+        for (var i = 0; i < fields.Count; i++)
+        {
+            if (table.Has(fields[i]))
+            {
+                // 0 ends the name, so the tail is cleared rather than left
+                // holding the letters of whoever was in this slot before.
+                table.Write(record, fields[i], i < codes.Count ? codes[i] : 0);
+            }
+        }
+
+        if (!truncated && dropped.Count == 0)
+        {
+            return null;
+        }
+
+        var problems = new List<string>();
+        if (truncated)
+        {
+            problems.Add($"it is longer than the {fields.Count} characters this format holds");
+        }
+
+        if (dropped.Count > 0)
+        {
+            problems.Add(
+                $"it uses {string.Join(", ", dropped.Distinct().Select(c => $"'{c}'"))}, which the format " +
+                "has no code for");
+        }
+
+        return $"'{name.Trim()}' was written as " +
+               $"'{new string(codes.Take(fields.Count).Select(c => DecodeNameCharacter(c) ?? '?').ToArray())}': " +
+               string.Join(", and ", problems) + ".";
+    }
+
     /// <summary>Reads a name out of its per-character fields.</summary>
     public static string DecodeName(LegacyTable table, int record, IReadOnlyList<string> fields)
     {
