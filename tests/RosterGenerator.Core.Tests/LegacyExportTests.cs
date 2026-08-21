@@ -1,4 +1,5 @@
 using RosterGenerator.Core.Legacy;
+using RosterGenerator.Core.Mapping;
 using RosterGenerator.Core.Schema;
 using Xunit;
 
@@ -149,4 +150,59 @@ public sealed class LegacyExportTests
             File.Delete(source);
         }
     }
+
+    [Fact]
+    public void ASchoolCfb27OnlyHasAStandInForIsNotAnExportSource()
+    {
+        // Idaho is the live case. CFB27 has no Idaho, so TeamMappings.json
+        // points it at a generic FCS squad to be GENERATED INTO — and every
+        // one of those shares team index 255 with the game's whole recruiting
+        // pool. Reading OUT of 255 would hand the PS2 file 4,527 recruits
+        // under Idaho's name, so the pairing has to refuse it and say why.
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        try
+        {
+            File.WriteAllText(path, LegacyTeamIdsJson);
+            var teams = TeamMappingSet.Build(new (int, IReadOnlyList<string>)[]
+            {
+                (3, new[] { "Alabama" }),
+                (PlayerSchema.NoTeamSentinel, new[] { "Idaho" }),
+            });
+
+            var paired = LegacyTeamPairing.Pair(path, teams, out var unpaired);
+
+            Assert.Equal(new[] { "Alabama" }, paired.Select(p => p.School));
+            Assert.DoesNotContain(paired, p => p.Cfb27TeamIndex == PlayerSchema.NoTeamSentinel);
+            Assert.Contains(unpaired, u => u.Contains("Idaho") && u.Contains("stand-in"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void NamingSuchASchoolOutrightFindsNothingRatherThanTheRecruitPool()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        try
+        {
+            File.WriteAllText(path, LegacyTeamIdsJson);
+            var teams = TeamMappingSet.Build(new (int, IReadOnlyList<string>)[]
+            {
+                (3, new[] { "Alabama" }),
+                (PlayerSchema.NoTeamSentinel, new[] { "Idaho" }),
+            });
+
+            Assert.Null(LegacyTeamPairing.Find(path, teams, "Idaho"));
+            Assert.Equal(3, LegacyTeamPairing.Find(path, teams, "Alabama")!.Cfb27TeamIndex);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    private const string LegacyTeamIdsJson =
+        "{\"teams\":[{\"teamId\":3,\"school\":\"Alabama\"},{\"teamId\":41,\"school\":\"Idaho\"}]}";
 }

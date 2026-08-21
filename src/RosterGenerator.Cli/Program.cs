@@ -1,4 +1,5 @@
 using RosterGenerator.Core.Comparison;
+using RosterGenerator.Core.Legacy;
 using RosterGenerator.Core.Conversion;
 using RosterGenerator.Core.Dynasty;
 using RosterGenerator.Core.Editing;
@@ -64,6 +65,7 @@ try
         "compare" => Compare(ParseOptions(args[1..])),
         "export" => Export(ParseOptions(args[1..])),
         "import" => Import(ParseOptions(args[1..])),
+        "export-legacy" => ExportLegacy(ParseOptions(args[1..])),
         _ => Usage(),
     };
 }
@@ -100,6 +102,23 @@ static int Usage()
                      [--output <csv>]
           import     --legacy <old NCAA Football roster file> --season <year>
                      [--team <name>] [--output <csv>] [--legacy-team-ids <json>]
+          export-legacy --dynasty <save or exported CSVs> --legacy <PS2 roster file>
+                     [--team <name>|all] [--output <file>] [--legacy-team-ids <json>]
+                     [--team-mappings <json>]
+
+        export-legacy goes the other way: it writes your CFB27 teams INTO a
+        PS2-era roster file, over the squads already there. Name a school with
+        --team, or leave it out and every school both games have is written in
+        one pass. You always get a NEW file; the one you point at is never
+        touched.
+
+        Three things are worth knowing before you use it. A PS2 squad holds
+        about 69 players against CFB27's 85, so the depth chart decides who
+        comes and everyone cut is named. Nobody changes position on the way,
+        so a slot your CFB27 team has nobody for keeps the player it had.
+        And that generation stores a rating in five bits, 32 steps across
+        0-99, so a rating can move by half a step -- an 84 stays an 84 and a
+        77 becomes a 76.
 
         import turns a roster file from an older NCAA Football game into the
         same roster CSV generate reads, which saves typing a hundred squads by
@@ -292,6 +311,94 @@ static int Import(Dictionary<string, string> options)
         : "  Ratings are NOT imported: this generation held 18 of CFB27's 57 columns, on a scale nobody " +
           "has anchored. What crossed over is the ORDER. Fill in stats, awards or a draft pick to rate " +
           "these players on their own record.");
+    return 0;
+}
+
+static int ExportLegacy(Dictionary<string, string> options)
+{
+    if (!options.TryGetValue("legacy", out var legacyPath))
+    {
+        throw new ArgumentException("--legacy <PS2 roster file> is required.");
+    }
+
+    if (!File.Exists(legacyPath))
+    {
+        throw new FileNotFoundException($"There is no roster file at '{Path.GetFullPath(legacyPath)}'.");
+    }
+
+    if (!options.TryGetValue("dynasty", out var dynastyPath))
+    {
+        throw new ArgumentException("--dynasty <save or exported CSVs> is required.");
+    }
+
+    var teamIds = FindDataFile(options, "legacy-team-ids", "LegacyTeamIds.json", required: true)!;
+    var mappings = TeamMappingSet.Load(
+        FindDataFile(options, "team-mappings", "TeamMappings.json", required: true)!);
+    var scale = LegacyRatingScale.Load(
+        FindDataFile(options, "legacy-rating-scale", "LegacyRatingScale.json", required: true)!);
+
+    // A save has to be unpacked before its Player table can be read, and that
+    // takes long enough that saying nothing looks like a hang.
+    Console.Error.WriteLine(NativeSave.LooksLikeSave(dynastyPath)
+        ? "Reading your dynasty save — this takes a few seconds…"
+        : "Reading your dynasty…");
+    using var package = DynastyPackage.Open(dynastyPath);
+    var roster = package.Export.LoadPlayerRoster();
+
+    // The save names its own schools, so its aliases beat the shipped file
+    // wherever the two disagree.
+    if (package.Export.Teams.Count > 0)
+    {
+        mappings = package.Export.BuildTeamMappings(
+            FindDataFile(options, "team-mappings", "TeamMappings.json", required: false));
+    }
+
+    var wanted = options.GetValueOrDefault("team");
+    IReadOnlyList<LegacyExportTeam> teams;
+    IReadOnlyList<string> unpaired = Array.Empty<string>();
+    if (wanted is null || wanted.Equals("all", StringComparison.OrdinalIgnoreCase))
+    {
+        teams = LegacyTeamPairing.Pair(teamIds, mappings, out unpaired);
+        Console.Error.WriteLine($"Writing every school both games have: {teams.Count} team(s).");
+    }
+    else
+    {
+        var one = LegacyTeamPairing.Find(teamIds, mappings, wanted)
+            ?? throw new ArgumentException(
+                $"'{wanted}' is not a school both games have. The PS2 file carries " +
+                $"{LegacyTeamPairing.Schools(teamIds).Count} of them; --team all writes every one.");
+        teams = new[] { one };
+    }
+
+    var output = options.GetValueOrDefault(
+        "output", Path.Combine("Output", Path.GetFileName(legacyPath)));
+    Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
+    var result = LegacyRosterExporter.Export(legacyPath, output, roster, teams, scale);
+
+    var written = result.Teams.Sum(t => t.Written.Count);
+    var cut = result.Teams.Sum(t => t.Cut.Count);
+    var kept = result.Teams.Sum(t => t.Unfilled.Count);
+    Console.Error.WriteLine(
+        $"wrote {result.Path}: {written} player(s) across {result.Teams.Count} team(s), " +
+        $"{cut} cut by the depth chart, {kept} slot(s) left as they were");
+
+    foreach (var team in result.Teams.Where(t => t.Notes.Count > 0))
+    {
+        foreach (var note in team.Notes)
+        {
+            Console.Error.WriteLine($"  {team.Team}: {note}");
+        }
+    }
+
+    foreach (var line in result.Skipped.Concat(unpaired))
+    {
+        Console.Error.WriteLine($"  {line}");
+    }
+
+    Console.Error.WriteLine(
+        "  Ratings went through the measured five-bit scale, so one can move by half a step. " +
+        "Everything the PS2 format cannot hold — the other 39 rating columns, and anything past " +
+        "13 characters of a surname — is listed above rather than silently dropped.");
     return 0;
 }
 

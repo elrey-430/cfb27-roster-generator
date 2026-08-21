@@ -11,6 +11,25 @@ namespace RosterGenerator.Core.Legacy;
 public sealed record LegacyExportedPlayer(
     string Name, string Position, int Cfb27Overall, int WrittenOverall);
 
+/// <summary>One school paired up across the two games.</summary>
+/// <param name="School">The school, as both maps name it.</param>
+/// <param name="Cfb27TeamIndex">Its CFB27 team index.</param>
+/// <param name="LegacyTeamId">Its PS2 team id.</param>
+public sealed record LegacyExportTeam(string School, int Cfb27TeamIndex, int LegacyTeamId);
+
+/// <summary>What an export did to one team.</summary>
+/// <param name="Team">The PS2 team that was overwritten.</param>
+/// <param name="Written">Every player written, in slot order.</param>
+/// <param name="Cut">CFB27 players the PS2 squad had no room for, deepest first.</param>
+/// <param name="Unfilled">PS2 slots left exactly as they were.</param>
+/// <param name="Notes">Names that would not fit, and anything else lost on the way.</param>
+public sealed record LegacyExportedTeam(
+    string Team,
+    IReadOnlyList<LegacyExportedPlayer> Written,
+    IReadOnlyList<string> Cut,
+    IReadOnlyList<string> Unfilled,
+    IReadOnlyList<string> Notes);
+
 /// <summary>What an export did.</summary>
 /// <param name="Path">Where the new roster file went.</param>
 /// <param name="Team">The PS2 team that was overwritten.</param>
@@ -31,7 +50,18 @@ public sealed record LegacyExportResult(
     IReadOnlyList<LegacyExportedPlayer> Written,
     IReadOnlyList<string> Cut,
     IReadOnlyList<string> Unfilled,
-    IReadOnlyList<string> Notes);
+    IReadOnlyList<string> Notes)
+{
+    /// <summary>
+    /// Every team the run wrote, in the order it wrote them. A one-team export
+    /// has a list of one, so a caller that only ever does one team needs no
+    /// changes.
+    /// </summary>
+    public IReadOnlyList<LegacyExportedTeam> Teams { get; init; } = Array.Empty<LegacyExportedTeam>();
+
+    /// <summary>Teams asked for that the file had no squad for, and why.</summary>
+    public IReadOnlyList<string> Skipped { get; init; } = Array.Empty<string>();
+}
 
 /// <summary>
 /// Writes a CFB27 team into a PS2-era roster file, over the squad already
@@ -85,6 +115,34 @@ public static class LegacyRosterExporter
         int legacyTeamId,
         string teamName,
         LegacyRatingScale scale,
+        IReadOnlyDictionary<string, IReadOnlyList<int>>? depthOrder = null) =>
+        Export(sourcePath, outputPath, roster,
+            new[] { new LegacyExportTeam(teamName, teamIndex, legacyTeamId) }, scale, depthOrder);
+
+    /// <summary>
+    /// Writes any number of CFB27 teams into one PS2 roster file.
+    ///
+    /// <para>Every team goes into the same file and the file is saved once, so
+    /// a whole-league export costs one read and one write rather than a
+    /// hundred. A team the file has no squad for is skipped and named instead
+    /// of failing the run — one unmapped school should not cost somebody the
+    /// other hundred and eighteen.</para>
+    /// </summary>
+    /// <param name="sourcePath">The PS2 roster file to start from. Never modified.</param>
+    /// <param name="outputPath">Where the new roster file goes.</param>
+    /// <param name="roster">The CFB27 player table.</param>
+    /// <param name="teams">The schools to write, paired across the two games.</param>
+    /// <param name="scale">The measured five-bit rating scale.</param>
+    /// <param name="depthOrder">
+    /// CFB27 player row indexes in depth-chart order, best first, per position.
+    /// Positions it does not mention fall back to overall.
+    /// </param>
+    public static LegacyExportResult Export(
+        string sourcePath,
+        string outputPath,
+        PlayerRoster roster,
+        IReadOnlyList<LegacyExportTeam> teams,
+        LegacyRatingScale scale,
         IReadOnlyDictionary<string, IReadOnlyList<int>>? depthOrder = null)
     {
         var file = EaDbFile.Read(sourcePath);
@@ -95,19 +153,62 @@ public static class LegacyRosterExporter
                 "checksums have not been worked out.");
         }
 
-        var play = file.Tables[LegacySchema.PlayerTable];
-        var slots = SlotsOf(file, legacyTeamId);
-        if (slots.Count == 0)
+        if (teams.Count == 0)
         {
-            throw new InvalidDataException(
-                $"Team {legacyTeamId} has no players in '{Path.GetFileName(sourcePath)}', so there is " +
-                "nothing to write over.");
+            throw new ArgumentException("No teams to write.", nameof(teams));
         }
+
+        var play = file.Tables[LegacySchema.PlayerTable];
 
         // Materialised once: PlayerRoster.Players filters empty slots on
         // every enumeration, and the indexes below have to mean one thing.
         var players = roster.Players.ToList();
-        var byPosition = Candidates(players, teamIndex, depthOrder);
+
+        // Read the squads once too. Working out who plays for whom on a PS2
+        // file means id runs and depth-chart collisions, and doing it per team
+        // would repeat that hundred-team job a hundred times.
+        var squads = SquadsOf(file);
+        var done = new List<LegacyExportedTeam>();
+        var skipped = new List<string>();
+
+        foreach (var team in teams)
+        {
+            if (!squads.TryGetValue(team.LegacyTeamId, out var slots) || slots.Count == 0)
+            {
+                skipped.Add(
+                    $"{team.School}: team {team.LegacyTeamId} has no players in " +
+                    $"'{Path.GetFileName(sourcePath)}', so there was nothing to write over.");
+                continue;
+            }
+
+            done.Add(WriteTeam(play, team, slots, players, scale, depthOrder));
+        }
+
+        if (done.Count == 0)
+        {
+            throw new InvalidDataException(
+                $"None of the {teams.Count} team(s) asked for could be written. " + string.Join(" ", skipped));
+        }
+
+        file.Save(outputPath, readFrom: sourcePath);
+        var first = done[0];
+        return new LegacyExportResult(
+            outputPath, first.Team, first.Written, first.Cut, first.Unfilled, first.Notes)
+        {
+            Teams = done,
+            Skipped = skipped,
+        };
+    }
+
+    private static LegacyExportedTeam WriteTeam(
+        LegacyTable play,
+        LegacyExportTeam team,
+        IReadOnlyDictionary<string, List<int>> slots,
+        IReadOnlyList<Player> players,
+        LegacyRatingScale scale,
+        IReadOnlyDictionary<string, IReadOnlyList<int>>? depthOrder)
+    {
+        var byPosition = Candidates(players, team.Cfb27TeamIndex, depthOrder);
         var written = new List<LegacyExportedPlayer>();
         var unfilled = new List<string>();
         var notes = new List<string>();
@@ -151,8 +252,7 @@ public static class LegacyRosterExporter
             })
             .ToList();
 
-        file.Save(outputPath, readFrom: sourcePath);
-        return new LegacyExportResult(outputPath, teamName, written, cut, unfilled, notes);
+        return new LegacyExportedTeam(team.School, written, cut, unfilled, notes);
     }
 
     private static string Ordinal(int n) => n switch
@@ -177,16 +277,9 @@ public static class LegacyRosterExporter
     /// player at the position his slot already played is what makes the result
     /// a football team rather than a list of the best available men.</para>
     /// </summary>
-    private static Dictionary<string, List<int>> SlotsOf(EaDbFile file, int legacyTeamId)
+    private static Dictionary<int, Dictionary<string, List<int>>> SquadsOf(EaDbFile file)
     {
         var roster = LegacyRosterReader.Read(file);
-        var team = roster.Teams.FirstOrDefault(t => t.TeamId == legacyTeamId);
-        var slots = new Dictionary<string, List<int>>(StringComparer.Ordinal);
-        if (team is null)
-        {
-            return slots;
-        }
-
         var play = file.Tables[LegacySchema.PlayerTable];
         var rowById = new Dictionary<int, int>();
         for (var row = 0; row < play.CountUsed(LegacySchema.PlayerId); row++)
@@ -194,18 +287,26 @@ public static class LegacyRosterExporter
             rowById[play.Read(row, LegacySchema.PlayerId)] = row;
         }
 
-        // Best first inside a position, so the PS2 starter is overwritten by
-        // the CFB27 starter rather than by whoever happens to be listed first.
-        foreach (var player in team.Players.OrderByDescending(p => p.RawOverall))
+        var squads = new Dictionary<int, Dictionary<string, List<int>>>();
+        foreach (var team in roster.Teams)
         {
-            if (rowById.TryGetValue(player.PlayerId, out var row))
+            var slots = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+
+            // Best first inside a position, so the PS2 starter is overwritten
+            // by the CFB27 starter rather than by whoever is listed first.
+            foreach (var player in team.Players.OrderByDescending(p => p.RawOverall))
             {
-                slots.TryAdd(player.Position, new List<int>());
-                slots[player.Position].Add(row);
+                if (rowById.TryGetValue(player.PlayerId, out var row))
+                {
+                    slots.TryAdd(player.Position, new List<int>());
+                    slots[player.Position].Add(row);
+                }
             }
+
+            squads[team.TeamId] = slots;
         }
 
-        return slots;
+        return squads;
     }
 
     /// <summary>
