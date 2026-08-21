@@ -611,14 +611,50 @@ and play them on the console the file came from.
 
 ```
 RosterGenerator.Cli export-legacy --dynasty <save or exported CSVs>
-                                  --legacy <PS2 roster file>
-                                  [--team <school>|all] [--output <file>]
+                                  --legacy <PS2 save (.psu) or roster file>
+                                  [--team <school>|all] [--output <file>] [--db-out <file>]
 ```
 
 In the app it is the **Export to PS2** tab, which shares the dynasty with the
 generator and asks for nothing else. `--team` names one school; leaving it off
 writes every school both games have, in one pass. You always get a new file —
 the one you point at is opened read-only and writing over it is refused.
+
+## The save, not just the roster file
+
+Both directions take your **memory-card save** — the `.psu` form, which is what
+uLaunchELF writes, what PS2 Save Builder reads, and what the save sites hand
+out — as readily as they take a bare roster file. A save in means a save out,
+ready to go straight back on the card, with no database editor anywhere in the
+loop.
+
+That turned out to cost far less than it sounds. A `.psu` is a plain archive
+with **no compression and no encryption**: a 512-byte entry header for the save
+directory, one for `.` and one for `..`, then a header and its contents for
+each file, every file padded out to a multiple of 1024 bytes. The EA roster
+database sits inside one exactly as it sits on disk — the file extracted from a
+save and the same file inside it are byte for byte identical. There was nothing
+to reverse-engineer, only a container to read.
+
+**Everything that is not the roster is left alone.** Each entry's 512-byte
+header is carried across verbatim rather than rebuilt from parsed fields, and
+the only field that ever changes is the length of the file whose contents
+changed. The icon, `icon.sys`, the game's settings and any other save sharing
+the file come through byte for byte. Timestamps are deliberately not touched
+either: the card browser shows them, and they are the user's record of their
+own save rather than this tool's.
+
+**You get back the kind you gave it.** A bare roster file in means a bare
+roster file out. Turning one into a save would mean inventing the save's
+directory, its icon and its timestamps — authoring something the user never had
+rather than editing something they did — so it is not offered. Going the other
+way is free, and `--db-out` (or the checkbox on the export tab) writes the
+roster on its own as well, for looking the result over in a database editor
+before a memory card goes anywhere near it.
+
+Which of the two a file is, is read off the file. Neither form carries an
+extension worth trusting — a memory-card file has no extension at all — so
+asking the user to declare it would be asking them to get it wrong.
 
 ## Over a squad, never into one
 

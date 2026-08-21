@@ -1,5 +1,34 @@
 # Release notes
 
+## Unreleased — the memory-card save, end to end
+
+`export-legacy` and `import` both take a PS2 **memory-card save** (`.psu`) now,
+not only the bare roster file, and give back the same kind they were given. The
+database editor drops out of the loop at both ends: a save goes in, a save comes
+out, and it goes straight back on the card.
+
+This cost much less than expected. A `.psu` is a plain archive — a 512-byte
+entry header per file, contents padded to 1024 bytes, no compression and no
+encryption anywhere in it — so the EA roster database sits inside one exactly as
+it sits on disk. The file extracted from a save and the same file inside it are
+byte for byte identical, so there was nothing to reverse-engineer, only a
+container to read.
+
+Every entry's header is carried across verbatim and the only field that ever
+changes is the length of the file whose contents changed, so the icon,
+`icon.sys` and anything else sharing the save come through untouched — verified
+on a real 2005 roster inside a three-file save, where only the roster differs
+and what sits inside the save equals the loose `.db` exactly. Timestamps are
+left alone on purpose: the card browser shows them and they are the user's
+record of their own save.
+
+A bare roster file in still means a bare roster file out. Making a save out of
+one would mean inventing its directory, icon and timestamps, which is authoring
+rather than editing. The reverse is free, so `--db-out` — and a checkbox on the
+export tab — writes the roster on its own as well, for checking the result in an
+editor first.
+
+
 ## v0.9.4-alpha — Your CFB27 teams, back on the PS2
 
 The import has always gone one way. `export-legacy` goes the other: a CFB27

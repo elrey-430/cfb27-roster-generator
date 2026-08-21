@@ -1,13 +1,18 @@
 # Project Status
 
 _Last updated: 2026-08-21 — a CFB27 dynasty can be written back into a PS2
-roster file._
+memory-card save._
 
 ## Current status
 
-**The road now runs both ways.** `export-legacy` writes your CFB27 teams into a
-PS2-era NCAA Football roster file, over the squads already there, so a dynasty
-built in the current game can be played on the console the file came from.
+**The road now runs both ways, and all the way.** `export-legacy` writes your
+CFB27 teams into a PS2-era NCAA Football roster, over the squads already there,
+so a dynasty built in the current game can be played on the console it came
+from. Both directions take the **memory-card save itself** (`.psu`) as well as a
+bare roster file, so no database editor is needed at either end — a `.psu`
+stores its files uncompressed, which means the roster sits inside one exactly as
+it sits on disk. Everything in the save that is not the roster comes back byte
+for byte.
 
 ```
 RosterGenerator.Cli export-legacy --dynasty <save or exported CSVs>

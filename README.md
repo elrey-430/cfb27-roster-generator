@@ -25,9 +25,13 @@ which saves typing a hundred squads by hand — and a CFB27 dynasty can be writt
 back out into a PS2 roster file and played on the console it came from:
 
 ```
-old NCAA Football roster → [this tool] → roster CSV → your CFB27 dynasty
-your CFB27 dynasty       → [this tool] → PS2 roster file
+PS2 memory-card save → [this tool] → roster CSV → your CFB27 dynasty
+your CFB27 dynasty   → [this tool] → PS2 memory-card save
 ```
+
+Both directions read and write the `.psu` memory-card save itself, so no
+database editor is needed at either end. Everything in the save that is not the
+roster comes back byte for byte.
 
 - **`docs/Historical_CSV_Format.md`** — the simple roster CSV you fill in
   (start from `templates/HistoricalRosterTemplate_Basics.csv`).
