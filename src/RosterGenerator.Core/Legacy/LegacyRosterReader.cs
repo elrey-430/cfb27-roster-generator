@@ -25,10 +25,14 @@ public static class LegacyRosterReader
     /// <summary>
     /// Reads a legacy roster file.
     /// </summary>
-    /// <param name="path">The roster file.</param>
+    /// <param name="path">
+    /// The roster — either the bare file, or still inside the <c>.psu</c>
+    /// memory-card save it lives in on the console. Which one it is is read off
+    /// the file rather than asked for.
+    /// </param>
     /// <param name="schools">Team id to school name, or null to leave schools unresolved.</param>
     public static LegacyRosterFile Read(string path, IReadOnlyDictionary<int, string>? schools = null) =>
-        Read(EaDbFile.Read(path), schools);
+        Read(LegacyRosterSource.Open(path).Database, schools);
 
     /// <summary>Reads a legacy roster file already parsed into tables.</summary>
     public static LegacyRosterFile Read(EaDbFile file, IReadOnlyDictionary<int, string>? schools = null)

@@ -67,6 +67,21 @@ public sealed record LegacyExportResult(
 
     /// <summary>Teams asked for that the file had no squad for, and why.</summary>
     public IReadOnlyList<string> Skipped { get; init; } = Array.Empty<string>();
+
+    /// <summary>
+    /// True when what was written is a PS2 memory-card save rather than a bare
+    /// roster file — which is to say, something that goes straight onto a
+    /// memory card with no database editor in between.
+    /// </summary>
+    public bool WroteSave { get; init; }
+
+    /// <summary>What the source was, in a sentence, for the report.</summary>
+    public string SourceDescription { get; init; } = "";
+
+    /// <summary>
+    /// Where the roster was also written on its own, when that was asked for.
+    /// </summary>
+    public string? DatabasePath { get; init; }
 }
 
 /// <summary>
@@ -153,9 +168,13 @@ public static class LegacyRosterExporter
         PlayerRoster roster,
         IReadOnlyList<LegacyExportTeam> teams,
         LegacyRatingScale scale,
-        Func<int, IReadOnlyDictionary<string, IReadOnlyList<int>>?>? depthChart = null)
+        Func<int, IReadOnlyDictionary<string, IReadOnlyList<int>>?>? depthChart = null,
+        string? databaseOutputPath = null)
     {
-        var file = EaDbFile.Read(sourcePath);
+        // Either a bare roster file or the memory-card save it lives inside;
+        // whichever it is, that is what comes back out.
+        var source = LegacyRosterSource.Open(sourcePath);
+        var file = source.Database;
         if (file.ByteOrder != LegacyByteOrder.Little)
         {
             throw new InvalidDataException(
@@ -201,13 +220,25 @@ public static class LegacyRosterExporter
                 $"None of the {teams.Count} team(s) asked for could be written. " + string.Join(" ", skipped));
         }
 
-        file.Save(outputPath, readFrom: sourcePath);
+        source.Save(outputPath, readFrom: sourcePath);
+
+        // The roster on its own as well, when asked for: somebody who wants to
+        // look the result over in a database editor before putting a memory
+        // card near it should not have to run the export twice.
+        if (databaseOutputPath is { Length: > 0 })
+        {
+            source.SaveDatabaseOnly(databaseOutputPath, readFrom: sourcePath);
+        }
+
         var first = done[0];
         return new LegacyExportResult(
             outputPath, first.Team, first.Written, first.Cut, first.Unfilled, first.Notes)
         {
             Teams = done,
             Skipped = skipped,
+            WroteSave = source.InSave,
+            SourceDescription = source.Describe(),
+            DatabasePath = databaseOutputPath is { Length: > 0 } ? databaseOutputPath : null,
         };
     }
 

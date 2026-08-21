@@ -63,8 +63,31 @@ internal sealed class LegacyExportView : UserControl
     };
     private readonly TextBox _legacyBox = new()
     {
-        Watermark = "The PS2 roster file to write into",
+        Watermark = "Your PS2 memory-card save (.psu), or a bare roster file",
         IsReadOnly = true,
+    };
+
+    /// <summary>
+    /// What the chosen file turned out to be, read off the file rather than
+    /// asked for. Shown because it decides what the user gets back.
+    /// </summary>
+    private readonly TextBlock _legacyNote = new()
+    {
+        TextWrapping = TextWrapping.Wrap,
+        FontSize = 12,
+        Opacity = 0.75,
+        IsVisible = false,
+    };
+
+    /// <summary>
+    /// Offered only when the source is a save, because for a bare roster file
+    /// the ordinary output already <em>is</em> the database.
+    /// </summary>
+    private readonly CheckBox _databaseBox = new()
+    {
+        Content = "Also write the roster on its own, for a database editor",
+        IsChecked = false,
+        IsVisible = false,
     };
     private readonly ComboBox _teamBox = new()
     {
@@ -74,10 +97,10 @@ internal sealed class LegacyExportView : UserControl
     };
     private readonly TextBox _outputBox = new()
     {
-        Watermark = "Where the new roster file goes",
+        Watermark = "Where the new file goes",
         IsReadOnly = true,
     };
-    private readonly Button _exportButton = new() { Content = "Write the PS2 roster file", IsEnabled = false };
+    private readonly Button _exportButton = new() { Content = "Write it", IsEnabled = false };
     private readonly TextBlock _blocker = new() { TextWrapping = TextWrapping.Wrap, IsVisible = false };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
     private readonly SelectableTextBlock _output = new()
@@ -202,10 +225,12 @@ internal sealed class LegacyExportView : UserControl
             "The same dynasty as the other tab — choosing one here chooses it there too, so a save only " +
             "ever has to be opened once."));
         panel.Children.Add(Labelled(
-            "2.  The PS2 roster file",
-            Row(_legacyBox, pickLegacy),
-            "The roster file the old game reads. Your teams are written over the squads already in it, " +
-            "which is what keeps its depth charts and captains valid."));
+            "2.  The PS2 side",
+            new StackPanel { Spacing = 4, Children = { Row(_legacyBox, pickLegacy), _legacyNote, _databaseBox } },
+            "Your memory-card save (.psu) — what uLaunchELF writes and PS2 Save Builder reads — or the " +
+            "bare roster file out of one. You get back the same kind you give it, so a save in means a " +
+            "save out, ready to go straight back on the card. Your teams are written over the squads " +
+            "already in it, which is what keeps its depth charts and captains valid."));
         panel.Children.Add(Labelled(
             "3.  Which teams",
             _teamBox,
@@ -303,8 +328,15 @@ internal sealed class LegacyExportView : UserControl
 
         var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Choose the PS2-era NCAA Football roster file to write into",
+            Title = "Choose your PS2 memory-card save, or a bare roster file",
             AllowMultiple = false,
+            FileTypeFilter = new[]
+            {
+                new FilePickerFileType("PS2 save or roster file")
+                {
+                    Patterns = new[] { "*.psu", "*.db", "*" },
+                },
+            },
         });
 
         if (files.FirstOrDefault()?.TryGetLocalPath() is not { Length: > 0 } path)
@@ -313,7 +345,30 @@ internal sealed class LegacyExportView : UserControl
         }
 
         _legacyBox.Text = path;
-        if (string.IsNullOrWhiteSpace(_outputBox.Text))
+
+        // Identified now rather than at export time: a user who picked the
+        // wrong file should find out while they can still change it, and
+        // whether it is a save decides what they are about to get back.
+        var isSave = Ps2MemoryCardSave.LooksLikeSave(path);
+        _legacyNote.IsVisible = true;
+        _databaseBox.IsVisible = isSave;
+        try
+        {
+            var source = await Task.Run(() => LegacyRosterSource.Open(path));
+            _legacyNote.Text = $"Read as {source.Describe()}. " + (source.InSave
+                ? "You will get a save back — put it straight on your memory card."
+                : "You will get a bare roster file back, the kind a database editor opens.");
+            _legacyNote.Foreground = null;
+        }
+        catch (Exception ex)
+        {
+            _legacyNote.Text = ex.Message;
+            _legacyNote.Foreground = Brushes.IndianRed;
+            _legacyBox.Text = "";
+            _databaseBox.IsVisible = false;
+        }
+
+        if (_legacyBox.Text is { Length: > 0 })
         {
             _outputBox.Text = Path.Combine(
                 AppContext.BaseDirectory, "Output", Path.GetFileName(path));
@@ -381,13 +436,21 @@ internal sealed class LegacyExportView : UserControl
                 teams = new[] { one };
             }
 
+            // Beside the save, with the extension swapped, because somebody
+            // asking for both wants them in the same place.
+            var databaseOut = _databaseBox is { IsVisible: true, IsChecked: true }
+                ? Path.Combine(
+                    Path.GetDirectoryName(Path.GetFullPath(outputPath))!,
+                    Path.GetFileNameWithoutExtension(outputPath) + ".db")
+                : null;
+
             var result = await Task.Run(() =>
             {
                 var roster = package.Export.LoadPlayerRoster();
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath))!);
                 return LegacyRosterExporter.Export(
                     legacyPath, outputPath, roster, teams, scale,
-                    LegacyDepthChart.For(package.Export));
+                    LegacyDepthChart.For(package.Export), databaseOut);
             });
 
             _output.Text = Describe(result, unpaired);
@@ -415,7 +478,18 @@ internal sealed class LegacyExportView : UserControl
         var charted = result.Teams.Count(t => t.DepthChartDecided);
 
         var text = new System.Text.StringBuilder();
-        text.AppendLine($"Roster file written to: {Path.GetFullPath(result.Path)}");
+        text.AppendLine($"Written to: {Path.GetFullPath(result.Path)}");
+        text.AppendLine(result.WroteSave
+            ? "  A PS2 memory-card save — put it straight on your card with uLaunchELF or PS2 Save\n" +
+              "  Builder. No database editor needed. Every other file in the save came through\n" +
+              "  untouched."
+            : "  A bare roster file, the kind a database editor opens. Choose a .psu save instead\n" +
+              "  and you get a save back.");
+        if (result.DatabasePath is { } databasePath)
+        {
+            text.AppendLine($"  Roster on its own also written to {Path.GetFullPath(databasePath)}.");
+        }
+
         text.AppendLine();
         text.AppendLine($"  {written} player(s) written across {result.Teams.Count} team(s).");
         text.AppendLine($"  {cut} cut — the squads had no room.");

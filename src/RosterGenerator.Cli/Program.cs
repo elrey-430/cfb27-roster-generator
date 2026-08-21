@@ -102,15 +102,25 @@ static int Usage()
                      [--output <csv>]
           import     --legacy <old NCAA Football roster file> --season <year>
                      [--team <name>] [--output <csv>] [--legacy-team-ids <json>]
-          export-legacy --dynasty <save or exported CSVs> --legacy <PS2 roster file>
-                     [--team <name>|all] [--output <file>] [--legacy-team-ids <json>]
-                     [--team-mappings <json>]
+          export-legacy --dynasty <save or exported CSVs> --legacy <PS2 save or roster file>
+                     [--team <name>|all] [--output <file>] [--db-out <file>]
+                     [--legacy-team-ids <json>] [--team-mappings <json>]
 
         export-legacy goes the other way: it writes your CFB27 teams INTO a
-        PS2-era roster file, over the squads already there. Name a school with
+        PS2-era roster, over the squads already there. Name a school with
         --team, or leave it out and every school both games have is written in
         one pass. You always get a NEW file; the one you point at is never
         touched.
+
+        --legacy takes your MEMORY-CARD SAVE (.psu) as well as a bare roster
+        file, and gives back the same kind you gave it. Point it at a save and
+        what comes out goes straight back on the card -- no database editor in
+        between. Every other file in the save comes through byte for byte;
+        only the roster changes, and only the teams you asked for. Which kind
+        of file it is, is read off the file, so there is no flag to get wrong.
+
+        --db-out additionally writes the roster on its own, without the save
+        around it, for looking the result over in a database editor first.
 
         Three things are worth knowing before you use it. A PS2 squad holds
         about 69 players against CFB27's 85, so the depth chart decides who
@@ -122,9 +132,9 @@ static int Usage()
 
         import turns a roster file from an older NCAA Football game into the
         same roster CSV generate reads, which saves typing a hundred squads by
-        hand. Point --legacy at the roster file itself — a PS2-era file, or the
-        USR-DATA inside an NCAA 14 save folder. --season is required because
-        neither generation records a year.
+        hand. Point --legacy at a PS2 memory-card save (.psu), the bare roster
+        file out of one, or the USR-DATA inside an NCAA 14 save folder.
+        --season is required because neither generation records a year.
 
         Which game wrote it decides what you get, and it is read off the file
         rather than asked for. A PS2-era file gives identity and the ORDER of
@@ -374,19 +384,38 @@ static int ExportLegacy(Dictionary<string, string> options)
         "output", Path.Combine("Output", Path.GetFileName(legacyPath)));
     Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
 
+    // Asked for separately, because wanting the roster on its own as well as
+    // in the save is an ordinary thing to want and running the export twice to
+    // get it is not.
+    var databaseOut = options.GetValueOrDefault("db-out");
+    if (databaseOut is { Length: > 0 })
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(databaseOut))!);
+    }
+
     // Who comes is the coach's call before it is the ratings'. Without the
     // chart the cut falls back to overall, which is a different squad wherever
     // a starter is not the highest-rated man at his position.
     var result = LegacyRosterExporter.Export(
-        legacyPath, output, roster, teams, scale, LegacyDepthChart.For(package.Export));
+        legacyPath, output, roster, teams, scale, LegacyDepthChart.For(package.Export), databaseOut);
 
     var written = result.Teams.Sum(t => t.Written.Count);
     var cut = result.Teams.Sum(t => t.Cut.Count);
     var kept = result.Teams.Sum(t => t.Unfilled.Count);
     var charted = result.Teams.Count(t => t.DepthChartDecided);
+    Console.Error.WriteLine($"read {Path.GetFileName(legacyPath)}: {result.SourceDescription}.");
     Console.Error.WriteLine(
         $"wrote {result.Path}: {written} player(s) across {result.Teams.Count} team(s), " +
         $"{cut} cut, {kept} slot(s) left as they were");
+    Console.Error.WriteLine(result.WroteSave
+        ? "  That is a memory-card save, so it goes straight back on the card — no database editor " +
+          "in between. Every other file in it came through untouched."
+        : "  That is a bare roster file, the kind a database editor opens. Point --legacy at a .psu " +
+          "save instead and you get a save back.");
+    if (result.DatabasePath is { } databasePath)
+    {
+        Console.Error.WriteLine($"  Roster on its own also written to {databasePath}.");
+    }
     Console.Error.WriteLine(charted == result.Teams.Count
         ? "  Your dynasty's own depth chart decided who came, at every team."
         : charted == 0
