@@ -22,6 +22,16 @@ and what sits inside the save equals the loose `.db` exactly. Timestamps are
 left alone on purpose: the card browser shows them and they are the user's
 record of their own save.
 
+Confirmed against a real memory-card save, not just one built to the spec: a
+2025 community roster exported by a save manager, carrying the roster alongside
+`view.ico` and `icon.sys`. It opens, round-trips byte-identical, and a
+whole-league write changes the roster and nothing else — every other entry's
+contents and all 512 bytes of every header come through untouched. That file
+also settled a design question: it names the save directory and the roster
+inside it **identically** (`BASLUS-20991R2025`), so finding the roster by
+matching its name would have had to guess between the two. It is found by being
+an EA database instead.
+
 A bare roster file in still means a bare roster file out. Making a save out of
 one would mean inventing its directory, icon and timestamps, which is authoring
 rather than editing. The reverse is free, so `--db-out` — and a checkbox on the

@@ -398,6 +398,27 @@ public sealed class Ps2SaveTests
     }
 
     [Fact]
+    public void TheRosterIsFoundEvenWhenItSharesTheSaveFoldersName()
+    {
+        // Not hypothetical: a real NCAA Football 2005 roster save names its
+        // directory and the roster inside it identically —
+        // BASLUS-20991R2025/BASLUS-20991R2025 — alongside view.ico and
+        // icon.sys. Matching on the name would have to guess between the two.
+        var save = Ps2MemoryCardSave.Parse(
+            BuildSave(
+                "BASLUS-20991R2025",
+                ("BASLUS-20991R2025", Roster()),
+                ("view.ico", Icon()),
+                ("icon.sys", Icon())),
+            "real.psu");
+
+        Assert.Equal("BASLUS-20991R2025", save.SaveName);
+        Assert.NotNull(save.RosterFile);
+        Assert.Equal("BASLUS-20991R2025", save.RosterFile!.Name);
+        Assert.Equal(Roster(), save.RosterFile.Data);
+    }
+
+    [Fact]
     public void ADirectoryEntryCannotBeGivenFileContents()
     {
         var save = Ps2MemoryCardSave.Parse(

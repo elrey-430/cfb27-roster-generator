@@ -162,6 +162,11 @@ public static class LegacyRosterExporter
     /// somebody the numbers do not. Positions it does not mention, and teams it
     /// has no chart for, fall back to overall.
     /// </param>
+    /// <param name="databaseOutputPath">
+    /// Where to additionally write the roster on its own, without the save
+    /// around it — the file a database editor opens. Null to write only the
+    /// ordinary output.
+    /// </param>
     public static LegacyExportResult Export(
         string sourcePath,
         string outputPath,
