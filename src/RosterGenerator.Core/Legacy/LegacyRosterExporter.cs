@@ -23,12 +23,18 @@ public sealed record LegacyExportTeam(string School, int Cfb27TeamIndex, int Leg
 /// <param name="Cut">CFB27 players the PS2 squad had no room for, deepest first.</param>
 /// <param name="Unfilled">PS2 slots left exactly as they were.</param>
 /// <param name="Notes">Names that would not fit, and anything else lost on the way.</param>
+/// <param name="DepthChartDecided">
+/// True when the dynasty's own depth chart ordered this squad. False means the
+/// cut fell back to overall, which is a weaker answer and worth saying out
+/// loud rather than leaving the user to assume the coach's chart was read.
+/// </param>
 public sealed record LegacyExportedTeam(
     string Team,
     IReadOnlyList<LegacyExportedPlayer> Written,
     IReadOnlyList<string> Cut,
     IReadOnlyList<string> Unfilled,
-    IReadOnlyList<string> Notes);
+    IReadOnlyList<string> Notes,
+    bool DepthChartDecided = false);
 
 /// <summary>What an export did.</summary>
 /// <param name="Path">Where the new roster file went.</param>
@@ -103,9 +109,9 @@ public static class LegacyRosterExporter
     /// <param name="legacyTeamId">The PS2 team id to write over.</param>
     /// <param name="teamName">What to call that team in the report.</param>
     /// <param name="scale">The measured five-bit rating scale.</param>
-    /// <param name="depthOrder">
-    /// CFB27 player row indexes in depth-chart order, best first, per position.
-    /// Positions it does not mention fall back to overall.
+    /// <param name="depthChart">
+    /// The dynasty's own depth chart, asked for a team at a time. See the
+    /// multi-team overload.
     /// </param>
     public static LegacyExportResult Export(
         string sourcePath,
@@ -115,9 +121,9 @@ public static class LegacyRosterExporter
         int legacyTeamId,
         string teamName,
         LegacyRatingScale scale,
-        IReadOnlyDictionary<string, IReadOnlyList<int>>? depthOrder = null) =>
+        Func<int, IReadOnlyDictionary<string, IReadOnlyList<int>>?>? depthChart = null) =>
         Export(sourcePath, outputPath, roster,
-            new[] { new LegacyExportTeam(teamName, teamIndex, legacyTeamId) }, scale, depthOrder);
+            new[] { new LegacyExportTeam(teamName, teamIndex, legacyTeamId) }, scale, depthChart);
 
     /// <summary>
     /// Writes any number of CFB27 teams into one PS2 roster file.
@@ -133,9 +139,13 @@ public static class LegacyRosterExporter
     /// <param name="roster">The CFB27 player table.</param>
     /// <param name="teams">The schools to write, paired across the two games.</param>
     /// <param name="scale">The measured five-bit rating scale.</param>
-    /// <param name="depthOrder">
-    /// CFB27 player row indexes in depth-chart order, best first, per position.
-    /// Positions it does not mention fall back to overall.
+    /// <param name="depthChart">
+    /// The dynasty's own depth chart, asked for one CFB27 team index at a time:
+    /// position → the player row keys listed there, starter first. This is what
+    /// decides who comes, so it is worth supplying — without it the cut falls
+    /// back to overall, which is a different answer whenever a coach starts
+    /// somebody the numbers do not. Positions it does not mention, and teams it
+    /// has no chart for, fall back to overall.
     /// </param>
     public static LegacyExportResult Export(
         string sourcePath,
@@ -143,7 +153,7 @@ public static class LegacyRosterExporter
         PlayerRoster roster,
         IReadOnlyList<LegacyExportTeam> teams,
         LegacyRatingScale scale,
-        IReadOnlyDictionary<string, IReadOnlyList<int>>? depthOrder = null)
+        Func<int, IReadOnlyDictionary<string, IReadOnlyList<int>>?>? depthChart = null)
     {
         var file = EaDbFile.Read(sourcePath);
         if (file.ByteOrder != LegacyByteOrder.Little)
@@ -181,7 +191,8 @@ public static class LegacyRosterExporter
                 continue;
             }
 
-            done.Add(WriteTeam(play, team, slots, players, scale, depthOrder));
+            done.Add(WriteTeam(
+                play, team, slots, players, scale, depthChart?.Invoke(team.Cfb27TeamIndex)));
         }
 
         if (done.Count == 0)
@@ -252,7 +263,8 @@ public static class LegacyRosterExporter
             })
             .ToList();
 
-        return new LegacyExportedTeam(team.School, written, cut, unfilled, notes);
+        return new LegacyExportedTeam(
+            team.School, written, cut, unfilled, notes, depthOrder is { Count: > 0 });
     }
 
     private static string Ordinal(int n) => n switch
@@ -320,6 +332,15 @@ public static class LegacyRosterExporter
         IReadOnlyList<Player> players, int teamIndex,
         IReadOnlyDictionary<string, IReadOnlyList<int>>? depthOrder)
     {
+        // The chart names players by row key, which is the only identifier the
+        // two tables share; the indexes below are into the filtered list.
+        var depthByRowKey = depthOrder?.ToDictionary(
+            p => p.Key,
+            p => p.Value.Select((rowKey, depth) => (rowKey, depth))
+                .GroupBy(x => x.rowKey)
+                .ToDictionary(g => g.Key, g => g.Min(x => x.depth)),
+            StringComparer.Ordinal);
+
         var byPosition = new Dictionary<string, List<int>>(StringComparer.Ordinal);
         for (var row = 0; row < players.Count; row++)
         {
@@ -343,20 +364,17 @@ public static class LegacyRosterExporter
             p => p.Key,
             p =>
             {
-                var chart = depthOrder?.GetValueOrDefault(p.Key);
+                var chart = depthByRowKey?.GetValueOrDefault(p.Key);
                 var ranked = p.Value
-                    .OrderBy(row => chart is null ? int.MaxValue : IndexIn(chart, row))
+                    .OrderBy(row => chart is not null &&
+                                    chart.TryGetValue(players[row].RowKey, out var depth)
+                        ? depth
+                        : int.MaxValue)
                     .ThenByDescending(row => Number(players[row], PlayerColumns.OverallRating))
                     .ToList();
                 return (IReadOnlyList<int>)ranked;
             },
             StringComparer.Ordinal);
-    }
-
-    private static int IndexIn(IReadOnlyList<int> chart, int row)
-    {
-        var index = chart.ToList().IndexOf(row);
-        return index < 0 ? int.MaxValue : index;
     }
 
     private static void WritePlayer(

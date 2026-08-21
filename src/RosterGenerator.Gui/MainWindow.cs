@@ -22,8 +22,12 @@ namespace RosterGenerator.Gui;
 /// and <see cref="RosterCsvValidator"/> — the same code the command line runs.
 /// The window's job is to ask the questions and show the answers, never to
 /// decide anything about a roster itself.
+///
+/// <para>The second tab goes the other way — a CFB27 dynasty written back out
+/// into a PS2-era roster file. It shares this window's dynasty and nothing
+/// else, which is why it is a tab rather than more controls on this one.</para>
 /// </summary>
-public sealed class MainWindow : Window
+public sealed class MainWindow : Window, IDynastyHost
 {
     private readonly TextBox _dynastyBox = new()
     {
@@ -134,6 +138,9 @@ public sealed class MainWindow : Window
 
     private readonly List<Button> _dynastyPickers = new();
 
+    /// <summary>The other direction, on its own tab. See <see cref="LegacyExportView"/>.</summary>
+    private LegacyExportView? _legacyExport;
+
     private DynastyExport? _dynasty;
 
     /// <summary>
@@ -180,9 +187,30 @@ public sealed class MainWindow : Window
         _checkButton.Click += async (_, _) => await CheckAsync();
         _generateButton.Click += async (_, _) => await GenerateAsync();
 
-        Content = BuildLayout();
+        _legacyExport = new LegacyExportView(this);
+        Content = new TabControl
+        {
+            Items =
+            {
+                new TabItem { Header = "Recreate a roster", Content = BuildLayout() },
+                new TabItem { Header = "Export to PS2", Content = _legacyExport },
+            },
+        };
+
         UpdateButtons();
     }
+
+    /// <inheritdoc />
+    DynastyPackage? IDynastyHost.Package => _dynasty is null ? null : _package;
+
+    /// <inheritdoc />
+    Task IDynastyHost.PickSaveAsync() => PickDynastySaveAsync();
+
+    /// <inheritdoc />
+    Task IDynastyHost.PickFolderAsync() => PickDynastyAsync();
+
+    /// <inheritdoc />
+    Task IDynastyHost.PickArchiveAsync() => PickDynastyArchiveAsync();
 
     private Control BuildLayout()
     {
@@ -463,6 +491,11 @@ public sealed class MainWindow : Window
             SetPickersEnabled(true);
             UpdateSaveOption();
             UpdateButtons();
+
+            // The export tab lists the schools this dynasty can actually fill,
+            // so it has to be told whenever the dynasty changes — including
+            // when one fails to open and the list has to empty again.
+            _legacyExport?.DynastyChanged();
         }
     }
 

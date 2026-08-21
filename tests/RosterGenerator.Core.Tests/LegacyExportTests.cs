@@ -203,6 +203,93 @@ public sealed class LegacyExportTests
         }
     }
 
+    [Fact]
+    public void TheDepthChartDecidesWhoComes()
+    {
+        // The point of reading the chart at all: a coach who starts his
+        // 72-overall end over his 81-overall one has said something, and a
+        // squad half the size of CFB27's has to honour it or the cut is just
+        // a ranking by overall wearing the word "depth".
+        var source = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        var byChart = source + ".chart";
+        var byOverall = source + ".overall";
+        try
+        {
+            File.WriteAllBytes(source, LegacyRosterTests.LittleEndianSquadFixture());
+
+            // Florida State has one end in the sample and the fixture squad has
+            // two slots, so the safety is moved to end to make it a contest.
+            var chartRoster = TestFixtures.LoadSampleRoster();
+            var moved = chartRoster.Players.Single(p => p.LastName == "Barker");
+            moved.SetRaw(PlayerColumns.Position, "RE");
+            var underdog = chartRoster.Players.Single(p => p.LastName == "Anderson");
+            Assert.True(underdog.OverallRating < moved.OverallRating);
+
+            var chart = new Dictionary<string, IReadOnlyList<int>>(StringComparer.Ordinal)
+            {
+                ["RE"] = new[] { underdog.RowKey, moved.RowKey },
+            };
+            var withChart = LegacyRosterExporter.Export(
+                source, byChart, chartRoster, teamIndex: 27, legacyTeamId: 9,
+                teamName: "Florida State", Scale, _ => chart);
+
+            var plainRoster = TestFixtures.LoadSampleRoster();
+            plainRoster.Players.Single(p => p.LastName == "Barker")
+                .SetRaw(PlayerColumns.Position, "RE");
+            var withoutChart = LegacyRosterExporter.Export(
+                source, byOverall, plainRoster, 27, 9, "Florida State", Scale);
+
+            Assert.Equal(
+                "Jalen Anderson",
+                withChart.Written.First(w => w.Position == "RE").Name);
+            Assert.Equal(
+                "Ashlynd Barker",
+                withoutChart.Written.First(w => w.Position == "RE").Name);
+            Assert.True(withChart.Teams[0].DepthChartDecided);
+            Assert.False(withoutChart.Teams[0].DepthChartDecided);
+        }
+        finally
+        {
+            File.Delete(source);
+            File.Delete(byChart);
+            File.Delete(byOverall);
+        }
+    }
+
+    [Fact]
+    public void APlayerTheChartDoesNotNameFallsBackToOverall()
+    {
+        // A chart is shallower than a roster — three quarterbacks listed of
+        // five carried — so most squads have players it says nothing about.
+        // They queue behind everyone it does name, best first.
+        var source = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        var output = source + ".out";
+        try
+        {
+            File.WriteAllBytes(source, LegacyRosterTests.LittleEndianSquadFixture());
+            var roster = TestFixtures.LoadSampleRoster();
+            roster.Players.Single(p => p.LastName == "Barker").SetRaw(PlayerColumns.Position, "RE");
+
+            // Names only the higher-rated end, leaving the other unmentioned.
+            var named = roster.Players.Single(p => p.LastName == "Barker");
+            var chart = new Dictionary<string, IReadOnlyList<int>>(StringComparer.Ordinal)
+            {
+                ["RE"] = new[] { named.RowKey },
+            };
+
+            var result = LegacyRosterExporter.Export(
+                source, output, roster, 27, 9, "Florida State", Scale, _ => chart);
+
+            var ends = result.Written.Where(w => w.Position == "RE").Select(w => w.Name).ToList();
+            Assert.Equal(new[] { "Ashlynd Barker", "Jalen Anderson" }, ends);
+        }
+        finally
+        {
+            File.Delete(source);
+            File.Delete(output);
+        }
+    }
+
     private const string LegacyTeamIdsJson =
         "{\"teams\":[{\"teamId\":3,\"school\":\"Alabama\"},{\"teamId\":41,\"school\":\"Idaho\"}]}";
 }

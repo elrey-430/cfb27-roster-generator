@@ -373,14 +373,26 @@ static int ExportLegacy(Dictionary<string, string> options)
     var output = options.GetValueOrDefault(
         "output", Path.Combine("Output", Path.GetFileName(legacyPath)));
     Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
-    var result = LegacyRosterExporter.Export(legacyPath, output, roster, teams, scale);
+
+    // Who comes is the coach's call before it is the ratings'. Without the
+    // chart the cut falls back to overall, which is a different squad wherever
+    // a starter is not the highest-rated man at his position.
+    var result = LegacyRosterExporter.Export(
+        legacyPath, output, roster, teams, scale, LegacyDepthChart.For(package.Export));
 
     var written = result.Teams.Sum(t => t.Written.Count);
     var cut = result.Teams.Sum(t => t.Cut.Count);
     var kept = result.Teams.Sum(t => t.Unfilled.Count);
+    var charted = result.Teams.Count(t => t.DepthChartDecided);
     Console.Error.WriteLine(
         $"wrote {result.Path}: {written} player(s) across {result.Teams.Count} team(s), " +
-        $"{cut} cut by the depth chart, {kept} slot(s) left as they were");
+        $"{cut} cut, {kept} slot(s) left as they were");
+    Console.Error.WriteLine(charted == result.Teams.Count
+        ? "  Your dynasty's own depth chart decided who came, at every team."
+        : charted == 0
+            ? "  This dynasty carries no depth chart, so the cut fell back to overall."
+            : $"  The depth chart decided {charted} of {result.Teams.Count} team(s); the rest fell back " +
+              "to overall, having no chart in this dynasty.");
 
     foreach (var team in result.Teams.Where(t => t.Notes.Count > 0))
     {
