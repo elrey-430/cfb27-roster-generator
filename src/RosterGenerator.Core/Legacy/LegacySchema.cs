@@ -206,14 +206,20 @@ public static class LegacySchema
 
     /// <summary>
     /// Decodes one of the character codes a name is stored as: 1-26 are
-    /// lower case, 27-52 upper, and four codes carry punctuation. 0 ends the
-    /// name.
+    /// lower case, 27-52 upper, and four codes carry punctuation — 53 a
+    /// hyphen, 54 an apostrophe, 55 a full stop, 56 a space. 0 ends the name.
+    ///
+    /// <para>53 was read as a full stop until the file was asked which names
+    /// actually use it: El-Amin, Blay-Miezah, John-Paul, Boye-Doe,
+    /// Tidwell-Neal. 55 is the full stop, and its names say so just as
+    /// plainly — J.B., C.J., D.J., T.J. Every hyphenated surname imported
+    /// before this came through with a full stop in the middle of it.</para>
     /// </summary>
     public static char? DecodeNameCharacter(int code) => code switch
     {
         >= 1 and <= 26 => (char)('a' + code - 1),
         >= 27 and <= 52 => (char)('A' + code - 27),
-        53 => '.',
+        53 => '-',
         54 => '\'',
         55 => '.',
         56 => ' ',
@@ -233,8 +239,9 @@ public static class LegacySchema
     {
         >= 'a' and <= 'z' => character - 'a' + 1,
         >= 'A' and <= 'Z' => character - 'A' + 27,
-        '.' => 53,
+        '-' => 53,
         '\'' => 54,
+        '.' => 55,
         ' ' => 56,
         _ => null,
     };

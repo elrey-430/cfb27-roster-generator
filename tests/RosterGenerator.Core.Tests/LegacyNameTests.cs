@@ -22,6 +22,8 @@ public sealed class LegacyNameTests
     [InlineData("LenDale")]
     [InlineData("D'Angelo")]
     [InlineData("A.J.")]
+    [InlineData("Boye-Doe")]
+    [InlineData("El-Amin")]
     [InlineData("Van Dyke")]
     public void ANameTheFormatCanHoldGoesInAndComesBackOut(string name)
     {
@@ -40,6 +42,21 @@ public sealed class LegacyNameTests
         Assert.NotNull(note);
         Assert.Contains("13 characters", note);
         Assert.Equal("Vanderjagtenb", LegacySchema.DecodeName(play, 0, LegacySchema.LastNameFields));
+    }
+
+    [Theory]
+    [InlineData('-', 53)]
+    [InlineData('\'', 54)]
+    [InlineData('.', 55)]
+    [InlineData(' ', 56)]
+    public void ThePunctuationCodesAreTheOnesTheRealFileUses(char character, int code)
+    {
+        // Read off the 2004 file by asking which names use each code:
+        // 53 is El-Amin and Blay-Miezah, 55 is J.B. and C.J. An earlier build
+        // had 53 as a full stop, which put one in the middle of every
+        // hyphenated surname it imported.
+        Assert.Equal(code, LegacySchema.EncodeNameCharacter(character));
+        Assert.Equal(character, LegacySchema.DecodeNameCharacter(code));
     }
 
     [Fact]
