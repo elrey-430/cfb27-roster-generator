@@ -19,8 +19,20 @@ first-class route:
 your dynasty → [export tool] → CSV files → [this tool] → new CSV → [roster editor]
 ```
 
+And it goes both ways with the older games. A roster file from a PS2-era NCAA
+Football, or from NCAA Football 14, can be read straight into a roster CSV —
+which saves typing a hundred squads by hand — and a CFB27 dynasty can be written
+back out into a PS2 roster file and played on the console it came from:
+
+```
+old NCAA Football roster → [this tool] → roster CSV → your CFB27 dynasty
+your CFB27 dynasty       → [this tool] → PS2 roster file
+```
+
 - **`docs/Historical_CSV_Format.md`** — the simple roster CSV you fill in
   (start from `templates/HistoricalRosterTemplate_Basics.csv`).
+- **`docs/Legacy_Rosters.md`** — the older games in both directions: what the
+  files hold, what crosses over, and what does not.
 - **`docs/Architecture.md`** — project structure, pipelines, and design
   rationale.
 - **`docs/Schema.md`** — column-level ground truth for the CFB27 player

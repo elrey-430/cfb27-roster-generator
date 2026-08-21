@@ -1,5 +1,48 @@
 # Release notes
 
+## v0.9.4-alpha — Your CFB27 teams, back on the PS2
+
+The import has always gone one way. `export-legacy` goes the other: a CFB27
+dynasty written into a PS2-era NCAA Football roster file, over the squads
+already in it, to be played on the console the file came from. In the app it is
+a new **Export to PS2** tab, which shares the dynasty with the generator and
+asks for nothing else — no roster CSV, no season, none of the four options that
+govern how players are rated.
+
+Name a school with `--team`, or leave it off and every school both games have is
+written in one pass: **118 teams, 6,756 written and 3,274 cut, which is 10,030
+slots exactly — 118 × 85**. One read, one save. The file you point at is opened
+read-only and writing over it is refused.
+
+**The depth chart decides who comes.** A PS2 squad holds about 69 players
+against CFB27's 85, so a sixth of every roster has to go, and overall is the
+obvious answer and the wrong one — a coach who starts a 78 over an 81 has said
+something. The dynasty's own chart is read and honoured, position by position.
+Only slots named after one of the game's 21 positions count: a chart also
+carries jobs rather than positions — kick returner, third-down back, long
+snapper — and keeping those would have put a receiver at the head of the running
+backs. Players the chart says nothing about, it being three deep at quarterback
+where a squad carries five, queue behind the ones it names. A dynasty carrying
+no chart falls back to overall and the report says so.
+
+Nobody changes position on the way across, so a slot your team has nobody for
+keeps the player it had and is named. Ratings go through the five-bit scale
+measured for this release, so one can move by half a step: an 84 stays an 84 and
+a 77 becomes a 76. A surname past 13 characters is truncated and named —
+`Kaahaaina-Torres` goes in as `Kaahaaina-Tor` — rather than discovered in the
+game.
+
+**The bug worth naming.** `--team all` first wrote 14,557 players into a
+10,030-slot league. CFB27 has no Idaho, so `TeamMappings.json` points it at a
+generic FCS squad to be *generated into* — and every one of those shares team
+index 255 with the game's 4,527 recruits. Reading *out* of 255 handed the file
+the entire recruiting pool under Idaho's name. Guarded now in all three places
+the index is resolved, with the school skipped and told why.
+
+Also fixed, and it has been wrong since v0.9.0: **character code 53 is a hyphen,
+not a full stop**. Every hyphenated surname imported from a PS2 roster since
+then came through as `El.Amin`.
+
 ## v0.9.3-alpha — NCAA 14's rosters bring their ratings
 
 The PS3-era save holds forty-two of CFB27's fifty-seven rating columns on the

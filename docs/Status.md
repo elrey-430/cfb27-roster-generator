@@ -1,8 +1,29 @@
 # Project Status
 
-_Last updated: 2026-08-08 — NCAA 14's own ratings are carried across._
+_Last updated: 2026-08-21 — a CFB27 dynasty can be written back into a PS2
+roster file._
 
 ## Current status
+
+**The road now runs both ways.** `export-legacy` writes your CFB27 teams into a
+PS2-era NCAA Football roster file, over the squads already there, so a dynasty
+built in the current game can be played on the console the file came from.
+
+```
+RosterGenerator.Cli export-legacy --dynasty <save or exported CSVs>
+                                  --legacy <PS2 roster file> [--team <school>|all]
+```
+
+In the app it is the **Export to PS2** tab. Name a school, or leave it off and
+every school both games have goes in one pass — **118 teams, 6,756 written and
+3,274 cut, which is 118 × 85 exactly**. A PS2 squad holds about 69 against
+CFB27's 85, so **your dynasty's own depth chart decides who comes**: overall
+would fill a team with the best 69 players and leave it without a punter, and
+would overrule a coach who starts a 78 over an 81. Nobody changes position on
+the way across, so a slot your team has nobody for keeps the player it had and
+is named. Ratings go through the measured five-bit scale, so one can move by
+half a step. The file you point at is never modified. See
+[Legacy_Rosters.md](Legacy_Rosters.md#writing-a-cfb27-roster-back-into-a-ps2-file).
 
 **A roster from NCAA Football 14 brings its ratings with it.** The PS3-era save
 holds the same EA `DB` container big-endian, and unlike the PS2 files it records

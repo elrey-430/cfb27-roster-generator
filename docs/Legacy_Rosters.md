@@ -600,3 +600,111 @@ CFB27 reads those same numbers as a 91. Rather than argue with the roster he
 came from, every one of his ratings steps down together until he is the 85 it
 said he was — still the same quarterback, still better short than deep, still
 throwing harder than he runs.
+
+---
+
+# Writing a CFB27 roster back into a PS2 file
+
+The other direction. Somebody who has built a dynasty in CFB27 — or recreated
+1998 Kansas State in it — can put those squads back into a PS2-era roster file
+and play them on the console the file came from.
+
+```
+RosterGenerator.Cli export-legacy --dynasty <save or exported CSVs>
+                                  --legacy <PS2 roster file>
+                                  [--team <school>|all] [--output <file>]
+```
+
+In the app it is the **Export to PS2** tab, which shares the dynasty with the
+generator and asks for nothing else. `--team` names one school; leaving it off
+writes every school both games have, in one pass. You always get a new file —
+the one you point at is opened read-only and writing over it is refused.
+
+## Over a squad, never into one
+
+A PS2 roster records no team on a player. A squad **is** a block of player ids,
+pointed at by the team row's `DCAP` and `OCAP` bounds, so there is no way to add
+a team to one of these files and no reason to want to: every slot that gets
+overwritten keeps its own id, which keeps the depth chart, the captains and the
+team's structure valid. The file that comes out differs from the one that went
+in only in the fields of the players you asked for. There is a test for exactly
+that — every untouched player's every numeric field, before and after.
+
+## The depth chart decides who comes
+
+CFB27 carries 85 players and a PS2 squad holds about 69, so a sixth of every
+roster cannot come. Cutting on overall alone would fill a team with the best 69
+players and leave it without a punter, so the cut is made position by position:
+the PS2 team's own slots say how many quarterbacks and how many guards it has
+room for, and **the dynasty's own depth chart says which ones**.
+
+That chart is the coach's answer to who plays, and it does not always agree with
+the ratings — which is the entire reason to read it rather than sort on overall.
+`LegacyDepthChart` pulls it out of the save and hands the exporter one team at a
+time.
+
+Two details matter:
+
+- **Only real-position slots are kept.** A dynasty chart also carries slots that
+  are jobs rather than positions — `KR`, `3DRB`, `GAD`, `LS`, `KOS` — and those
+  list players who play something else. Keeping `KR` would have put a wide
+  receiver at the head of the running backs because he returns kicks.
+- **The chart is shallower than the roster.** It is three deep at quarterback
+  where a squad carries five. Players it says nothing about queue behind every
+  player it names, best first.
+
+A dynasty with no depth chart at all is still a dynasty worth exporting: the cut
+falls back to overall, and the report says so in as many words rather than
+leaving the user to assume the coach was consulted.
+
+Nobody changes position on the way across. A slot your CFB27 team has nobody for
+— an unusual position split, or a squad still being filled — keeps the player it
+had, and is named in the report. A left tackle is better than a safety standing
+where the left tackle was.
+
+## Ratings go through the measured scale
+
+That generation holds a rating in **five bits**: 32 steps across 0-99. The
+mapping is not linear and was measured off in-game screenshots rather than
+guessed — `data/LegacyRatingScale.json`, steps of 4 at the bottom and 1 at the
+top. A rating can therefore move by up to half a step on the way out: an 84
+stays an 84 and a 77 becomes a 76.
+
+Eighteen of CFB27's fifty-seven rating columns have any counterpart in that
+format. The other thirty-nine do not exist there and are not written anywhere.
+
+## Which school is which
+
+`data/LegacyTeamIds.json` says which PS2 team id each school is;
+`data/TeamMappings.json` says which CFB27 team index it is, aliases included.
+`LegacyTeamPairing` joins them on the school name, which is the only thing the
+two have in common — and where the save names its own schools, those aliases
+win.
+
+A school one map has and the other does not is reported rather than guessed at.
+The PS2 files carry 119 schools and CFB27 ships 136, so they genuinely disagree.
+
+**Idaho is the case that bites.** CFB27 has no Idaho, so `TeamMappings.json`
+points it at one of the game's generic FCS squads to be *generated into* — and
+every one of those carries team index 255, which is also where the game parks
+its 4,527 recruits. Reading *out* of 255 is the opposite operation and would
+hand the PS2 file the whole recruiting pool under Idaho's name. Before the guard
+went in, `--team all` wrote 14,557 players into a 10,030-slot league. Idaho is
+now skipped with an explanation, in all three places the index is resolved.
+
+A whole-league run comes to **118 teams, 6,756 written and 3,274 cut — 10,030
+exactly, which is 118 × 85**.
+
+## Names
+
+Ten character columns for a first name, thirteen for a last, in the encoding
+[described above](#what-comes-across-and-what-does-not). Anything longer is
+truncated and **named in the report**: `Kaahaaina-Torres` goes in as
+`Kaahaaina-Tor` and the user is told, rather than finding out in the game.
+
+## The PS3 generation is refused
+
+`export-legacy` writes PS2-era files only. NCAA Football 14's container carries
+checksums that have not been worked out, and a file written without them may or
+may not load with no way to tell which. Pointing it at one gets a refusal that
+says so, not an attempt.
