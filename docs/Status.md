@@ -1,6 +1,6 @@
 # Project Status
 
-_Last updated: 2026-08-21 — a CFB27 dynasty can be written back into a PS2
+_Last updated: 2026-08-22 — a CFB27 dynasty can be written back into a PS2
 memory-card save._
 
 ## Current status

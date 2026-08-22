@@ -1,6 +1,6 @@
 # Release notes
 
-## Unreleased — the memory-card save, end to end
+## v0.9.5-alpha — the memory-card save, end to end
 
 `export-legacy` and `import` both take a PS2 **memory-card save** (`.psu`) now,
 not only the bare roster file, and give back the same kind they were given. The
@@ -37,7 +37,6 @@ one would mean inventing its directory, icon and timestamps, which is authoring
 rather than editing. The reverse is free, so `--db-out` — and a checkbox on the
 export tab — writes the roster on its own as well, for checking the result in an
 editor first.
-
 
 ## v0.9.4-alpha — Your CFB27 teams, back on the PS2
 
